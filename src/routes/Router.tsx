@@ -8,7 +8,7 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       {
-        path: "filter",
+        path: "main",
         element: <FilterLayout />,
       },
     ],
