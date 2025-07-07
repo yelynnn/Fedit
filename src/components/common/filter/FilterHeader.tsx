@@ -1,5 +1,3 @@
-import React from "react";
-
 function FilterHeader() {
   return (
     <header className="w-full h-14 bg-[#40424B] pl-7 flex items-center gap-2">

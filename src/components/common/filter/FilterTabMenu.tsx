@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import ProductAnalysis from "../../../pages/filter/ProductAnalysis";
 import ColorAnalysis from "../../../pages/filter/ColorAnalysis";
 import TypeAnalysis from "../../../pages/filter/TypeAnalysis";
@@ -33,7 +33,7 @@ function FilterTabMenu() {
         ))}
       </nav>
 
-      <div className="flex-1 bg-gray-100 p-6 overflow-auto">
+      <div className="flex-1 p-6 overflow-auto bg-gray-100">
         {selectedTab === "product" && <ProductAnalysis />}
         {selectedTab === "color" && <ColorAnalysis />}
         {selectedTab === "type" && <TypeAnalysis />}

@@ -1,4 +1,3 @@
-import React from "react";
 import type { BrandChipProps } from "../../../types/Filter";
 import { Icon } from "@iconify/react";
 import { useBrandStore } from "../../../stores/BrandStore";

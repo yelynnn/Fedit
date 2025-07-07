@@ -1,4 +1,3 @@
-import React from "react";
 const Colors = ["#A02072", "#91C7BD", "#F2D993"];
 
 function ProductDetailBox() {

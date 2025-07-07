@@ -1,4 +1,3 @@
-import React from "react";
 import type { FilterOptionProps } from "../../../types/Filter";
 import { Icon } from "@iconify/react/dist/iconify.js";
 

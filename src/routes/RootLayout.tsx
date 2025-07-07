@@ -1,15 +1,14 @@
-import React from "react";
 import Header from "../components/common/Header";
 import Sidebar from "../components/common/Sidebar";
 import { Outlet } from "react-router-dom";
 
 function RootLayout() {
   return (
-    <div className="h-screen w-screen flex">
+    <div className="flex w-screen h-screen">
       <Sidebar />
       <div className="flex flex-col flex-1">
         <Header />
-        <main className="flex-1 bg-gray-100 overflow-auto">
+        <main className="flex-1 overflow-auto bg-gray-100">
           <Outlet />
         </main>
       </div>

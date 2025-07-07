@@ -1,5 +1,5 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
-import React, { useState } from "react";
+import { useState } from "react";
 import BrandChip from "./BrandChip";
 import FilterOption from "./FilterOption";
 import { useBrandStore } from "../../../stores/BrandStore";
@@ -11,8 +11,8 @@ function FilterBar() {
   const [openBrandTab, setOpenBrandTab] = useState(false);
 
   return (
-    <aside className="relative w-43 h-full bg-white pt-4 px-1 flex flex-col">
-      <header className="pl-2 font-bold text-sm leading-5 mb-2">필터</header>
+    <aside className="relative flex flex-col h-full px-1 pt-4 bg-white w-43">
+      <header className="pl-2 mb-2 text-sm font-bold leading-5">필터</header>
       <section className="h-7 w-full bg-[#D9D9D999] px-4 justify-between flex items-center mb-3">
         <div className="text-sm">브랜드</div>
         <Icon
@@ -25,7 +25,7 @@ function FilterBar() {
         />
       </section>
       {openBrandTab && (
-        <div className="absolute top-10 left-full h-full z-50">
+        <div className="absolute z-50 h-full top-10 left-full">
           <BrandMenu />
         </div>
       )}
@@ -33,7 +33,7 @@ function FilterBar() {
         <div className="relative mb-3">
           <Icon
             icon="ion:search-outline"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base"
+            className="absolute text-base text-gray-400 -translate-y-1/2 left-3 top-1/2"
           />
           <input
             type="text"

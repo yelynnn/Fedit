@@ -1,5 +1,4 @@
 import TypeBox from "@/components/type/TypeBox";
-import React from "react";
 
 function TypeAnalysis() {
   return (

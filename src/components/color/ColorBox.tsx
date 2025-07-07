@@ -1,4 +1,3 @@
-import React from "react";
 import ColorChart from "./ColorChart";
 import ProductDetailBox from "./ProductDetailBox";
 
