@@ -11,7 +11,6 @@ function ColorAnalysis() {
       <ColorBox />
       <ColorBox />
       <ColorBox />
-      <ColorBox />
     </div>
   );
 }

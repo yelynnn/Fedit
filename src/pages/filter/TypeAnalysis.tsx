@@ -11,8 +11,6 @@ function TypeAnalysis() {
       <TypeBox />
       <TypeBox />
       <TypeBox />
-      <TypeBox />
-      <TypeBox />
     </div>
   );
 }
