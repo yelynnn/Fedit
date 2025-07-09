@@ -73,7 +73,7 @@ export default function ColorChart() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center mt-7 mb-13">
+    <div className="flex items-center justify-center my-7">
       <svg ref={ref}></svg>
     </div>
   );

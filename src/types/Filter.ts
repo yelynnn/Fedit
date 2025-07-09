@@ -4,6 +4,13 @@ export type BrandChipProps = {
 
 export type FilterOptionProps = {
   title: string;
+  categoryList?: string[];
+  typeList?: CategoryGroup[];
+};
+
+export type CategoryGroup = {
+  category: string;
+  subcategories: string[];
 };
 
 export type BrandStore = {

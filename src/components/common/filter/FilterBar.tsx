@@ -4,6 +4,14 @@ import BrandChip from "./BrandChip";
 import FilterOption from "./FilterOption";
 import { useBrandStore } from "../../../stores/BrandStore";
 import BrandMenu from "./BrandMenu";
+import {
+  ColorCategories,
+  DetailCategories,
+  GenderCategories,
+  MoodCategories,
+  PatternCategories,
+  TypeCategories,
+} from "@/data/FilterCategories";
 
 function FilterBar() {
   const { brandList, addBrand } = useBrandStore((state) => state);
@@ -13,58 +21,65 @@ function FilterBar() {
   return (
     <aside className="relative flex flex-col h-full px-1 pt-4 bg-white w-43">
       <header className="pl-2 mb-2 text-sm font-bold leading-5">필터</header>
-      <section className="h-7 w-full bg-[#D9D9D999] px-4 justify-between flex items-center mb-3">
-        <div className="text-sm">브랜드</div>
+      <section
+        className="flex items-center justify-between w-full h-12 px-4"
+        style={{
+          backgroundColor: openBrandTab ? "#D9D9D999" : "transparent",
+          height: openBrandTab ? "44px" : "56px",
+        }}
+      >
+        <div>브랜드</div>
         <Icon
           icon={
             openBrandTab ? "heroicons-outline:minus" : "heroicons-outline:plus"
           }
           color="#00000066"
-          className="w-3 h-3"
+          className="w-4 h-4"
           onClick={() => setOpenBrandTab((prev) => !prev)}
         />
       </section>
       {openBrandTab && (
-        <div className="absolute z-50 h-full top-10 left-full">
-          <BrandMenu />
+        <div>
+          <div className="absolute z-50 h-full top-10 left-full">
+            <BrandMenu />
+          </div>
+          <section className="mt-3 mb-6">
+            <div className="relative mb-3">
+              <Icon
+                icon="ion:search-outline"
+                className="absolute text-base text-gray-400 -translate-y-1/2 left-3 top-1/2"
+              />
+              <input
+                type="text"
+                placeholder="검색"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyUp={(e) => {
+                  if (e.key === "Enter") {
+                    const trimmed = inputValue.trim();
+                    if (trimmed.length > 0) {
+                      addBrand(trimmed);
+                      setInputValue("");
+                    }
+                  }
+                }}
+                className="h-7 w-full pl-9 pr-3 rounded-lg bg-[#F9F9FA] border border-[#F1F1F3] text-xs placeholder:text-gray-400 focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col gap-[6px]">
+              {brandList.map((brand) => (
+                <BrandChip key={brand} brand={brand} />
+              ))}
+            </div>
+          </section>
         </div>
       )}
-      <section className="mb-6">
-        <div className="relative mb-3">
-          <Icon
-            icon="ion:search-outline"
-            className="absolute text-base text-gray-400 -translate-y-1/2 left-3 top-1/2"
-          />
-          <input
-            type="text"
-            placeholder="검색"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyUp={(e) => {
-              if (e.key === "Enter") {
-                const trimmed = inputValue.trim();
-                if (trimmed.length > 0) {
-                  addBrand(trimmed);
-                  setInputValue("");
-                }
-              }
-            }}
-            className="h-7 w-full pl-9 pr-3 rounded-lg bg-[#F9F9FA] border border-[#F1F1F3] text-xs placeholder:text-gray-400 focus:outline-none"
-          />
-        </div>
-        <div className="flex flex-col gap-[6px]">
-          {brandList.map((brand) => (
-            <BrandChip key={brand} brand={brand} />
-          ))}
-        </div>
-      </section>
-      <FilterOption title={"성별"} />
-      <FilterOption title={"유형"} />
-      <FilterOption title={"색상"} />
-      <FilterOption title={"디테일"} />
-      <FilterOption title={"키워드"} />
-      <FilterOption title={"패턴"} />
-      <FilterOption title={"무드"} />
+      <FilterOption title={"성별"} categoryList={GenderCategories} />
+      <FilterOption title={"유형"} typeList={TypeCategories} />
+      <FilterOption title={"색상"} categoryList={ColorCategories} />
+      <FilterOption title={"디테일"} categoryList={DetailCategories} />
+      <FilterOption title={"패턴"} categoryList={PatternCategories} />
+      <FilterOption title={"무드"} categoryList={MoodCategories} />
     </aside>
   );
 }

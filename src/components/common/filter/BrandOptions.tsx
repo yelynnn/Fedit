@@ -36,7 +36,7 @@ function BrandOptions() {
           </div>
 
           {openCategories.includes(category) && (
-            <ul className="ml-6 mt-2 flex flex-col gap-2 text-xs text-[#4B4B4B]">
+            <ul className="ml-6 mt-2 flex flex-col gap-2 text-sm text-[#4B4B4B]">
               {brandData[category].map((brand) => {
                 const isChecked = brandList.includes(brand);
                 return (
@@ -49,7 +49,7 @@ function BrandOptions() {
                         onChange={() =>
                           isChecked ? removeBrand(brand) : addBrand(brand)
                         }
-                        className="w-3.5 h-3.5 accent-[#95A4FC]"
+                        className="w-3 h-3 accent-[#95A4FC]"
                       />
                       <label htmlFor={brand} className="cursor-pointer">
                         {brand}

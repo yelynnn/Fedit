@@ -3,7 +3,7 @@ import ProductDetailBox from "./ProductDetailBox";
 
 function ColorBox() {
   return (
-    <div className="w-100 rounded-2xl bg-[#F7F9FB] ">
+    <div className="w-90 rounded-2xl bg-[#F7F9FB] ">
       <div className="p-6 ">
         <header className="text-[#1C1C1C] text-base font-bold">아디다스</header>
         <ColorChart />

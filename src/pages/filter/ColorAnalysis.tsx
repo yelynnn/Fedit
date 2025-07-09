@@ -5,7 +5,7 @@ function ColorAnalysis() {
     <div
       className="grid gap-6"
       style={{
-        gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
       }}
     >
       <ColorBox />
