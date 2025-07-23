@@ -1,0 +1,123 @@
+export const mockProductList = [
+  {
+    productId: "p1",
+    brand: "ZARA",
+    product_name: "ZW 컬렉션 자수 블라우스",
+    category: "블라우스",
+    current_price: "49,900",
+    regular_price: "55,000",
+    rating: 4.8,
+    reviews: 36,
+    image_url:
+      "https://static.zara.net/assets/public/e6a6/5005/be7e487ba26f/3f8db3ff4789/05107277712-p/05107277712-p.jpg?ts=1751901268420&w=1440",
+  },
+
+  {
+    productId: "p3",
+    brand: "유니클로",
+    product_name: "리넨 블렌드 오픈칼라 셔츠",
+    category: "반팔 티셔츠",
+    current_price: "29,900",
+    regular_price: "39,900",
+    rating: 4.6,
+    reviews: 67,
+    image_url:
+      "https://image.uniqlo.com/UQ/ST3/AsianCommon/imagesgoods/475651/item/goods_54_475651_3x4.jpg?width=400",
+  },
+  {
+    productId: "p4",
+    brand: "ZARA",
+    product_name: "플로럴 프린트 라미 스커트 ZW 컬렉션",
+    category: "스커트",
+    current_price: "129,900",
+    regular_price: "",
+    rating: 4.7,
+    reviews: 31,
+    image_url:
+      "https://static.zara.net/assets/public/a9c6/5edd/62f642f8b530/5a4b96e48a21/08293020715-a1/08293020715-a1.jpg?ts=1752507180633&w=676",
+  },
+  {
+    productId: "p5",
+    brand: "H&M",
+    product_name: "리넨 블렌드 드로스트링 팬츠",
+    category: "팬츠",
+    current_price: "34,900",
+    regular_price: "",
+    rating: 4.2,
+    reviews: 18,
+    image_url:
+      "https://image.hm.com/assets/hm/99/0e/990e91a0dde26c11f6192565d1dabd0ba35a9729.jpg?imwidth=1536",
+  },
+  {
+    productId: "p6",
+    brand: "유니클로",
+    product_name: "홀터넥 원피스",
+    category: "원피스",
+    current_price: "49,900",
+    regular_price: "76,200",
+    rating: 4.3,
+    reviews: 30,
+    image_url:
+      "https://image.uniqlo.com/UQ/ST3/AsianCommon/imagesgoods/474059/item/goods_09_474059_3x4.jpg?width=400",
+  },
+  {
+    productId: "p7",
+    brand: "ZARA",
+    product_name: "벌룬 봄버 재킷 ZW COLLECTION",
+    category: "자켓",
+    current_price: "149,900",
+    regular_price: "",
+    rating: 4.9,
+    reviews: 72,
+    image_url:
+      "https://static.zara.net/assets/public/9b7f/c7b7/f43e4f7585ec/3f94379df597/02814404523-p/02814404523-p.jpg?ts=1749463145738&w=1500",
+  },
+  {
+    productId: "p8",
+    brand: "유니클로",
+    product_name: "플리츠 스코츠",
+    category: "스커트",
+    current_price: "39,900",
+    regular_price: "56,200",
+    rating: 4.4,
+    reviews: 27,
+    image_url:
+      "https://image.uniqlo.com/UQ/ST3/AsianCommon/imagesgoods/480302/item/goods_08_480302_3x4.jpg?width=400",
+  },
+  {
+    productId: "p9",
+    brand: "H&M",
+    product_name: "프릴 트리밍 맥시 스커트",
+    category: "스커트",
+    current_price: "39,900",
+    regular_price: "",
+    rating: 4.1,
+    reviews: 14,
+    image_url:
+      "https://image.hm.com/assets/hm/44/df/44df27ba9eba022feb3b1cdd6be8f46b1ea0201d.jpg?imwidth=1536",
+  },
+  {
+    productId: "p10",
+    brand: "ZARA",
+    product_name: "반팔티 그래픽 Graphic Tee",
+    category: "슬리브리스",
+    current_price: "55,900",
+    regular_price: "",
+    rating: 4.6,
+    reviews: 41,
+    image_url:
+      "https://static.zara.net/assets/public/4e6c/6492/3c6e4007896b/96862e8b1c1d/04192003401-p/04192003401-p.jpg?ts=1746532605790&w=1500",
+  },
+  {
+    productId: "p2",
+    brand: "H&M",
+    product_name: "파인니트 탑",
+    category: "탑",
+    current_price: "14,900",
+    regular_price: "19,900",
+    rating: 4.5,
+    reviews: 21,
+    image_url:
+      "https://image.hm.com/assets/hm/16/8c/168cf47f9089c67c8f68533b1b358c70d8506ceb.jpg?imwidth=1536",
+  },
+];

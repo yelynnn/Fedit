@@ -1,15 +1,17 @@
+import { brandData } from "./BrandCategories";
+
 export const GenderCategories = ["여성", "남성", "공용"];
 export const ColorCategories = [
-  "#FF0000",
-  "#FFA378",
-  "#FFF017",
-  "#2563EB",
-  "#216F36",
-  "#000000",
-  "#D9D9D9",
-  "#FFFFFF",
-  "#785915",
-  "#FF27C9",
+  { label: "red", value: "#FF0000" },
+  { label: "orange", value: "#FFA378" },
+  { label: "yellow", value: "#FFF017" },
+  { label: "blue", value: "#2563EB" },
+  { label: "green", value: "#216F36" },
+  { label: "black", value: "#000000" },
+  { label: "gray", value: "#D9D9D9" },
+  { label: "white", value: "#FFFFFF" },
+  { label: "brown", value: "#785915" },
+  { label: "pink", value: "#FF27C9" },
 ];
 
 export const DetailCategories = [
@@ -43,4 +45,13 @@ export const TypeCategories = [
     category: "하의",
     subcategories: ["스커트", "쇼츠", "데님", "슬랙스", "코튼", "추리닝"],
   },
+];
+
+export const allowedFilters = [
+  ...Object.values(brandData).flat(),
+  ...GenderCategories,
+  ...ColorCategories.map((color) => color.label),
+  ...DetailCategories,
+  ...PatternCategories,
+  ...TypeCategories.flatMap((t) => [t.category, ...t.subcategories]),
 ];

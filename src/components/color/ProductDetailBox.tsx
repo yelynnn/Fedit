@@ -1,28 +1,26 @@
-const Colors = ["#A02072", "#91C7BD", "#F2D993"];
+import type { ProductType } from "@/types/Filter";
 
-function ProductDetailBox() {
+function ProductDetailBox({
+  product_name,
+  color,
+  material,
+  image_url,
+}: ProductType) {
   return (
-    <section className="flex justify-between w-full h-22">
-      <div className="h-full bg-blue-200 mr-17 w-21" />
-      <div className="flex flex-col justify-between pr-8 text-sm font-bold w-47 ">
-        <span className="line-clamp-1">밴딩 트레이닝 쇼츠 블랙</span>
-        <div className="flex flex-col">
-          <div className="flex items-center justify-between mb-1">
-            <span>색상</span>
-            <div className="flex gap-2">
-              {Colors.map((color, idx) => (
-                <div
-                  key={idx}
-                  className="w-4 h-4 border rounded-full"
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center justify-between mb-1">
-            <span>소재</span>
-            <span className="font-normal line-clamp-1">나일론 80%</span>
-          </div>
+    <section
+      className="flex justify-between w-full h-24"
+      // onClick={() => navigate(`/product/${id}`)}
+    >
+      <img src={image_url} className="flex-shrink-0 h-full mr-15 w-23" />
+      <div className="flex flex-col pr-8 text-sm font-bold w-47 ">
+        <span className="my-2 break-all truncate">{product_name}</span>
+        <div className="flex items-center my-1">
+          <span className="flex-shrink-0 mr-3">색상</span>
+          <span className="font-normal break-all truncate">{color}</span>
+        </div>
+        <div className="flex items-center mb-1">
+          <span className="flex-shrink-0 mr-3">소재</span>
+          <span className="font-normal break-all truncate">{material}</span>
         </div>
       </div>
     </section>

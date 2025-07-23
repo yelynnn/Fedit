@@ -1,28 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import TypeChart from "./TypeChart";
+import type { TypeBoxProps } from "@/types/Filter";
+import { Icon } from "@iconify/react/dist/iconify.js";
+import KeyWordBox from "./KeyWordBox";
 
-type RowData = {
-  category: string;
-  count: number;
-  ratio: string;
-  color: string;
-};
+function TypeBox({ title, chartData, rows }: TypeBoxProps) {
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
 
-const rows: RowData[] = [
-  { category: "전체", count: 2044, ratio: "100%", color: "transparent" },
-  { category: "상의", count: 671, ratio: "32.8%", color: "#A02072" },
-  { category: "하의", count: 485, ratio: "23.7%", color: "#86A7BF" },
-  { category: "잡화", count: 241, ratio: "11.8%", color: "#A57EE9" },
-  { category: "속옷", count: 239, ratio: "10%", color: "#F2D993" },
-  { category: "드레스", count: 440, ratio: "20%", color: "#91C7BD" },
-  { category: "기타", count: 440, ratio: "20%", color: "#E26AC6" },
-];
+  const toggleRow = (category: string) => {
+    setOpenMap((prev) => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
+  };
 
-function TypeBox() {
   return (
     <div className="w-90 p-6 rounded-2xl bg-[#F7F9FB]">
-      <header className="text-[#1C1C1C] text-base font-bold">아디다스</header>
-      <TypeChart />
+      <header className="text-[#1C1C1C] text-base font-bold">{title}</header>
+      <TypeChart chartData={chartData} />
       <div className="w-full max-w-xs text-s1">
         <table className="w-full text-left">
           <tr className="border-b border-[#00000040] text-[#1C1C1C] text-[13px] font-semibold text-center">
@@ -41,6 +36,15 @@ function TypeBox() {
                         style={{ backgroundColor: row.color }}
                       />
                       <span>{row.category}</span>
+                      {row.category !== "전체" && (
+                        <Icon
+                          icon="ep:arrow-down"
+                          className={`text-[#6B7A99] ml-1 transition-transform duration-200 ${
+                            openMap[row.category] ? "rotate-180" : ""
+                          }`}
+                          onClick={() => toggleRow(row.category)}
+                        />
+                      )}
                     </div>
                   </td>
                   <td className={`py-2 text-center ${idx === 0 ? "pr-2" : ""}`}>
@@ -52,6 +56,19 @@ function TypeBox() {
                   <tr>
                     <td colSpan={3}>
                       <div className="border-t border-[#C3A9F0] mb-1" />
+                    </td>
+                  </tr>
+                )}
+                {openMap[row.category] === true && (
+                  <tr>
+                    <td colSpan={3}>
+                      <div className="">
+                        <KeyWordBox
+                          fit={row.fit}
+                          material={row.material}
+                          etc={row.etc}
+                        />
+                      </div>
                     </td>
                   </tr>
                 )}

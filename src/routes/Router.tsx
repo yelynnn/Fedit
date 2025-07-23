@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootLayout from "./RootLayout";
 import FilterLayout from "./FilterLayout";
+import ProductDetailPage from "@/pages/ProductDetailPage";
 
 const router = createBrowserRouter([
   {
@@ -8,8 +9,12 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       {
-        path: "main",
+        index: true,
         element: <FilterLayout />,
+      },
+      {
+        path: "product/:id",
+        element: <ProductDetailPage />,
       },
     ],
   },

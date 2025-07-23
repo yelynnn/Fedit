@@ -3,17 +3,42 @@
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import type { SunburstData } from "@/types/Filter";
-import { SunburstCategories } from "@/data/SunburstCategories";
 
-export default function ColorChart() {
+function propagateAll(data: SunburstData): SunburstData {
+  const newNode = { ...data };
+
+  if (data.children && data.value) {
+    const perChild = data.value / data.children.length;
+    newNode.children = data.children.map((child) =>
+      propagateAll({
+        ...child,
+        value: perChild,
+      })
+    );
+    newNode.value = undefined;
+  } else if (data.children) {
+    newNode.children = data.children.map(propagateAll);
+  }
+
+  return newNode;
+}
+
+interface ColorChartProps {
+  data: SunburstData;
+  onSelectColor?: (color: string) => void;
+}
+
+export default function ColorChart({ data, onSelectColor }: ColorChartProps) {
   const ref = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
     const width = 250;
     const radius = width / 2;
 
+    const rootData = propagateAll(data);
+
     const root = d3
-      .hierarchy<SunburstData>(SunburstCategories)
+      .hierarchy<SunburstData>(rootData)
       .sum((d) => d.value ?? 0)
       .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 
@@ -38,39 +63,31 @@ export default function ColorChart() {
       .attr("transform", `translate(${width / 2},${width / 2})`);
 
     svg
-      .selectAll<SVGPathElement, d3.HierarchyRectangularNode<SunburstData>>(
-        "path"
-      )
+      .append("circle")
+      .attr("r", radius * 0.33)
+      .attr("fill", "none")
+      .attr("stroke", "#d1d1d1")
+      .attr("stroke-width", 1);
+
+    svg
+      .selectAll("path")
       .data(rootPartitioned.descendants().filter((d) => d.depth > 0))
       .join("path")
       .attr("d", arcGenerator)
-      .attr("fill", (d) => d.data.color || "#ccc");
-
-    svg
-      .selectAll<SVGTextElement, d3.HierarchyRectangularNode<SunburstData>>(
-        "text"
-      )
-      .data(rootPartitioned.descendants().filter((d) => d.depth > 1))
-      .join("text")
-      .attr("transform", (d) => {
-        const angle = ((d.x0 + d.x1) / 2) * (180 / Math.PI);
-        const r = (d.y0 + d.y1) / 2;
-        return `rotate(${angle - 90}) translate(${r},0) rotate(${
-          angle < 180 ? 0 : 180
-        })`;
-      })
-      .attr("dy", "0.35em")
-      .attr("font-size", "10px")
-      .attr("text-anchor", "middle")
-      .attr("fill", "#000")
-      .text((d) => {
-        const name = d.data.name;
-        return /^#[0-9a-fA-F]{6}$/.test(name) ? "" : name;
+      .attr("fill", (d) => d.data.color || "#ccc")
+      .style("cursor", (d) => (d.depth === 1 ? "pointer" : "default"))
+      .on("click", (event, d) => {
+        if (d.depth === 1 && onSelectColor) {
+          const selected = d.data.name;
+          console.log("✅ 선택한 대표색:", selected);
+          onSelectColor(selected);
+        }
       });
+
     return () => {
       d3.select(ref.current).selectAll("*").remove();
     };
-  }, []);
+  }, [data, onSelectColor]);
 
   return (
     <div className="flex items-center justify-center my-7">
