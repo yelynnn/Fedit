@@ -29,12 +29,12 @@ function ProductDetailContent() {
         />
       </div>
       <span className="text-3xl font-semibold">{detailData?.product_name}</span>
-      <section className="flex mt-7 gap-25">
-        <div className="flex flex-col gap-4">
+      <section className="flex items-start mt-7 gap-25">
+        <div className="flex-shrink-0 w-[300px] flex flex-col gap-4">
           <img
             src={detailData?.image_url}
             alt={"product_name"}
-            className="h-97 w-78"
+            className="object-cover h-97 w-78"
           />
           <DetailSection
             title="상품 상세 페이지"
@@ -63,7 +63,8 @@ function ProductDetailContent() {
             }
           />
         </div>
-        <div className="flex flex-col gap-4">
+
+        <div className="flex flex-col flex-1 min-w-0 gap-4">
           <div className="flex items-center gap-6">
             <span className="text-[#FF4242] text-2xl font-semibold">
               ₩{detailData?.current_price}
@@ -81,7 +82,7 @@ function ProductDetailContent() {
               )}
             </div>
           </div>
-          <div className="flex flex-col ">
+          <div className="flex flex-col">
             {detailData?.rating && (
               <div className="flex items-center gap-1 ">
                 <Icon icon="tabler:star-filled" />
