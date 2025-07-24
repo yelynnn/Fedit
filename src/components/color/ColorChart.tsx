@@ -76,7 +76,7 @@ export default function ColorChart({ data, onSelectColor }: ColorChartProps) {
       .attr("d", arcGenerator)
       .attr("fill", (d) => d.data.color || "#ccc")
       .style("cursor", (d) => (d.depth === 1 ? "pointer" : "default"))
-      .on("click", (d) => {
+      .on("click", (_, d) => {
         if (d.depth === 1 && onSelectColor) {
           const selected = d.data.name;
           console.log("✅ 선택한 대표색:", selected);
