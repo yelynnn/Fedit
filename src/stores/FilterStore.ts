@@ -5,7 +5,7 @@ import type { FilterStore } from "../types/Filter";
 export const useFilterStore = create<FilterStore>()(
   persist(
     (set) => ({
-      selectedTab: "상품 분석",
+      selectedTab: "메인 홈",
       selectedColors: [],
       selectedGenders: [],
       selectedTypes: [],
