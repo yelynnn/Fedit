@@ -25,12 +25,6 @@ export const MockTrendData = [
     related_item: [
       {
         item_image_url:
-          "	https://m.ganadaran.co.kr/web/product/big/202505/332e08552440e039d82b3e673cb6e677.webp",
-        item_url:
-          "https://m.ganadaran.co.kr/product/detail.html?product_no=4842",
-      },
-      {
-        item_image_url:
           "	https://nimg.lfmall.co.kr/file/product/prd/DW/2025/750/DWSK5D611I2_00.jpg",
         item_url:
           "https://doubleflag.co.kr/product/25fw-skants-%EC%B2%B4%ED%81%AC-%EB%B2%A0%EC%9D%B4%EC%A7%80-%EC%97%AC%EC%84%B1-%ED%97%88%EB%A6%AC-%EB%B0%B4%EB%94%A9-%ED%94%8C%EB%A6%AC%EC%B8%A0-%EC%8A%A4%EC%B9%B8%ED%8A%B8%EC%8A%A4%EC%BB%A4%ED%8A%B8-%ED%8C%AC%EC%B8%A095%EC%9E%85%EA%B3%A0%EC%98%88%EC%A0%95/2473/category/1/display/10/",
@@ -46,6 +40,12 @@ export const MockTrendData = [
           "http://natural-mind.co.kr/shopimages/mind3067/0200010008822.jpg?1745220559",
         item_url:
           "http://natural-mind.co.kr/shop/shopdetail.html?branduid=3572481&search=&xcode=020&mcode=001&scode=&special=3&GfDT=Z213UlQ%3D",
+      },
+      {
+        item_image_url:
+          "	https://m.bfactorial.com/web/product/big/202507/b4db8d8dee734eca58ee4bb5b2343106.jpg",
+        item_url:
+          "https://m.bfactorial.com/product/1105-%EC%8A%A4%ED%8A%B8%EB%9D%BC%EC%9D%B4%ED%94%84-%EC%8A%A4%EC%B9%B8%ED%8A%B8-oot/5465/category/1/display/2/",
       },
     ],
   },

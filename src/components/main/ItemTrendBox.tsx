@@ -1,5 +1,5 @@
-import vogue from "@/assets/vogue.svg";
-import W from "@/assets/W.svg";
+import vogue from "@/assets/vogue.png";
+import W from "@/assets/W.png";
 import allure from "@/assets/allure.png";
 import SingleChart from "../chart/SingleChart";
 import { MockTrendData } from "@/data/mock/MockTrendData";
@@ -74,11 +74,7 @@ function ItemTrendBox() {
                   <img
                     src={MAG_LOGO[m.title] || allure}
                     alt={m.title}
-                    className={`block rounded-full object-cover ${
-                      m.title === "allure"
-                        ? "w-8 h-8 shadow-[0_4px_4px_rgba(0,0,0,0.15)]"
-                        : "w-8.5 h-8.5 "
-                    }`}
+                    className="block rounded-full object-cover w-8 h-8 shadow-[0_4px_4px_rgba(0,0,0,0.15)]"
                   />
                 </a>
               ))}
