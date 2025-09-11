@@ -83,10 +83,10 @@ export type TypeChartProps = {
 export type ProductType = {
   itemcode: string;
   product_name: string;
-  color_text: string;
-  color: string;
-  material: string;
-  product_image_url: string;
+  color_text?: string;
+  color?: string;
+  material?: string;
+  product_image_url?: string;
 };
 
 export type ColorBoxProps = {
