@@ -2,6 +2,11 @@ export type FilterChipProps = {
   filter: string;
 };
 
+export type FilterTitle = {
+  filterName: string;
+  filterList: string[];
+};
+
 export type FilterOptionProps = {
   title: string;
   categoryList?: string[];
@@ -20,12 +25,23 @@ type CategoryGroup = {
 };
 
 export type FilterStore = {
+  selectedTab: string;
+  selectedColors: string[];
+  selectedGenders: string[];
+  selectedTypes: string[];
+  selectedDetails: string[];
+  selectedPatterns: string[];
+  setSelectedTab: (tab: string) => void;
+
   filterList: string[];
   addFilter: (filter: string) => void;
   removeFilter: (filter: string) => void;
   resetFilter: () => void;
-  selectedTab: string;
-  setSelectedTab: (tab: string) => void;
+
+  brandList: string[];
+  addBrand: (brand: string) => void;
+  removeBrand: (brand: string) => void;
+  resetBrand: () => void;
 };
 
 export type SunburstData = {
@@ -65,11 +81,12 @@ export type TypeChartProps = {
 };
 
 export type ProductType = {
+  itemcode: string;
   product_name: string;
-  material: string;
-  image_url: string;
+  color_text: string;
   color: string;
-  // id: string;
+  material: string;
+  product_image_url: string;
 };
 
 export type ColorBoxProps = {
@@ -79,3 +96,31 @@ export type ColorBoxProps = {
 export interface BrandMenuProps {
   onClose: () => void;
 }
+
+export type TypeRow = {
+  category: string;
+  count: number;
+  ratio?: string | number;
+  fit?: string[];
+  material?: string[];
+  etc?: string[];
+};
+
+export type BrandTypeBlock = {
+  brand: string;
+  total: number;
+  rows: TypeRow[];
+};
+
+type ColorItem = {
+  color: string;
+  name: string;
+  value: number;
+};
+
+export type BrandColorBlock = {
+  brand: string;
+  colors: ColorItem[];
+};
+
+export type BrandTypeData = BrandTypeBlock[];

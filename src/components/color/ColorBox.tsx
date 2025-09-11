@@ -49,13 +49,7 @@ function ColorBox({ brand }: ColorBoxProps) {
 
       <section className="flex flex-col gap-3 p-5 overflow-y-auto h-86 hide-scrollbar">
         {selectedColorLists.map((p) => (
-          <ProductDetailBox
-            key={p.itemcode}
-            product_name={p.product_name}
-            color={p.color_text}
-            material={p.material}
-            image_url={p.image_url}
-          />
+          <ProductDetailBox key={p.itemcode} {...p} />
         ))}
       </section>
     </div>

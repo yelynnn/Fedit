@@ -38,7 +38,7 @@ function FilterOption({
           const next = !openCategory;
           setOpenCategory(next);
           if (isBrandCategory && onBrandClick) {
-            onBrandClick(next); // ✅ 상태 전달
+            onBrandClick(next);
           }
         }}
       >

@@ -52,7 +52,10 @@ export default function useFilteredData() {
 
     const expanded = selected.flatMap((item) => {
       const match = TypeCategories.find((t) => t.category === item);
-      return match ? match.subcategories : [item];
+      if (match) {
+        return [item];
+      }
+      return [item];
     });
 
     return [...new Set(expanded)];

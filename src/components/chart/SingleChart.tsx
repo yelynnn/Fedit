@@ -1,6 +1,6 @@
 import type { chartProps } from "@/types/Main";
 import React from "react";
-import { LineChart, Line } from "recharts";
+import { LineChart, Line, Area } from "recharts";
 
 export default function SingleChart({ charList }: chartProps) {
   const data = React.useMemo(
@@ -15,7 +15,8 @@ export default function SingleChart({ charList }: chartProps) {
       tabIndex={-1}
       style={{ display: "block", margin: "0 auto", pointerEvents: "none" }}
     >
-      <Line dataKey="uv" stroke="#8884d8" dot={false} activeDot={false} />
+      <Area type="monotone" dataKey="uv" stroke="none" fill="url(#colorUv)" />
+      <Line dataKey="uv" stroke="#1A75FF" dot={false} activeDot={false} />
     </LineChart>
   );
 }

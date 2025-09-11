@@ -5,140 +5,127 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Legend,
+  CartesianGrid,
 } from "recharts";
-import React from "react";
+import { useEffect, useMemo, useState } from "react";
+import { GetTrendGraph } from "@/apis/DashBoardAPI";
 
-const data = [
-  { date: "2024-08-01", 레이스치마: 61, "플레어 팬츠": 46, 도트스커트: 31 },
-  { date: "2024-09-01", 레이스치마: 48, "플레어 팬츠": 51, 도트스커트: 37 },
-  { date: "2024-10-01", 레이스치마: 39, "플레어 팬츠": 49, 도트스커트: 26 },
-  { date: "2024-11-01", 레이스치마: 24, "플레어 팬츠": 41, 도트스커트: 15 },
-  { date: "2024-12-01", 레이스치마: 29, "플레어 팬츠": 40, 도트스커트: 13 },
-  { date: "2025-01-01", 레이스치마: 34, "플레어 팬츠": 44, 도트스커트: 17 },
-  { date: "2025-02-01", 레이스치마: 49, "플레어 팬츠": 80, 도트스커트: 28 },
-  { date: "2025-03-01", 레이스치마: 100, "플레어 팬츠": 100, 도트스커트: 53 },
-  { date: "2025-04-01", 레이스치마: 93, "플레어 팬츠": 72, 도트스커트: 61 },
-  { date: "2025-05-01", 레이스치마: 76, "플레어 팬츠": 58, 도트스커트: 76 },
-  { date: "2025-06-01", 레이스치마: 68, "플레어 팬츠": 57, 도트스커트: 100 },
-  { date: "2025-07-01", 레이스치마: 55, "플레어 팬츠": 50, 도트스커트: 93 },
-];
+type TrendRow = { date: string; [series: string]: number | string };
+type TrendResp = { crawled_date?: string; data?: TrendRow[] };
 
-const palette = ["#6f6be7", "#00C73C", "#f2994a"];
+const palette = ["#3385FF", "#FF6363", "#88F03E"];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload || payload.length === 0) return null;
+function formatKYM(dateStr: string) {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
+}
+
+function CustomTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const date = payload[0]?.payload?.date ?? "";
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #ddd",
-        borderRadius: 6,
-        padding: "8px 12px",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-        fontSize: "12px",
+        background: "#1F2937",
+        color: "#fff",
+        padding: 12,
+        borderRadius: 8,
       }}
     >
-      <div style={{ fontWeight: 500, marginBottom: 4 }}>
-        {(() => {
-          const raw = (payload?.[0]?.payload as any)?.date ?? label;
-          if (!raw) return "";
-          const d = new Date(raw);
-          return `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
-        })()}
-      </div>
-      <div style={{ display: "flex", gap: 5, flexDirection: "column" }}>
-        {payload.map((p: any) => (
-          <div
-            key={p.dataKey}
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
-          >
-            <span
-              style={{
-                display: "inline-block",
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                backgroundColor: p.color,
-              }}
-            />
-            <span style={{ fontSize: "12px" }}>{p.date ?? p.dataKey}</span>
-            <span
-              style={{ marginLeft: "auto", fontWeight: 300, fontSize: "12px" }}
-            >
-              {p.value}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const renderCustomLegend = ({ payload }: any) => {
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: 12,
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-      }}
-    >
-      {payload.map((entry: any, i: number) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <div style={{ marginBottom: 8 }}>{formatKYM(date)}</div>
+      {payload.map((p: any, i: number) => (
+        <div key={p.dataKey} style={{ display: "flex", gap: 8 }}>
           <span
             style={{
-              display: "inline-block",
-              width: 8,
-              height: 8,
+              width: 12,
+              height: 12,
               borderRadius: "50%",
-              backgroundColor: entry.color,
+              background: palette[i % palette.length],
             }}
           />
-          <span style={{ fontSize: 13 }}>{entry.value}</span>
+          <span>{p.dataKey}</span>
+          <span>{p.value}</span>
         </div>
       ))}
     </div>
   );
-};
+}
+
+const monthTick = (v: string) =>
+  new Date(v).toLocaleString("en-US", { month: "short" });
 
 export default function DoubleChart() {
-  const seriesKeys = React.useMemo(
-    () => (data?.[0] ? Object.keys(data[0]).filter((k) => k !== "date") : []),
-    []
+  const [rows, setRows] = useState<TrendRow[]>([]);
+  // const [crawledDate, setCrawledDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchGraph = async () => {
+      try {
+        const res: TrendResp = await GetTrendGraph();
+        setRows(Array.isArray(res?.data) ? res.data : []);
+        // setCrawledDate(res?.crawled_date ?? null);
+        console.log("유형 그래프 API 응답:", res);
+      } catch (error) {
+        console.error("유형 그래프 불러오기 실패:", error);
+        setRows([]);
+        // setCrawledDate(null);
+      }
+    };
+    fetchGraph();
+  }, []);
+
+  const seriesKeys = useMemo(
+    () => (rows[0] ? Object.keys(rows[0]).filter((k) => k !== "date") : []),
+    [rows]
   );
 
   return (
-    <ResponsiveContainer width="100%" height={245}>
-      <LineChart
-        data={data}
-        margin={{ top: 10, right: 43, bottom: 0, left: 0 }}
-      >
-        <XAxis
-          dataKey="date"
-          axisLine
-          tick={false}
-          tickLine={false}
-          height={10}
-        />
-        <YAxis axisLine tick={false} tickLine={false} />
+    <div className="w-full h-full min-w-0">
+      <div className="w-full min-w-0 h-67">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={rows}
+            margin={{ top: 8, right: 16, bottom: 10, left: 0 }}
+          >
+            <CartesianGrid
+              stroke="#eee"
+              strokeDasharray="3 3"
+              vertical={false}
+            />
+            <XAxis dataKey="date" tickFormatter={monthTick} />
+            <YAxis />
+            {seriesKeys.map((key, i) => (
+              <Line
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={palette[i % palette.length]}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+            ))}
+            <Tooltip content={<CustomTooltip />} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
+      <div className="flex flex-wrap items-center mt-8 ml-4 gap-x-8 gap-y-2">
         {seriesKeys.map((key, i) => (
-          <Line
-            key={key}
-            dataKey={key}
-            name={key}
-            stroke={palette[i % palette.length]}
-            dot={false}
-            isAnimationActive={false}
-          />
+          <div key={key} className="flex items-center gap-3">
+            <span
+              className="inline-block w-3 h-3 rounded-full"
+              style={{ backgroundColor: palette[i % palette.length] }}
+            />
+            <span>{key}</span>
+          </div>
         ))}
+      </div>
 
-        <Tooltip content={<CustomTooltip />} />
-        <Legend verticalAlign="bottom" content={renderCustomLegend} />
-      </LineChart>
-    </ResponsiveContainer>
+      {/* {crawledDate && (
+        <div className="mt-2 ml-4 text-xs text-gray-500">
+          기준: {new Date(crawledDate).toLocaleString()}
+        </div>
+      )} */}
+    </div>
   );
 }
