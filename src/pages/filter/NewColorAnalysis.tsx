@@ -76,9 +76,9 @@ function NewColorAnalysis() {
             </div>
           )}
           {!loading &&
-            blocks.map((block) => (
-              <NewColorBox key={block.brand} block={block} />
-            ))}
+            blocks
+              .filter((block) => block.brand !== "전체")
+              .map((block) => <NewColorBox key={block.brand} block={block} />)}
         </div>
 
         {isDetailOpen && (
