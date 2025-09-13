@@ -28,7 +28,7 @@ export function NewFilterTabBar() {
 
   return (
     <div>
-      <nav className="flex items-end h-16 px-12 ">
+      <nav className="flex items-end h-16 gap-8 px-12">
         {TAB_OPTIONS.map(({ label, icon }) => {
           const active = selectedTab === label;
           return (
@@ -37,8 +37,8 @@ export function NewFilterTabBar() {
               onClick={() => setSelectedTab(label)}
               aria-selected={active}
               className={[
-                "h-11 w-28 mx-0.5 rounded-t flex items-center justify-center gap-1",
-                "text-base font-semibold px-3",
+                "h-11 w-22 mx-0.5 rounded-t flex items-center justify-center gap-1",
+                "text-base font-semibold px-1",
                 active
                   ? "text-[#1C1C1C] border-b-[3px] border-[var(--Line-Primary-Normal,#56585A)]"
                   : "text-[#888A8C] border-b-[3px] border-transparent",
