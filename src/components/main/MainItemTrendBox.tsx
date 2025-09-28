@@ -51,7 +51,7 @@ function MainItemTrendBox({ sliceIndex = 0 }: Props) {
 
       {items.map((item, idx) => {
         const rank = sliceIndex + idx + 1;
-        const magazines = item.magazines ?? item.magazine ?? []; // ← magazines 우선
+        const magazines = item.magazines ?? item.magazine ?? [];
         const related = item.related_item ?? [];
 
         return (

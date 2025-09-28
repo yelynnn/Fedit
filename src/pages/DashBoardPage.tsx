@@ -48,7 +48,11 @@ function DashBoardPage() {
 
         setKeywordList(normalized);
         setCrawledDate(res?.crawled_date ?? null);
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.status === 401) {
+          setPasswordModalOpen(true);
+          return;
+        }
         console.error("플랫폼 키워드 가져오기 실패:", error);
         setKeywordList([]);
         setCrawledDate(null);
@@ -59,24 +63,14 @@ function DashBoardPage() {
 
   return (
     <div className="w-full h-full">
-      <button
-        type="button"
-        onClick={() => setPasswordModalOpen(true)}
-        className="w-full text-left"
-      >
-        <TitleHeader
-          title="FEDIT 대시보드"
-          sub_title="데이터로 보는 오늘의 패션 인사이트"
-        />
-      </button>
+      <TitleHeader
+        title="FEDIT 대시보드"
+        sub_title="데이터로 보는 오늘의 패션 인사이트"
+      />
 
       <PasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setPasswordModalOpen(false)}
-        onSubmit={(password) => {
-          console.log("입력된 비밀번호:", password);
-          setPasswordModalOpen(false);
-        }}
       />
 
       <div className="flex items-center gap-5 w-80 h-18 rounded-xl border-[1px] border-[#ECEEF0] px-4 py-5 mt-4 bg-white">

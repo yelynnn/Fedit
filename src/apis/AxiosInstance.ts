@@ -8,6 +8,7 @@ const axiosInstance = axios.create({
     // Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 export { axiosInstance };

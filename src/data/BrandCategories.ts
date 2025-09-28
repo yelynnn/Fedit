@@ -47,6 +47,10 @@ const DomesticBrands = [
   "리얼코코",
 ];
 
+// const JapanBrands=[
+//   "빔즈","SHIPS",""
+// ]
+
 // const SportsBrands = [""];
 
 export const brandData = {

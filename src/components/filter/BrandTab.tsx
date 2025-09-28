@@ -50,7 +50,7 @@ function BrandTab({ isProductTab }: Props) {
               <button
                 key={brand}
                 type="button"
-                className="inline-flex px-3 h-10 rounded-lg border-1 border-[#3D3F41] bg-white text-[#3D3F41] items-center justify-center text-xs shrink-0"
+                className="font-semibold inline-flex px-3 h-10 rounded-lg border-1 border-[#3D3F41] bg-white text-[#3D3F41] items-center justify-center text-sm shrink-0"
               >
                 {brand}
               </button>
