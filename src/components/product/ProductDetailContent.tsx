@@ -1,41 +1,93 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useProductStore } from "@/stores/ProductStore";
 import DetailSection from "./DetailSection";
-import { GetDetailInfo } from "@/apis/AnalysisAPI";
+import { GetDetailInfo, GetRelatedItemInfo } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
 
-function formatPriceKRW(price?: string | number | null) {
-  if (price == null || price === "") return "";
-  const num = typeof price === "string" ? Number(price) : price;
-  if (!isFinite(num)) return String(price);
-  return `₩${num.toLocaleString("ko-KR")}`;
+function formatPrice(price?: string | number | null) {
+  if (price === null || price === undefined || price === "") return "";
+
+  if (typeof price === "string" && /[₩$€¥]/.test(price)) {
+    return price;
+  }
+
+  const n = typeof price === "string" ? parseFloat(price) : price;
+  if (!isFinite(n)) return String(price);
+
+  return `₩${Math.floor(n).toLocaleString("ko-KR")}`;
 }
 
 type RelatedItem = { itemcode?: string; product_image_url?: string };
 
-export default function ProductDetailContent() {
+type Props = { product?: ApiDetail | null };
+
+export default function ProductDetailContent({ product }: Props) {
   const { setSelectedProductId, selectedProductId } = useProductStore((s) => s);
-  const [detailData, setDetailData] = useState<ApiDetail | null>(null);
+  const [detailData, setDetailData] = useState<ApiDetail | null>(
+    product ?? null
+  );
   const [loading, setLoading] = useState(false);
+  const [related, setRelated] = useState<RelatedItem[]>([]);
+  const skipNextDetailFetchRef = useRef(false);
+
+  useEffect(() => {
+    if (product) {
+      setDetailData(product);
+      skipNextDetailFetchRef.current = true;
+    } else {
+      skipNextDetailFetchRef.current = false;
+    }
+  }, [product]);
 
   useEffect(() => {
     if (!selectedProductId) return;
-    const run = async () => {
+    if (
+      skipNextDetailFetchRef.current &&
+      product?.itemcode === selectedProductId
+    ) {
+      skipNextDetailFetchRef.current = false;
+      return;
+    }
+    let canceled = false;
+    (async () => {
       try {
         setLoading(true);
         const res: ApiDetail = await GetDetailInfo({
           itemcode: selectedProductId,
         });
-        setDetailData(res ?? null);
+        if (!canceled) setDetailData(res ?? null);
       } catch {
-        setDetailData(null);
+        if (!canceled) setDetailData(null);
       } finally {
-        setLoading(false);
+        if (!canceled) setLoading(false);
       }
+    })();
+    return () => {
+      canceled = true;
     };
-    run();
+  }, [selectedProductId, product?.itemcode]);
+
+  useEffect(() => {
+    if (!selectedProductId) return;
+    let canceled = false;
+    (async () => {
+      try {
+        const res = await GetRelatedItemInfo({ itemcode: selectedProductId });
+        const items = Array.isArray(res)
+          ? res
+          : Array.isArray((res as any)?.related_item)
+          ? (res as any).related_item
+          : [];
+        if (!canceled) setRelated(items as RelatedItem[]);
+      } catch {
+        if (!canceled) setRelated([]);
+      }
+    })();
+    return () => {
+      canceled = true;
+    };
   }, [selectedProductId]);
 
   const mainCategory = useMemo(
@@ -64,11 +116,6 @@ export default function ProductDetailContent() {
     return dayjs().format("YYYY.MM.DD");
   }, [detailData]);
 
-  const related: RelatedItem[] = useMemo(() => {
-    const arr = (detailData as any)?.related_item;
-    return Array.isArray(arr) ? arr : [];
-  }, [detailData]);
-
   const discountRateText = useMemo(() => {
     const v = detailData?.discount_rate;
     if (v == null || v === "") return "";
@@ -77,7 +124,7 @@ export default function ProductDetailContent() {
     return `${Math.floor(num)}%`;
   }, [detailData]);
 
-  if (!selectedProductId) return null;
+  if (!selectedProductId && !detailData) return null;
 
   return (
     <div className="relative">
@@ -94,13 +141,13 @@ export default function ProductDetailContent() {
         </div>
       )}
 
-      {!loading && (
+      {!loading && detailData && (
         <section className="flex items-start gap-5">
           <div className="flex flex-col flex-shrink-0 gap-6">
-            {detailData?.front_image_url ? (
+            {detailData.front_image_url ? (
               <img
                 src={detailData.front_image_url}
-                alt={detailData?.product_name || "product"}
+                alt={detailData.product_name || "product"}
                 className="object-cover h-129 w-96 rounded-xl"
               />
             ) : (
@@ -131,7 +178,7 @@ export default function ProductDetailContent() {
 
           <div className="flex flex-col flex-1 min-w-0 mt-3">
             <span className="text-[#56585A] text-sm font-semibold mb-3">
-              {detailData?.brand || "-"}
+              {detailData.brand || "-"}
             </span>
 
             <div className="text-[#56585A] text-sm font-semibold gap-1 flex items-center">
@@ -146,9 +193,9 @@ export default function ProductDetailContent() {
 
             <div className="flex items-end justify-between w-full text-[#56585A] mb-3">
               <span className="text-xl font-semibold">
-                {detailData?.product_name || "-"}
+                {detailData.product_name || "-"}
               </span>
-              {detailData?.product_detail_url && (
+              {detailData.product_detail_url && (
                 <a
                   href={detailData.product_detail_url}
                   target="_blank"
@@ -161,9 +208,9 @@ export default function ProductDetailContent() {
               )}
             </div>
 
-            {detailData?.regular_price && (
+            {detailData.regular_price && (
               <span className="text-[#91929D] text-md line-through leading-6">
-                {formatPriceKRW(detailData.regular_price)}
+                {formatPrice(detailData.regular_price)}
               </span>
             )}
 
@@ -174,18 +221,18 @@ export default function ProductDetailContent() {
                 </div>
               )}
               <span className="text-[#3D3F41] font-semibold">
-                {formatPriceKRW(detailData?.current_price)}
+                {formatPrice(detailData.current_price)}
               </span>
             </div>
 
             <div className="flex items-center gap-3">
-              {detailData?.rating != null && (
+              {detailData.rating != null && (
                 <div className="flex items-center gap-1 text-[#3D3F41]">
                   <Icon icon="tabler:star-filled" color="#3D3F41" />
                   {detailData.rating}
                 </div>
               )}
-              {detailData?.reviews != null && (
+              {detailData.reviews != null && (
                 <span className="text-[#888A8C] text-xs font-semibold">
                   {detailData.reviews}개의 리뷰
                 </span>
@@ -196,11 +243,11 @@ export default function ProductDetailContent() {
               <section className="grid grid-cols-2 gap-x-16 gap-y-4">
                 <DetailSection
                   title="성별"
-                  content={detailData?.gender || "-"}
+                  content={detailData.gender || "-"}
                 />
                 <DetailSection
                   title="색상"
-                  content={detailData?.colors || "-"}
+                  content={detailData.colors || "-"}
                 />
                 <DetailSection title="패턴" content="준비중" />
                 <DetailSection title="사이즈" content="준비중" />
@@ -208,11 +255,11 @@ export default function ProductDetailContent() {
 
               <DetailSection
                 title="소재"
-                content={detailData?.material || "준비중"}
+                content={detailData.material || "준비중"}
               />
               <DetailSection
                 title="디테일"
-                content={detailData?.details || "-"}
+                content={detailData.details || "-"}
               />
             </div>
           </div>

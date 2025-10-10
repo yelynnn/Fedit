@@ -3,22 +3,28 @@ import ProductBox from "@/components/product/ProductBox";
 import ProductDetailContent from "@/components/product/ProductDetailContent";
 import { useProductStore } from "@/stores/ProductStore";
 import { useEffect, useState } from "react";
-import mockData from "@/data/mock/mockup_v3.json";
 import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
 import { PostProductList } from "@/apis/AnalysisAPI";
 import { useFilterStore } from "@/stores/FilterStore";
-
-type ProductItem = (typeof mockData)[number];
+import type { ApiDetail } from "@/types/Product";
+import PasswordModal from "@/components/main/PasswordModal";
+import { isAxiosError } from "axios";
 
 function NewProductAnalysis() {
-  const { selectedProductId, setSelectedProductId } = useProductStore(
-    (state) => state
-  );
+  const {
+    selectedProductId,
+    setSelectedProductId,
+    setResultLists,
+    resultLists,
+  } = useProductStore((s) => s);
 
-  const [resultLists, setResultLists] = useState<ProductItem[]>(mockData);
   const [isFilterOpen, setFilterOpen] = useState(false);
+  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ApiDetail | null>(
+    null
+  );
 
   const isDetailOpen = !!selectedProductId;
 
@@ -41,17 +47,31 @@ function NewProductAnalysis() {
         const list = Array.isArray(data?.products) ? data.products : [];
         setResultLists(list);
       } catch (err) {
+        if (isAxiosError(err) && err.response?.status === 401) {
+          setPasswordModalOpen(true);
+          return;
+        }
         console.error("필터별 검색 결과 조회 실패", err);
         setResultLists([]);
       }
     };
 
     fetchData();
-  }, [brandList, selectedColors, selectedGenders, selectedCategories]);
+  }, [
+    brandList,
+    selectedColors,
+    selectedGenders,
+    selectedCategories,
+    setResultLists,
+  ]);
 
   return (
     <div className="flex gap-5 mt-14">
       <FilterSideBar onOpenFilter={() => setFilterOpen(true)} />
+      <PasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+      />
       <section
         className={[
           "transition-all duration-200",
@@ -70,7 +90,10 @@ function NewProductAnalysis() {
           {resultLists.map((product) => (
             <button
               key={product.itemcode}
-              onClick={() => setSelectedProductId(product.itemcode)}
+              onClick={() => {
+                setSelectedProductId(product.itemcode);
+                setSelectedProduct(product);
+              }}
               className="w-full text-left"
             >
               <ProductBox product={product} />
@@ -81,7 +104,7 @@ function NewProductAnalysis() {
 
       {isDetailOpen && (
         <aside className="flex-1 min-w-0 px-5 py-8 overflow-y-auto bg-white hide-scrollbar rounded-xl shadow-[0_0_8px_0_rgba(0,0,0,0.15)] h-fit">
-          <ProductDetailContent />
+          <ProductDetailContent product={selectedProduct} />
         </aside>
       )}
       <Modal

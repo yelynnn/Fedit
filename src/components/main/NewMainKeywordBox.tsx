@@ -1,6 +1,5 @@
 import type { KeywordBox } from "@/types/Main";
 import { Icon } from "@iconify/react";
-import dayjs from "dayjs";
 import "dayjs/locale/ko";
 import naverIcon from "@/assets/naverIcon.png";
 import musinsaIcon from "@/assets/musinsaIcon.png";
@@ -17,10 +16,10 @@ function getImageByTitle(title: string) {
   }
 }
 
-function NewMainKeywordBox({ title, keywords, crawledDate }: KeywordBox) {
-  const today = crawledDate
-    ? dayjs(crawledDate).format("MM.DD HH:mm")
-    : dayjs().format("MM.DD HH:mm");
+function NewMainKeywordBox({ title, keywords }: KeywordBox) {
+  // const today = crawledDate
+  //   ? dayjs(crawledDate).format("MM.DD HH:mm")
+  //   : dayjs().format("MM.DD HH:mm");
 
   return (
     <section className="w-108 h-92 box-border py-5 px-6 rounded-xl bg-white shadow border border-[#ECEEF0]">
@@ -33,11 +32,11 @@ function NewMainKeywordBox({ title, keywords, crawledDate }: KeywordBox) {
           />
           <h3 className="text-base font-semibold leading-6">{title} 키워드</h3>
         </div>
-        <div className="inline-flex items-center justify-center bg-[#ECEEF0] rounded px-2 py-1 max-w-full">
+        {/* <div className="inline-flex items-center justify-center bg-[#ECEEF0] rounded px-2 py-1 max-w-full">
           <span className="text-xs font-normal text-gray-500 whitespace-nowrap">
             {today} 기준
           </span>
-        </div>
+        </div> */}
       </header>
 
       <div>

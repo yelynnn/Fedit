@@ -6,12 +6,15 @@ import { useProductStore } from "@/stores/ProductStore";
 import { useEffect, useState } from "react";
 import { GetColorGraph } from "@/apis/AnalysisAPI";
 import { useFilterStore } from "@/stores/FilterStore";
+import PasswordModal from "@/components/main/PasswordModal";
+import { isAxiosError } from "axios";
 
 type ColorBlock = (typeof MockNewColorData.brands)[number];
 
 function NewColorAnalysis() {
   const { selectedProductId } = useProductStore((s) => s);
   const { brandList } = useFilterStore.getState();
+  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
 
   const isDetailOpen = !!selectedProductId;
 
@@ -29,7 +32,11 @@ function NewColorAnalysis() {
         setBlocks(list);
         console.log(res);
       } catch (e) {
-        console.error(e);
+        if (isAxiosError(e) && e.response?.status === 401) {
+          setPasswordModalOpen(true);
+          return;
+        }
+        console.error("색상 그래프 불러오기 실패:", e);
         setBlocks([]);
       } finally {
         setLoading(false);
@@ -43,6 +50,10 @@ function NewColorAnalysis() {
       <TitleHeader
         title="색상 분석"
         sub_title="세부 톤까지 확장된 색상 흐름을 브랜드 단위로 확인해보세요."
+      />
+      <PasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
       />
 
       <div

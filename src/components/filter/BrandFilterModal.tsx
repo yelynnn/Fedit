@@ -1,22 +1,11 @@
 import { Icon } from "@iconify/react";
 import Modal from "react-modal";
-import { useMemo, useState, useCallback } from "react";
-import { brandData } from "@/data/BrandCategories";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
+import { GetBrandList } from "@/apis/AnalysisAPI";
 
-type BrandCategory = keyof typeof brandData;
-type TabKey = "selected" | "favorite" | BrandCategory;
-
-const TAB_ITEMS: { key: TabKey; label: string }[] = [
-  { key: "selected", label: "선택된 브랜드" },
-  { key: "favorite", label: "즐겨찾기 (준비중)" },
-  { key: "SPA", label: "SPA 브랜드" },
-  { key: "명품", label: "명품 브랜드" },
-  { key: "디자이너", label: "디자이너 브랜드" },
-  { key: "보세", label: "보세 브랜드" },
-  //   { key: "스포츠", label: "스포츠 브랜드" },
-];
-
+type ApiCategory = { label: string; brands: string[] };
+type TabKey = "selected" | "favorite" | string;
 type Props = { isOpen: boolean; onClose: () => void; onSubmit?: () => void };
 
 export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
@@ -25,14 +14,51 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const resetBrand = useFilterStore((s) => s.resetBrand);
   const removeBrand = useFilterStore((s) => s.removeBrand);
 
-  const [activeTab, setActiveTab] = useState<TabKey>("SPA");
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [activeTab, setActiveTab] = useState<TabKey>("selected");
   const [keyword, setKeyword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    const fetch = async () => {
+      try {
+        setLoading(true);
+        setErr(null);
+        const data = await GetBrandList();
+        if (ignore) return;
+        const cats = Array.isArray(data?.categories) ? data.categories : [];
+        setCategories(cats);
+        if (cats.length > 0) setActiveTab(cats[0].label);
+      } catch (e: any) {
+        if (ignore) return;
+        setErr(e?.message || "브랜드 목록을 불러오지 못했습니다.");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+    fetch();
+    return () => {
+      ignore = true;
+    };
+  }, [isOpen]);
+
+  const tabItems = useMemo<{ key: TabKey; label: string }[]>(
+    () => [
+      { key: "selected", label: "선택된 브랜드" },
+      { key: "favorite", label: "즐겨찾기 (준비중)" },
+      ...categories.map((c) => ({ key: c.label, label: `${c.label}` })),
+    ],
+    [categories]
+  );
 
   const sourceBrands = useMemo<string[]>(() => {
     if (activeTab === "selected") return brandList;
     if (activeTab === "favorite") return [];
-    return brandData[activeTab as BrandCategory];
-  }, [activeTab, brandList]);
+    const cat = categories.find((c) => c.label === activeTab);
+    return cat?.brands ?? [];
+  }, [activeTab, brandList, categories]);
 
   const visibleBrands = useMemo(() => {
     const k = keyword.trim().toLowerCase();
@@ -57,11 +83,8 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   };
 
   const toggleOne = (brand: string) => {
-    if (brandList.includes(brand)) {
-      removeBrand(brand);
-    } else {
-      addBrand(brand);
-    }
+    if (brandList.includes(brand)) removeBrand(brand);
+    else addBrand(brand);
   };
 
   const parentSelector = useCallback(
@@ -134,7 +157,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
             WebkitOverflowScrolling: "touch",
           }}
         >
-          {TAB_ITEMS.map(({ key, label }) => {
+          {tabItems.map(({ key, label }) => {
             const active = key === activeTab;
             return (
               <button
@@ -169,33 +192,41 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       </div>
 
       <div className="flex-1 px-6 py-3 overflow-y-auto">
-        <div
-          className="grid gap-2"
-          style={{
-            gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))",
-          }}
-        >
-          {visibleBrands.map((brand) => {
-            const checked = brandList.includes(brand);
-            return (
-              <Chip
-                key={brand}
-                brand={brand}
-                checked={checked}
-                onClick={() => toggleOne(brand)}
-              />
-            );
-          })}
-          {visibleBrands.length === 0 && (
-            <div className="text-sm text-[#888A8C] py-8 text-center col-span-full">
-              {activeTab === "favorite"
-                ? "즐겨찾기한 브랜드가 없어요."
-                : activeTab === "selected"
-                ? "선택된 브랜드가 없어요."
-                : "검색 결과가 없어요."}
-            </div>
-          )}
-        </div>
+        {loading ? (
+          <div className="text-sm text-[#888A8C] py-8 text-center">
+            불러오는 중…
+          </div>
+        ) : err ? (
+          <div className="py-8 text-sm text-center text-red-500">{err}</div>
+        ) : (
+          <div
+            className="grid gap-2"
+            style={{
+              gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))",
+            }}
+          >
+            {visibleBrands.map((brand) => {
+              const checked = brandList.includes(brand);
+              return (
+                <Chip
+                  key={brand}
+                  brand={brand}
+                  checked={checked}
+                  onClick={() => toggleOne(brand)}
+                />
+              );
+            })}
+            {visibleBrands.length === 0 && (
+              <div className="text-sm text-[#888A8C] py-8 text-center col-span-full">
+                {activeTab === "favorite"
+                  ? "즐겨찾기한 브랜드가 없어요."
+                  : activeTab === "selected"
+                  ? "선택된 브랜드가 없어요."
+                  : "검색 결과가 없어요."}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="px-6">

@@ -4,12 +4,35 @@ import { axiosInstance } from "./AxiosInstance";
 const GetDetailInfo = async ({ itemcode }: { itemcode: string }) => {
   try {
     const response = await axiosInstance.get(
-      `/api/v1/product-analysis/detailInfo/${itemcode}`
+      `/api/v1/color-analysis/detailInfo/${itemcode}`
     );
     console.log("상품 상세 정보 조회 성공");
     return response.data;
   } catch (error) {
     console.error("상품 상세 정보 조회 실패", error);
+    throw error;
+  }
+};
+
+const GetRelatedItemInfo = async ({ itemcode }: { itemcode: string }) => {
+  try {
+    const response = await axiosInstance.get(
+      `/api/v1/product-analysis/detailInfo/${itemcode}`
+    );
+    console.log("유사 아이템 정보 조회 성공");
+    return response.data;
+  } catch (error) {
+    console.error("유사 아이템 정보 조회 실패", error);
+    throw error;
+  }
+};
+
+const GetBrandList = async () => {
+  try {
+    const response = await axiosInstance.get(`/api/v1/menu/brand`);
+    return response.data;
+  } catch (error) {
+    console.error("브랜드 목록 가져오기 실패", error);
     throw error;
   }
 };
@@ -96,4 +119,6 @@ export {
   GetColorProduct,
   GetCategoryGraph,
   PostProductList,
+  GetBrandList,
+  GetRelatedItemInfo,
 };
