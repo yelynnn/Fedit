@@ -46,7 +46,7 @@ function LandingPage() {
               alt="rectangle"
               className="absolute inset-0 pointer-events-none -left-8 -top-4"
             />
-            <span className="relative px-6 text-5xl font-bold text-black">
+            <span className="relative px-6 text-5xl font-semibold text-black">
               데이터
             </span>
             <span className="text-5xl text-white leading-[65px]">
