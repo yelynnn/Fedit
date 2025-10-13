@@ -118,7 +118,6 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* 5) 베이스 레이어: 전역 폰트/스무딩/테마 적용 */
 @layer base {
   html {
     font-family: var(--font-sans);
@@ -139,5 +138,7 @@
   -ms-overflow-style: none;
 }
 .hide-scrollbar::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
   display: none;
 }

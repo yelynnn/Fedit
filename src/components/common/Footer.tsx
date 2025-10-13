@@ -1,4 +1,5 @@
 import { Icon } from "@iconify/react";
+import logo from "@/assets/logo/feditLogo.svg";
 
 function Footer() {
   return (
@@ -6,9 +7,8 @@ function Footer() {
       <div className="max-w-screen-xl pb-10 mx-auto pt-7 px-13">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-6 lg:grid-cols-6">
           <div className="col-span-1 lg:col-span-2">
-            <h3 className="text-xl font-semibold tracking-tight text-[#242628]">
-              FEDIT
-            </h3>
+            <img src={logo} alt="fedit icon" className="h-7" />
+
             <p className="mt-3 text-sm text-[#666A6E]">
               데이터를 분석하는 패션 트렌드의 새로운 기준
             </p>

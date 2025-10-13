@@ -3,6 +3,9 @@ import RootLayout from "./RootLayout";
 import FilterLayout from "./FilterLayout";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import RootNewLayout from "./RootNewLayout";
+import LandingPage from "@/pages/LandingPage";
+import AskPage from "@/pages/AskPage";
+import AskSuccessPage from "@/pages/AskSuccessPage";
 
 const router = createBrowserRouter([
   {
@@ -31,6 +34,23 @@ const router = createBrowserRouter([
       //   path: "product/:id",
       //   element: <ProductDetailPage />,
       // },
+    ],
+  },
+  {
+    path: "/",
+    children: [
+      {
+        path: "landing",
+        element: <LandingPage />,
+      },
+      {
+        path: "ask",
+        element: <AskPage />,
+      },
+      {
+        path: "success",
+        element: <AskSuccessPage />,
+      },
     ],
   },
 ]);
