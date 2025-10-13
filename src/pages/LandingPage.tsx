@@ -4,6 +4,7 @@ import silverLogo from "@/assets/logo/silverLogo.svg";
 import questionFrame from "@/assets/landing/questionFrame.svg";
 import closeBar from "@/assets/landing/closeBar.svg";
 import eclipseFrame from "@/assets/landing/eclipseFrame.svg";
+import rectangle from "@/assets/landing/rectangleBg.svg";
 import QuestionBox from "@/components/landing/QuestionBox";
 import CategoryBox from "@/components/landing/CategoryBox";
 import roundLine from "@/assets/landing/roundLine.svg";
@@ -39,9 +40,20 @@ function LandingPage() {
           <span className="text-5xl text-white leading-[65px]">
             패션을 보는 눈
           </span>
-          <span className="text-5xl text-white leading-[65px]">
-            데이터를 통해 선택하다.
-          </span>
+          <div className="relative inline-block">
+            <img
+              src={rectangle}
+              alt="rectangle"
+              className="absolute inset-0 pointer-events-none -left-8 -top-4"
+            />
+            <span className="relative px-6 text-5xl font-bold text-black">
+              데이터
+            </span>
+            <span className="text-5xl text-white leading-[65px]">
+              를 통해 선택하다.
+            </span>
+          </div>
+
           <p className="text-2xl text-[#888A8C] leading-9">
             국내 브랜드 데이터를 전략으로 바꾸는 유일한 패션 트렌드 솔루션
           </p>
