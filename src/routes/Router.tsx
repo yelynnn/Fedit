@@ -9,7 +9,7 @@ import AskSuccessPage from "@/pages/AskSuccessPage";
 
 const router = createBrowserRouter([
   {
-    path: "/main",
+    path: "/beta",
     element: <RootLayout />,
     children: [
       {
@@ -23,7 +23,7 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: "/",
+    path: "/main",
     element: <RootNewLayout />,
     children: [
       // {
@@ -40,7 +40,7 @@ const router = createBrowserRouter([
     path: "/",
     children: [
       {
-        path: "landing",
+        index: true,
         element: <LandingPage />,
       },
       {

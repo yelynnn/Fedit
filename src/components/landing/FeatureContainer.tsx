@@ -14,16 +14,16 @@ function FeatureContainer({ category, title, content }: ContainerProps) {
 
   return (
     <div
-      className="flex flex-col items-center justify-center text-white bg-center bg-no-repeat bg-cover h-175 w-120"
+      className="flex flex-col items-center justify-center w-full text-white bg-center bg-no-repeat bg-cover h-125 md:h-175 sm:w-120"
       style={bg ? { backgroundImage: `url(${bg})` } : undefined}
     >
       <CategoryBox category={category} />
       <p
-        className="text-[32px] font-semibold mt-9 mb-30 text-center"
+        className="text-2xl md:text-[32px] font-semibold mt-9 mb-19 md:mb-30 text-center"
         dangerouslySetInnerHTML={{ __html: title }}
       />
       <p
-        className="text-xl font-semibold leading-[30px] text-center"
+        className="break-keep md:text-xl font-semibold leading-6 md:leading-[30px] text-center"
         dangerouslySetInnerHTML={{ __html: content }}
       />
     </div>

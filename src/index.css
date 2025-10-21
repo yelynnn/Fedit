@@ -142,3 +142,7 @@
   height: 0 !important;
   display: none;
 }
+
+:root {
+  --swiper-theme-color: #fff !important;
+}

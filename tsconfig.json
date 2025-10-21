@@ -13,6 +13,8 @@
     "types": ["node"],
     "baseUrl": "src",
     "paths": { "@/*": ["*"] },
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   }
 }

@@ -25,20 +25,22 @@ function ServiceContainer({ category, title, content }: ContainerProps) {
 
   return (
     <section
-      className={`flex gap-45 ${reverseLayout ? "flex-row-reverse" : ""}`}
+      className={`flex sm:justify-around flex-col gap-5 sm:gap-10 md:gap-15 xl:gap-45 ${
+        reverseLayout ? "sm:flex-row-reverse" : "sm:flex-row"
+      }`}
     >
       {img && (
         <img
           src={img}
           alt={`${category} 이미지`}
-          className="object-contain w-115 h-90"
+          className="object-contain w-84 md:w-115 md:h-90 h-65"
         />
       )}
-      <div className="flex flex-col justify-center text-white gap-7">
+      <div className="flex flex-col justify-center gap-2 text-white md:gap-7">
         <CategoryBox category={category} />
-        <p className="text-4xl font-semibold">{title}</p>
+        <p className="text-xl font-semibold md:text-4xl">{title}</p>
         <p
-          className="text-2xl font-semibold leading-[1.5]"
+          className="md:text-2xl font-semibold leading-6 md:leading-[1.5]"
           dangerouslySetInnerHTML={{ __html: content }}
         />
       </div>

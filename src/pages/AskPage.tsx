@@ -33,15 +33,19 @@ function AskPage() {
     <div className="w-full overflow-auto hide-scrollbar min-h-screen bg-[#151515] flex flex-col pb-46">
       <header className="flex items-center px-12 py-4 mb-16">
         <img
-          onClick={() => navigate("/landing")}
+          onClick={() => navigate("/")}
           src={logo}
           alt="fedit icon"
           className="h-8"
         />
       </header>
       <section className="relative flex flex-col items-center justify-center">
-        <img src={askFrame} alt="askFrame" className="block object-fill" />
-        <div className="absolute">
+        <img
+          src={askFrame}
+          alt="askFrame"
+          className="hidden object-fill xl:block"
+        />
+        <div className="absolute top-0 xl:top-10">
           <p className="mb-7 text-center text-white font-semibold leading-[65px] text-[50px]">
             문의하기
           </p>
