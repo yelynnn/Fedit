@@ -35,20 +35,15 @@ function ServiceContainer({ category, title, content }: ContainerProps) {
       }`}
     >
       {selectedImg && (
-        <div className="w-full">
-          <picture>
-            <source srcSet={selectedImg.sm} media="(max-width: 767px)" />
-            <img
-              src={selectedImg.md}
-              alt={`${category} 이미지`}
-              className="block h-auto w-full max-w-[335px] sm:max-w-[460px] object-contain"
-              loading="eager"
-              decoding="async"
-            />
-          </picture>
-        </div>
+        <picture>
+          <source srcSet={selectedImg.sm} media="(max-width: 767px)" />
+          <img
+            src={selectedImg.md}
+            alt={`${category} 이미지`}
+            className="object-contain w-84 md:w-115 md:h-90 h-65"
+          />
+        </picture>
       )}
-
       <div className="flex flex-col justify-center gap-2 text-white md:gap-7">
         <CategoryBox category={category} />
         <p className="text-xl font-semibold md:text-4xl">{title}</p>
