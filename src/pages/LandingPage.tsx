@@ -1,6 +1,7 @@
 import logo from "@/assets/logo/whiteLogo.png";
 import outlineLogo from "@/assets/logo/outlineLogo.png";
 import silverLogo from "@/assets/logo/silverLogo.svg";
+import smSilverLogo from "@/assets/logo/smSilverLogo.svg";
 import questionFrame from "@/assets/landing/questionFrame.svg";
 import closeBar from "@/assets/landing/closeBar.svg";
 import eclipseFrame from "@/assets/landing/eclipseFrame.svg";
@@ -44,9 +45,9 @@ function LandingPage() {
             <img
               src={rectangle}
               alt="rectangle"
-              className="absolute inset-0 pointer-events-none -left-2 sm:-left-8 sm:-top-4 -top-2 w-31 sm:w-55"
+              className="absolute inset-0 hidden pointer-events-none sm:block -left-2 sm:-left-8 sm:-top-4 -top-2 w-31 sm:w-55"
             />
-            <span className="relative px-4 text-3xl font-semibold text-black sm:px-6 sm:text-5xl">
+            <span className="relative text-3xl font-semibold text-white sm:text-black sm:px-6 sm:text-5xl">
               데이터
             </span>
             <span className="text-3xl sm:text-5xl text-white leading-9 sm:leading-[65px]">
@@ -143,7 +144,10 @@ function LandingPage() {
         </div>
       </section>
       <section className="flex flex-col items-center w-full mt-33 sm:mt-0 mb-23">
-        <img src={silverLogo} alt="fedit icon" className="sm:w-147 w-76" />
+        <picture>
+          <source srcSet={smSilverLogo} media="(max-width: 639px)" />
+          <img src={silverLogo} alt="fedit icon" />
+        </picture>{" "}
         <div className="-translate-y-7 sm:-translate-y-12">
           <CategoryBox category="Features" />
         </div>
