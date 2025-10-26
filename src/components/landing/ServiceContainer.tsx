@@ -40,7 +40,7 @@ function ServiceContainer({ category, title, content }: ContainerProps) {
           <img
             src={selectedImg.md}
             alt={`${category} 이미지`}
-            className="object-contain"
+            className="flex-none object-contain w-auto h-auto shrink-0"
           />
         </picture>
       )}
