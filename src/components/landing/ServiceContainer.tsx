@@ -4,6 +4,11 @@ import monitoringImg from "@/assets/landing/monitoringImg.svg";
 import socialMediaImg from "@/assets/landing/socialMediaImg.svg";
 import analysisImg from "@/assets/landing/analysisImg.svg";
 
+import smMarketImg from "@/assets/landing/smMarketImg.svg";
+import smMonitoringImg from "@/assets/landing/smMonitoringImg.svg";
+import smSocialMediaImg from "@/assets/landing/smSocialMediaImg.svg";
+import smAnalysisImg from "@/assets/landing/smAnalysisImg.svg";
+
 export type ContainerProps = {
   category: string;
   title: string;
@@ -11,17 +16,17 @@ export type ContainerProps = {
 };
 
 function ServiceContainer({ category, title, content }: ContainerProps) {
-  const imageMap: Record<string, string> = {
-    "Market Trends": marketImg,
-    Monitoring: monitoringImg,
-    "Product Analysis": analysisImg,
-    "Social Media": socialMediaImg,
+  const imageMap: Record<string, { sm: string; md: string }> = {
+    "Market Trends": { sm: smMarketImg, md: marketImg },
+    Monitoring: { sm: smMonitoringImg, md: monitoringImg },
+    "Product Analysis": { sm: smAnalysisImg, md: analysisImg },
+    "Social Media": { sm: smSocialMediaImg, md: socialMediaImg },
   };
 
   const reverseLayout =
     category === "Monitoring" || category === "Social Media";
 
-  const src = imageMap[category];
+  const selectedImg = imageMap[category];
 
   return (
     <section
@@ -29,13 +34,21 @@ function ServiceContainer({ category, title, content }: ContainerProps) {
         reverseLayout ? "sm:flex-row-reverse" : "sm:flex-row"
       }`}
     >
-      {src && (
-        <img
-          src={src}
-          alt={`${category} 이미지`}
-          className="flex-none shrink-0 object-contain w-[335px] sm:w-[460px] h-auto"
-        />
+      {selectedImg && (
+        <div className="w-full">
+          <picture>
+            <source srcSet={selectedImg.sm} media="(max-width: 767px)" />
+            <img
+              src={selectedImg.md}
+              alt={`${category} 이미지`}
+              className="block h-auto w-full max-w-[335px] sm:max-w-[460px] object-contain"
+              loading="eager"
+              decoding="async"
+            />
+          </picture>
+        </div>
       )}
+
       <div className="flex flex-col justify-center gap-2 text-white md:gap-7">
         <CategoryBox category={category} />
         <p className="text-xl font-semibold md:text-4xl">{title}</p>
