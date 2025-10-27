@@ -33,7 +33,7 @@ function ServiceContainer({ category, title, content }: ContainerProps) {
         <img
           src={src}
           alt={`${category} 이미지`}
-          className="flex-none shrink-0 object-contain w-[335px] sm:w-[460px] h-auto"
+          className="flex-none shrink-0 object-contain w-[335px] sm:w-[460px] h-auto rounded-xl"
         />
       )}
       <div className="flex flex-col justify-center gap-2 text-white md:gap-7">
