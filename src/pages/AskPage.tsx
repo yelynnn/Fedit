@@ -179,7 +179,7 @@ function AskPage() {
 
             <button
               type="submit"
-              className="mt-22 w-full flex items-center justify-center h-10 text-base text-[#242628] bg-white rounded-lg font-semibold"
+              className="my-22 w-full flex items-center justify-center h-10 text-base text-[#242628] bg-white rounded-lg font-semibold"
             >
               문의 보내기
             </button>
