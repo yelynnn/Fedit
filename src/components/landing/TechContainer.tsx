@@ -1,7 +1,5 @@
 import tagAIImgUrl from "@/assets/landing/tagAIImg.svg";
-import smTagAIImgUrl from "@/assets/landing/smTagAIImg.svg";
 import personalizeImgUrl from "@/assets/landing/personalizeImg.svg";
-import smPersonalizeImgUrl from "@/assets/landing/smPersonalizeImg.svg";
 
 export type SubContainerProps = {
   title: string;
@@ -22,21 +20,11 @@ function TechContainer({ title, content }: SubContainerProps) {
         {title}
       </div>
 
-      {isAI ? (
-        <picture>
-          <source srcSet={smTagAIImgUrl} media="(max-width: 639px)" />
-          <img src={tagAIImgUrl} alt="AI 이미지" className="rounded-2xl" />
-        </picture>
-      ) : (
-        <picture>
-          <source srcSet={smPersonalizeImgUrl} media="(max-width: 639px)" />
-          <img
-            src={personalizeImgUrl}
-            alt="퍼스널라이즈 이미지"
-            className="rounded-2xl"
-          />{" "}
-        </picture>
-      )}
+      <img
+        src={isAI ? tagAIImgUrl : personalizeImgUrl}
+        alt={isAI ? "AI 이미지" : "퍼스널라이즈 이미지"}
+        className="rounded-2xl w-[268px] sm:w-[363px]"
+      />
 
       <div className="w-83 sm:w-95 p-[1px] text-center box-border rounded-[12px] bg-gradient-to-r from-[#FFFFFF] to-[#3C40C1] sm:w-95 md:translate-x-15 md:-translate-y-3">
         <div

@@ -234,7 +234,7 @@ function LandingPage() {
         <img
           src={roundLine}
           alt="roundLine"
-          className="object-cover w-full h-auto"
+          className="hidden object-cover w-full h-auto sm:block"
         />
         <p
           className="mb-10 sm:mb-21 text-center text-white font-semibold break-keep
