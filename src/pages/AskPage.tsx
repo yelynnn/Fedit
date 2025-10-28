@@ -54,7 +54,7 @@ function AskPage() {
             <br /> FEDIT 팀이 빠르게 연락드릴게요.
           </p>
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-13 gap-y-9">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-13 gap-y-9">
               <div className="flex flex-col gap-2">
                 <label className="font-semibold text-white">
                   <span className="text-[#FF4242]">•</span> 성함(Name)
@@ -62,7 +62,7 @@ function AskPage() {
                 <input
                   name="name"
                   required
-                  className="h-12 px-3 py-4 text-sm font-semibold text-black bg-white rounded-lg w-72 md:w-full"
+                  className="w-full h-12 px-3 py-4 text-sm font-semibold text-black bg-white rounded-lg"
                   placeholder="성함"
                   autoComplete="name"
                 />
@@ -77,7 +77,7 @@ function AskPage() {
                   type="email"
                   name="email"
                   required
-                  className="h-12 px-3 py-4 text-sm font-semibold text-black bg-white rounded-lg w-72 md:w-full"
+                  className="w-full h-12 px-3 py-4 text-sm font-semibold text-black bg-white rounded-lg"
                   placeholder="example@company.com"
                   autoComplete="email"
                 />
@@ -88,7 +88,7 @@ function AskPage() {
                   <span className="text-[#FF4242]">•</span> 직무(Role)
                 </label>
                 <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger className="h-12 px-3 py-4 font-semibold text-black bg-white rounded-lg w-72 md:w-full">
+                  <SelectTrigger className="w-full h-12 px-3 py-4 font-semibold text-black bg-white rounded-lg">
                     <SelectValue placeholder="직무를 선택해주세요." />
                   </SelectTrigger>
                   <SelectContent>
@@ -108,7 +108,7 @@ function AskPage() {
                   규모(Company-size)
                 </label>
                 <Select value={companySize} onValueChange={setCompanySize}>
-                  <SelectTrigger className="h-12 px-3 py-4 font-semibold text-black bg-white rounded-lg w-72 md:w-full">
+                  <SelectTrigger className="w-full h-12 px-3 py-4 font-semibold text-black bg-white rounded-lg">
                     <SelectValue placeholder="회사 규모를 선택해주세요." />
                   </SelectTrigger>
                   <SelectContent>
