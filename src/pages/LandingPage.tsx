@@ -62,13 +62,13 @@ function LandingPage() {
         <div className="z-10 flex gap-3 mb-47 sm:mb-64">
           <button
             onClick={() => navigate("/ask")}
-            className="cursor-pointer flex rounded-full items-center justify-center bg-white sm:w-54 w-28 h-8 sm:h-13 text-[#242628] sm:text-xl font-semibold"
+            className="cursor-pointer flex rounded-full items-center justify-center bg-white sm:w-54 w-30 h-10 sm:h-13 text-[#242628] sm:text-xl font-semibold"
           >
             개인 플랜 문의
           </button>
           <button
             onClick={() => navigate("/ask")}
-            className="flex items-center justify-center h-8 font-semibold text-white bg-transparent border border-white rounded-full cursor-pointer sm:text-xl sm:w-54 w-28 sm:h-13"
+            className="flex items-center justify-center h-10 font-semibold text-white bg-transparent border border-white rounded-full cursor-pointer sm:text-xl sm:w-54 w-30 sm:h-13"
           >
             기업 플랜 문의
           </button>
@@ -272,13 +272,13 @@ function LandingPage() {
           <div className="z-10 flex gap-3">
             <button
               onClick={() => navigate("/ask")}
-              className="cursor-pointer flex rounded-full items-center justify-center bg-white sm:w-54 w-28 h-8 sm:h-13 text-[#242628] sm:text-xl font-semibold"
+              className="cursor-pointer flex rounded-full items-center justify-center bg-white sm:w-54 w-30 h-10 sm:h-13 text-[#242628] sm:text-xl font-semibold"
             >
               개인 플랜 문의
             </button>
             <button
               onClick={() => navigate("/ask")}
-              className="flex items-center justify-center h-8 font-semibold text-white bg-transparent border border-white rounded-full cursor-pointer sm:text-xl sm:w-54 w-28 sm:h-13"
+              className="flex items-center justify-center h-10 font-semibold text-white bg-transparent border border-white rounded-full cursor-pointer sm:text-xl sm:w-54 w-30 sm:h-13"
             >
               기업 플랜 문의
             </button>
