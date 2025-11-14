@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import Modal from "react-modal";
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { GetBrandList } from "@/apis/AnalysisAPI";
 
@@ -13,12 +13,47 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const addBrand = useFilterStore((s) => s.addBrand);
   const resetBrand = useFilterStore((s) => s.resetBrand);
   const removeBrand = useFilterStore((s) => s.removeBrand);
-
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("selected");
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isHovering, setIsHovering] = useState(false);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
+  const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
+
+  const updateScrollButtons = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const canScrollLeft = el.scrollLeft > 0;
+    const canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+
+    setShowLeft(canScrollLeft);
+    setShowRight(canScrollRight);
+  };
+
+  const scrollLeftFn = () => {
+    scrollRef.current?.scrollBy({ left: -150, behavior: "smooth" });
+    setTimeout(updateScrollButtons, 250);
+  };
+
+  const scrollRightFn = () => {
+    scrollRef.current?.scrollBy({ left: 150, behavior: "smooth" });
+    setTimeout(updateScrollButtons, 250);
+  };
+
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+
+    const half = rect.width / 2;
+
+    if (x < half) setHoverSide("left");
+    else setHoverSide("right");
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -148,32 +183,71 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
         </div>
       </div>
 
-      <div className="px-6">
+      <div className="relative px-6">
         <div
-          className="flex overflow-x-auto whitespace-nowrap items-center gap-6 text-base font-semibold border-b border-[#EDEEEF]"
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            WebkitOverflowScrolling: "touch",
+          className="relative"
+          onMouseEnter={() => {
+            setIsHovering(true);
+            updateScrollButtons();
           }}
+          onMouseLeave={() => {
+            setIsHovering(false);
+            setHoverSide(null);
+          }}
+          onMouseMove={onMouseMove}
         >
-          {tabItems.map(({ key, label }) => {
-            const active = key === activeTab;
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={[
-                  "pb-1 -mb-px shrink-0",
-                  active
-                    ? "text-[#242628] border-b-3 border-[#242628]"
-                    : "text-[#888A8C] border-b-1 border-transparent hover:text-[#4B4B4B]",
-                ].join(" ")}
-              >
-                {label}
-              </button>
-            );
-          })}
+          <div
+            ref={scrollRef}
+            className="flex overflow-x-auto whitespace-nowrap items-center gap-6 text-base font-semibold border-b border-[#EDEEEF] scroll-smooth"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            onScroll={updateScrollButtons}
+          >
+            {tabItems.map(({ key, label }) => {
+              const active = key === activeTab;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={[
+                    "pb-1 -mb-px shrink-0",
+                    active
+                      ? "text-[#242628] border-b-3 border-[#242628]"
+                      : "text-[#888A8C] border-b-1 border-transparent hover:text-[#4B4B4B]",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {isHovering && hoverSide === "left" && showLeft && (
+            <button
+              onClick={scrollLeftFn}
+              className="absolute left-0 top-[calc(50%-2px)] -translate-y-1/2 
+          px-2 py-2 rounded-lg bg-white shadow-[0_4px_8px_rgba(0,0,0,0.10)]
+          border border-[#E4E4E4] z-10"
+            >
+              <Icon
+                icon="grommet-icons:form-previous"
+                className="w-5 h-5 text-[#3D3F41]"
+              />
+            </button>
+          )}
+
+          {isHovering && hoverSide === "right" && showRight && (
+            <button
+              onClick={scrollRightFn}
+              className="absolute right-0 top-[calc(50%-2px)] -translate-y-1/2 
+          px-2 py-2 rounded-lg bg-white shadow-[0_4px_8px_rgba(0,0,0,0.10)]
+          border border-[#E4E4E4] z-10"
+            >
+              <Icon
+                icon="grommet-icons:form-next"
+                className="w-5 h-5 text-[#3D3F41]"
+              />
+            </button>
+          )}
         </div>
       </div>
 

@@ -192,9 +192,9 @@ function BrandTab({ isProductTab }: Props) {
       {isProductTab && (
         <button
           onClick={() => downloadXlsxWithImages(resultLists as ApiDetail[])}
-          className="text-white flex items-center h-10 gap-1 py-2 px-2 text-sm font-semibold bg-[#242628] rounded-lg w-32 cursor-pointer select-none shrink-0"
+          className="text-[#3D3F41] flex justify-center items-center h-10 gap-1 py-2 text-base font-semibold bg-white rounded-lg px-3 cursor-pointer select-none shrink-0 border border-[#E4E4E4]"
         >
-          <Icon icon="ci:download" className="w-6" />
+          <Icon icon="ci:download" className="w-5" />
           <p>엑셀 다운로드</p>
         </button>
       )}

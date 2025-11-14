@@ -40,8 +40,8 @@ export function NewFilterTabBar() {
                 "h-11 w-22 mx-0.5 rounded-t flex items-center justify-center gap-1",
                 "text-base font-semibold px-1",
                 active
-                  ? "text-[#1C1C1C] border-b-[3px] border-[var(--Line-Primary-Normal,#56585A)]"
-                  : "text-[#888A8C] border-b-[3px] border-transparent",
+                  ? "text-[#0B0E0F] border-b-[3px] border-[var(--Line-Primary-Normal,#56585A)]"
+                  : "text-[#6F7173] border-b-[3px] border-transparent",
               ].join(" ")}
             >
               <Icon
