@@ -4,6 +4,23 @@ type Keyword = {
   status: number;
 };
 
+export interface MonthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (value: string) => void;
+  dateList: string[];
+}
+
+export interface MainItemTrendBoxProps {
+  audienceType: string;
+}
+
+export interface GetTrendKeywordParams {
+  audienceType: string;
+  date?: string;
+  brand?: string;
+}
+
 export type KeywordBox = {
   title: string;
   keywords: Keyword[];

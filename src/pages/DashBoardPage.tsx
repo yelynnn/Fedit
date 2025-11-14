@@ -1,26 +1,29 @@
 import { GetTrendKeyword } from "@/apis/DashBoardAPI";
+import QuestionTooltip from "@/components/common/QuestionTooltip";
 import TitleHeader from "@/components/common/TitleHeader";
-import MainColorBox from "@/components/main/MainColorBox";
 import MainItemTrendBox from "@/components/main/MainItemTrendBox";
-import MainTypeBox from "@/components/main/MainTypeBox";
 import NewMainKeywordBox from "@/components/main/NewMainKeywordBox";
 import PasswordModal from "@/components/main/PasswordModal";
 import SubTitleBox from "@/components/main/SubTitleBox";
-import type { KeywordBox } from "@/types/Main";
+import { useTypeStore } from "@/stores/TypeStore";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 import { useEffect, useState } from "react";
 
-type ApiBrandBlock = {
-  brand: string;
-  keywords: { idx: number; keyword: string; status: number }[];
-};
+// type ApiBrandBlock = {
+//   brand: string;
+//   categories: {
+//     category: string;
+//     rankings: { idx: number; keyword: string; status: number }[];
+//   }[];
+// };
 
 function DashBoardPage() {
-  const [keywordList, setKeywordList] = useState<KeywordBox[]>([]);
+  const [keywordList, setKeywordList] = useState<any[]>([]);
   const [crawledDate, setCrawledDate] = useState<string | null>(null);
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
+  const { audienceType, selectedMonth, setAudienceType } = useTypeStore();
 
   dayjs.locale("ko");
   const today = dayjs();
@@ -28,38 +31,65 @@ function DashBoardPage() {
   const weekday = today.format("dd");
 
   useEffect(() => {
-    const fetchKeywords = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await GetTrendKeyword();
+        const baseParams =
+          selectedMonth && selectedMonth.trim() !== ""
+            ? { audienceType, date: selectedMonth }
+            : { audienceType };
 
-        const brands: ApiBrandBlock[] = Array.isArray(res?.brands)
-          ? res.brands
-          : [];
+        // 1) 기본 키워드
+        const baseRes = await GetTrendKeyword(baseParams);
+        const baseArray = Array.isArray(baseRes)
+          ? baseRes
+          : baseRes?.result ?? [];
 
-        const normalized: KeywordBox[] = brands
-          .filter((b) => b.brand !== "29CM")
-          .map((b) => ({
-            title: b.brand,
-            keywords: (b.keywords ?? [])
-              .slice()
-              .sort((a, b) => (a.idx ?? 0) - (b.idx ?? 0))
-              .slice(0, 8),
-          }));
+        // 기본 브랜드 변환
+        let merged = baseArray.flatMap((result: any) => {
+          const brands = result.brands ?? [];
+          return brands
+            .filter((b: any) => b.brand !== "29CM")
+            .map((b: any) => ({
+              title: b.brand,
+              dateType: result.date_type,
+              categories: b.categories ?? [],
+              date: result.date,
+            }));
+        });
 
-        setKeywordList(normalized);
-        setCrawledDate(res?.crawled_date ?? null);
-      } catch (error: any) {
-        if (error?.status === 401) {
-          setPasswordModalOpen(true);
-          return;
+        // 2) kids라면 네이버 추가 요청
+        if (audienceType === "kids") {
+          const naverParams = { audienceType: "kids", brand: "네이버" };
+
+          const naverRes = await GetTrendKeyword(naverParams);
+          const naverArray = Array.isArray(naverRes)
+            ? naverRes
+            : naverRes?.result ?? [];
+
+          const parsedNaver = naverArray.flatMap((result: any) => {
+            const brands = result.brands ?? [];
+            return brands.map((b: any) => ({
+              title: b.brand,
+              dateType: result.date_type,
+              categories: b.categories ?? [],
+              date: result.date,
+            }));
+          });
+
+          merged = [...merged, ...parsedNaver];
         }
-        console.error("플랫폼 키워드 가져오기 실패:", error);
+
+        setKeywordList(merged);
+        setCrawledDate(baseArray[0]?.date ?? null);
+      } catch (e) {
+        console.log("Fetch error:", e);
         setKeywordList([]);
         setCrawledDate(null);
       }
     };
-    fetchKeywords();
-  }, []);
+
+    fetchAll();
+  }, [audienceType, selectedMonth]);
 
   return (
     <div className="w-full h-full">
@@ -87,45 +117,62 @@ function DashBoardPage() {
       </div>
 
       <section>
-        <SubTitleBox
-          title="지금 인기 있는"
-          sub_title={"플랫폼에서 지금 주목받는 패션 키워드를 확인해보세요."}
-        />
+        <div className="flex items-end gap-2 mb-3">
+          <SubTitleBox
+            title="지금 인기 있는"
+            sub_title="플랫폼에서 지금 주목받는 패션 키워드와 트렌드 항목을 확인해보세요."
+          />
+          <QuestionTooltip infoText="매일 오전 10시, 무신사·W컨셉·네이버 등 주요 패션 플랫폼의 검색어 데이터를 자동 수집하며, 매거진·SNS 언급량 분석을 결합해 월별 종합 랭킹과 최근 주목도가 급상승한 패션 트렌드를 함께 제공합니다." />
+        </div>
+        <div className="flex items-center justify-between p-1 bg-white border border-[#56585A] rounded-full w-80 mt-1 mb-4">
+          {["adult", "kids"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setAudienceType(type)}
+              className={`w-1/2 h-9 rounded-full text-[18px] font-semibold transition-colors duration-200 ${
+                audienceType === type
+                  ? "bg-[#1A1A1A] text-white"
+                  : "text-gray-500 hover:bg-gray-100"
+              }`}
+            >
+              {type === "adult" ? "어덜트" : "키즈"}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-wrap gap-5">
           {keywordList.map((box) => (
             <NewMainKeywordBox
-              key={box.title}
+              key={`${box.title}-${box.dateType}`}
               title={box.title}
-              keywords={box.keywords}
+              dateType={box.dateType}
+              categories={box.categories}
               crawledDate={crawledDate}
+              dateList={[
+                "2024-11",
+                "2024-12",
+                "2025-01",
+                "2025-02",
+                "2025-03",
+                "2025-04",
+                "2025-05",
+                "2025-06",
+                "2025-07",
+                "2025-08",
+                "2025-09",
+                "2025-10",
+              ]}
             />
           ))}
+
           {keywordList.length === 0 && (
             <div className="text-sm text-gray-500">표시할 키워드가 없어요.</div>
           )}
         </div>
       </section>
 
-      <section>
-        <SubTitleBox
-          title="급상승 중인"
-          sub_title="데이터로 지금 떠오르는 패션 유형을 확인해보세요."
-        />
-        <div className="flex gap-5">
-          <MainColorBox />
-          <MainTypeBox />
-        </div>
-      </section>
-
-      <section>
-        <SubTitleBox
-          title="지금 가장 주목받는 아이템"
-          sub_title="데이터로 확인하고 실시간 패션 아이템 트렌드를 확인해보세요."
-        />
-        <div className="flex gap-5">
-          <MainItemTrendBox sliceIndex={0} />
-          <MainItemTrendBox sliceIndex={3} />
-        </div>
+      <section className="mt-4">
+        <MainItemTrendBox />
       </section>
     </div>
   );
