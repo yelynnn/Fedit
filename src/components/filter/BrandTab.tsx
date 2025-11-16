@@ -156,12 +156,12 @@ function BrandTab({ isProductTab }: Props) {
         <button
           type="button"
           onClick={() => setBrandOpen((prev) => !prev)}
-          className="text-[#888A8C] flex items-center h-10 gap-1 p-2 text-sm font-semibold bg-white rounded-lg w-18 border border-[#E4E4E4] cursor-pointer select-none shrink-0"
+          className="text-[3D3F41] flex items-center h-10 gap-1 p-2 text-sm font-semibold bg-white rounded-lg w-18 border border-[#56585A] cursor-pointer select-none shrink-0"
         >
           <p>브랜드</p>
           <Icon
             icon="mingcute:down-fill"
-            color="#888A8C"
+            color="6F7173"
             className={`w-3 transition-transform duration-300 ${
               isBrandOpen ? "rotate-180" : ""
             }`}
@@ -180,7 +180,7 @@ function BrandTab({ isProductTab }: Props) {
               <button
                 key={brand}
                 type="button"
-                className="font-semibold inline-flex px-3 h-10 rounded-lg border-1 border-[#3D3F41] bg-white text-[#3D3F41] items-center justify-center text-sm shrink-0"
+                className="font-semibold inline-flex px-3 h-10 rounded-lg  bg-[#242628] text-white items-center justify-center text-sm shrink-0"
               >
                 {brand}
               </button>

@@ -29,35 +29,36 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
       />
       <div className="flex flex-col w-full gap-1 p-2 bg-white">
         <div className="flex items-center justify-between">
-          <span className="text-[#91929D] text-xs mt-1">
+          <span className="text-[#3D3F41] text-sm mt-1">
             {product.brand ?? ""}
           </span>
           {category && (
-            <div className="flex items-center justify-center h-5 w-fit px-[6px] bg-[#ECEEF0] rounded text-xs text-[#56585A]">
+            <div className="flex items-center justify-center h-5 w-fit px-[6px] bg-[#ECEEF0] rounded text-xs text-[#3D3F41]">
               {category}
             </div>
           )}
         </div>
 
-        <span className="w-full text-sm break-all truncate text-[#56585A]">
+        <span className="w-full font-semibold text-base break-all truncate text-[#242628]">
           {product.product_name}
         </span>
 
         <div className="flex justify-between">
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-semibold text-[#56585A]">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-[#6F7173]">
               {formatPrice(product.current_price)}
             </span>
             {product.regular_price != null && product.regular_price !== "" && (
-              <span className="text-[#888A8C] text-xs line-through">
-                {formatPrice(product.regular_price)}
+              <span className="text-[#6F7173] text-sm font-semibold">
+                {/* {formatPrice(product.regular_price)} */}
+                {product.discount_rate}%
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1 text-xs text-[#56585A]">
+          <div className="flex items-center font-semibold gap-1 text-sm text-[#A1A3A5]">
             {product.rating != null && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 text-[#3D3F41]">
                 <Icon icon="tabler:star-filled" color="#3D3F41" />
                 {product.rating}
               </div>

@@ -160,7 +160,13 @@ export default function FilterCheckList({ title }: Props) {
                   {checked && (
                     <Icon
                       icon="mdi:check"
-                      className="absolute inset-0 w-4 h-4 m-auto text-white"
+                      className="absolute inset-0 w-4 h-4 m-auto"
+                      style={{
+                        color:
+                          c.value === "#FFFFFF" || c.value === "#FFF017"
+                            ? "#3D3F41"
+                            : "#FFFFFF",
+                      }}
                     />
                   )}
                 </span>

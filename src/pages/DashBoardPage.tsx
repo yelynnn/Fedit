@@ -38,13 +38,18 @@ function DashBoardPage() {
             ? { audienceType, date: selectedMonth }
             : { audienceType };
 
-        // 1) 기본 키워드
+        // 1) 기본 키워드 호출
         const baseRes = await GetTrendKeyword(baseParams);
+
+        if (baseRes?.status === 401) {
+          setPasswordModalOpen(true);
+          return;
+        }
+
         const baseArray = Array.isArray(baseRes)
           ? baseRes
           : baseRes?.result ?? [];
 
-        // 기본 브랜드 변환
         let merged = baseArray.flatMap((result: any) => {
           const brands = result.brands ?? [];
           return brands
@@ -57,11 +62,12 @@ function DashBoardPage() {
             }));
         });
 
-        // 2) kids라면 네이버 추가 요청
+        // 2) kids라면 네이버 추가 호출
         if (audienceType === "kids") {
           const naverParams = { audienceType: "kids", brand: "네이버" };
 
           const naverRes = await GetTrendKeyword(naverParams);
+
           const naverArray = Array.isArray(naverRes)
             ? naverRes
             : naverRes?.result ?? [];
@@ -81,8 +87,14 @@ function DashBoardPage() {
 
         setKeywordList(merged);
         setCrawledDate(baseArray[0]?.date ?? null);
-      } catch (e) {
+      } catch (e: any) {
         console.log("Fetch error:", e);
+
+        if (e?.status === 401) {
+          setPasswordModalOpen(true);
+          return;
+        }
+
         setKeywordList([]);
         setCrawledDate(null);
       }

@@ -42,8 +42,8 @@ export default function FilterTabs({ tabs, active, onChange }: Props) {
             <FilterChip key={filter} filter={filter} />
           ))}
         </div>
-        <div className="flex gap-1 ml-12">
-          <p className="text-xs font-normal text-[#56585A]">초기화</p>
+        <div className="flex gap-1 ml-12 w-13">
+          <p className="w-8 text-xs font-normal text-[#56585A]">초기화</p>
           <Icon
             icon="ri:reset-left-line"
             className="w-3 text-gray-500 cursor-pointer"
