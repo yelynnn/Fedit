@@ -7,11 +7,13 @@ import NewColorAnalysis from "@/pages/filter/NewColorAnalysis";
 import NewTypeAnalysis from "@/pages/filter/NewTypeAnalysis";
 import { useProductStore } from "@/stores/ProductStore";
 import { useEffect } from "react";
+import RunwayPage from "@/pages/RunwayPage";
 
 type TabOption = { label: string; icon: string };
 
 const TAB_OPTIONS: TabOption[] = [
   { label: "대시보드", icon: "material-symbols:dashboard-rounded" },
+  { label: "패션쇼 분석", icon: "material-symbols:dashboard-rounded" },
   { label: "상품 분석", icon: "streamline-plump:tag-alt-solid" },
   { label: "색상 분석", icon: "material-symbols:palette" },
   { label: "유형 분석", icon: "garden:shapes-fill-16" },
@@ -37,7 +39,7 @@ export function NewFilterTabBar() {
               onClick={() => setSelectedTab(label)}
               aria-selected={active}
               className={[
-                "h-11 w-22 mx-0.5 rounded-t flex items-center justify-center gap-1",
+                "h-11 w-fit mx-0.5 rounded-t flex items-center justify-center gap-1",
                 "text-base font-semibold px-1",
                 active
                   ? "text-[#0B0E0F] border-b-[3px] border-[var(--Line-Primary-Normal,#56585A)]"
@@ -66,8 +68,9 @@ export function NewFilterTabBar() {
 export function NewFilterTabPanels() {
   const { selectedTab } = useFilterStore((s) => s);
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       {selectedTab === "대시보드" && <DashBoardPage />}
+      {selectedTab === "패션쇼 분석" && <RunwayPage />}
       {selectedTab === "상품 분석" && <NewProductAnalysis />}
       {selectedTab === "색상 분석" && <NewColorAnalysis />}
       {selectedTab === "유형 분석" && <NewTypeAnalysis />}

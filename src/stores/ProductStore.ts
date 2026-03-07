@@ -7,7 +7,9 @@ export interface ProductStore {
   setSelectedProductId: (id: string | null) => void;
 
   resultLists: ApiDetail[];
-  setResultLists: (rows: ApiDetail[]) => void;
+  setResultLists: (
+    rows: ApiDetail[] | ((prev: ApiDetail[]) => ApiDetail[]),
+  ) => void;
   clearResults: () => void;
 }
 
@@ -18,9 +20,15 @@ export const useProductStore = create<ProductStore>()(
       setSelectedProductId: (id) => set({ selectedProductId: id }),
 
       resultLists: [],
-      setResultLists: (rows) => set({ resultLists: rows ?? [] }),
+      setResultLists: (input) =>
+        set((state) => ({
+          resultLists:
+            typeof input === "function"
+              ? input(state.resultLists)
+              : (input ?? []),
+        })),
       clearResults: () => set({ resultLists: [] }),
     }),
-    { name: "product-store" }
-  )
+    { name: "product-store" },
+  ),
 );

@@ -4,7 +4,7 @@ import { axiosInstance } from "./AxiosInstance";
 const GetDetailInfo = async ({ itemcode }: { itemcode: string }) => {
   try {
     const response = await axiosInstance.get(
-      `/api/v1/color-analysis/detailInfo/${itemcode}`
+      `/api/v1/color-analysis/detailInfo/${itemcode}`,
     );
     console.log("상품 상세 정보 조회 성공");
     return response.data;
@@ -16,9 +16,7 @@ const GetDetailInfo = async ({ itemcode }: { itemcode: string }) => {
 
 const GetRelatedItemInfo = async ({ itemcode }: { itemcode: string }) => {
   try {
-    const response = await axiosInstance.get(
-      `/api/v1/product-analysis/detailInfo/${itemcode}`
-    );
+    const response = await axiosInstance.get(`/products/detail/${itemcode}`);
     console.log("유사 아이템 정보 조회 성공");
     return response.data;
   } catch (error) {
@@ -29,7 +27,7 @@ const GetRelatedItemInfo = async ({ itemcode }: { itemcode: string }) => {
 
 const GetBrandList = async () => {
   try {
-    const response = await axiosInstance.get(`/api/v1/menu/brand`);
+    const response = await axiosInstance.get(`/menu/brand`);
     return response.data;
   } catch (error) {
     console.error("브랜드 목록 가져오기 실패", error);
@@ -43,7 +41,7 @@ const GetColorGraph = async () => {
   try {
     const query = brandList.join(",");
     const response = await axiosInstance.get(
-      `/api/v1/color-analysis/graph?brand=${encodeURIComponent(query)}`
+      `/api/v1/color-analysis/graph?brand=${encodeURIComponent(query)}`,
     );
     return response.data;
   } catch (error) {
@@ -57,7 +55,7 @@ const GetCategoryGraph = async () => {
   try {
     const query = brandList.join(",");
     const response = await axiosInstance.get(
-      `/api/v1/category-analysis/graph?brand=${encodeURIComponent(query)}`
+      `/category/graph?brand=${encodeURIComponent(query)}`,
     );
     console.log("유형 그래프 조회 성공");
     return response.data;
@@ -77,7 +75,7 @@ const GetColorProduct = async ({
   parent_color_hex,
 }: GetColorProductParams) => {
   try {
-    const response = await axiosInstance.get("/api/v1/color-analysis/product", {
+    const response = await axiosInstance.get("/color/product", {
       params: {
         brand,
         parent_color_hex,
@@ -98,18 +96,41 @@ type ProductFilterPayload = {
   selectedCategories: string[];
 };
 
-const PostProductList = async (payload: ProductFilterPayload) => {
-  const { brandList, selectedColors, selectedGenders, selectedCategories } =
-    payload;
+const GetProductList = async (
+  payload: ProductFilterPayload & { cursor?: string | null },
+) => {
+  const {
+    brandList,
+    selectedColors,
+    selectedGenders,
+    selectedCategories,
+    cursor,
+  } = payload;
 
-  const body = {
-    brands: brandList,
-    colors: selectedColors,
-    genders: selectedGenders,
-    categories: selectedCategories,
+  const params = {
+    selectedBrands: brandList,
+    selectedColors,
+    selectedGenders,
+    selectedCategories,
+    size: 50,
+    cursor: cursor || undefined,
   };
 
-  const res = await axiosInstance.post("/api/v1/product-analysis", body);
+  const res = await axiosInstance.get("/products", {
+    params,
+    // [수정] 배열 파라미터에서 []를 제거하고 동일한 키를 반복하도록 설정
+    paramsSerializer: (params) => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((v) => searchParams.append(key, v));
+        } else if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+      return searchParams.toString();
+    },
+  });
   return res.data;
 };
 
@@ -118,7 +139,7 @@ export {
   GetColorGraph,
   GetColorProduct,
   GetCategoryGraph,
-  PostProductList,
+  GetProductList,
   GetBrandList,
   GetRelatedItemInfo,
 };

@@ -1,30 +1,74 @@
-import { NewFilterTabBar } from "../filter/NewFilterTabBar";
-import { Icon } from "@iconify/react/dist/iconify.js";
-import logo from "@/assets/logo/feditLogo.svg";
+import { Icon } from "@iconify/react";
+import { useFilterStore } from "@/stores/FilterStore";
+import BrandFilterModal from "../filter/BrandFilterModal";
+import BrandTab from "../filter/BrandTab";
+import { useState } from "react";
 
-function NewHeader() {
+export default function NewHeader() {
+  const [isBrandOpen, setBrandOpen] = useState(false);
+  const { selectedTab } = useFilterStore((s) => s);
+  const brandList = useFilterStore((s) => s.brandList);
+
   return (
-    <header className="items-center w-full pt-5 h-29 border-b border-[#E4E4E4] border-solid shadow-[0_1px_5px_0_rgba(168,168,168,0.05)]">
-      <div className="flex items-center justify-between px-12 leading-9 ">
-        <img src={logo} alt="fedit icon" className="h-8" />
-        <div className="flex items-center gap-3">
-          <Icon icon="uiw:bell" color="#3D3F41" className="w-5 h-5" />
+    /* 헤더 자체에 group/header를 주어 헤더 하단 어디든 기준을 잡을 수 있게 합니다. */
+    <header className="relative flex items-center justify-between w-full h-15 px-16 bg-white border-b border-[#ECEEF0] sticky top-0 z-20">
+      {/* 좌측 타이틀 영역 */}
+      <div className="flex items-center gap-2">
+        <div className="rounded-lg p-1 bg-[#F2F9E9] text-[#0B0E0F] border border-[#E8FFD8]">
           <Icon
-            icon="ion:settings-outline"
-            color="#3D3F41"
-            className="w-5 h-5"
+            icon="material-symbols:dashboard-rounded"
+            className="w-5 h-5 text-[#3D3F41]"
           />
-          <Icon
-            icon="pepicons-pop:line-y"
-            color="#BABCBE"
-            className="h-6 scale-y-150"
-          />
-          <p className="text-base font-semibold text-[#3D3F41]">사용자 1</p>
+        </div>
+        <span className="text-lg font-bold text-[#3D3F41]">
+          {selectedTab || "대시보드"}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-1">
+          <div className="relative group/brand">
+            <div
+              onClick={() => setBrandOpen((prev) => !prev)}
+              className="cursor-pointer flex items-center h-10 px-3 py-2 bg-[#F8F9FA] rounded-l-2xl hover:bg-[#F1F3F5] transition-colors"
+            >
+              <span className="text-[15px] font-bold text-[#495057] mr-2">
+                브랜드
+              </span>
+              <span className="flex items-center justify-center min-w-[42px] h-7 px-2 bg-[#3D3F41] text-white text-[13px] font-bold rounded-full">
+                {brandList.length}
+              </span>
+            </div>
+
+            <div className="fixed left-0 z-30 invisible w-full transition-all duration-200 opacity-0 pointer-events-none top-15 group-hover/brand:opacity-100 group-hover/brand:visible group-hover/brand:pointer-events-auto">
+              <div className="bg-white border-b border-[#ECEEF0] shadow-md">
+                <BrandTab isProductTab={selectedTab === "상품 분석"} />
+              </div>
+            </div>
+          </div>
+
+          <div className="cursor-pointer flex items-center h-10 px-4 bg-[#F8F9FA] rounded-r-2xl hover:bg-[#F1F3F5] transition-colors">
+            <span className="text-[15px] font-bold text-[#495057] mr-1.5">
+              내 보드
+            </span>
+            <Icon
+              icon="ph:caret-down-bold"
+              className="w-3.5 h-3.5 text-[#868E96]"
+            />
+          </div>
+        </div>
+
+        {/* 사용자 아바타 */}
+        <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+          E
         </div>
       </div>
-      <NewFilterTabBar />
+
+      <BrandFilterModal
+        isOpen={isBrandOpen}
+        onClose={() => setBrandOpen(false)}
+        onSubmit={() => setBrandOpen(false)}
+      />
     </header>
   );
 }
-
-export default NewHeader;

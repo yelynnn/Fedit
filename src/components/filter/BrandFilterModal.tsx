@@ -48,9 +48,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-
     const half = rect.width / 2;
-
     if (x < half) setHoverSide("left");
     else setHoverSide("right");
   };
@@ -85,7 +83,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       { key: "favorite", label: "즐겨찾기 (준비중)" },
       ...categories.map((c) => ({ key: c.label, label: `${c.label}` })),
     ],
-    [categories]
+    [categories],
   );
 
   const sourceBrands = useMemo<string[]>(() => {
@@ -106,7 +104,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     () =>
       visibleBrands.length > 0 &&
       visibleBrands.every((b) => brandList.includes(b)),
-    [visibleBrands, brandList]
+    [visibleBrands, brandList],
   );
 
   const toggleAllVisible = () => {
@@ -124,7 +122,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
 
   const parentSelector = useCallback(
     () => document.getElementById("modal-root") as HTMLElement,
-    []
+    [],
   );
 
   const Chip = ({
@@ -182,6 +180,33 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
           />
         </div>
       </div>
+
+      {keyword.trim() !== "" && visibleBrands.length === 0 && (
+        <div className="px-6 mb-2">
+          <div className="w-full p-3 rounded-lg bg-[#F9FAFB] flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-[#888A8C]">
+                검색 결과
+              </span>
+              <span className="text-sm font-medium text-[#3D3F41]">
+                해당 브랜드가 없어요.
+              </span>
+            </div>
+            <button
+              type="button"
+              className="self-end flex-shrink-0 flex items-center gap-1.5 px-2 py-1 bg-white border border-[#ECEEF0] rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+            >
+              <Icon
+                icon="solar:shop-2-linear"
+                className="w-4 h-4 text-[#3D3F41]"
+              />
+              <span className="text-xs font-semibold text-[#3D3F41]">
+                브랜드 입점 신청하기
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="relative px-6">
         <div
@@ -295,8 +320,8 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
                 {activeTab === "favorite"
                   ? "즐겨찾기한 브랜드가 없어요."
                   : activeTab === "selected"
-                  ? "선택된 브랜드가 없어요."
-                  : "검색 결과가 없어요."}
+                    ? "선택된 브랜드가 없어요."
+                    : "검색 결과가 없어요."}
               </div>
             )}
           </div>

@@ -1,22 +1,25 @@
-import Footer from "@/components/common/Footer";
+import Sidebar from "@/components/common/Sidebar";
 import NewHeader from "@/components/common/NewHeader";
 import { NewFilterTabPanels } from "@/components/filter/NewFilterTabBar";
 
 function RootNewLayout() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <NewHeader />
-      <div className="flex flex-col flex-1 min-h-0 bg-[#F9FAFB]">
-        <main className="flex-1 min-h-0 overflow-auto">
-          <div className="w-full max-w-full px-12 pt-6 pb-30">
+    <div className="flex w-full h-screen overflow-hidden bg-white">
+      <Sidebar />
+
+      <div className="flex flex-col flex-1 h-full min-w-0">
+        <NewHeader />
+
+        <main className="flex-1 overflow-auto bg-white">
+          <div className="h-full py-8">
             <NewFilterTabPanels />
           </div>
         </main>
-        <Footer />
       </div>
 
       <div id="modal-root" />
     </div>
   );
 }
+
 export default RootNewLayout;

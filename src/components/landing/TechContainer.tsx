@@ -1,4 +1,4 @@
-import tagAIImgUrl from "@/assets/landing/tagAIImg.svg";
+// import tagAIImgUrl from "@/assets/landing/tagAIImg.svg";
 import personalizeImgUrl from "@/assets/landing/personalizeImg.svg";
 
 export type SubContainerProps = {
@@ -21,7 +21,7 @@ function TechContainer({ title, content }: SubContainerProps) {
       </div>
 
       <img
-        src={isAI ? tagAIImgUrl : personalizeImgUrl}
+        src={isAI ? personalizeImgUrl : personalizeImgUrl}
         alt={isAI ? "AI 이미지" : "퍼스널라이즈 이미지"}
         className="rounded-2xl w-[268px] sm:w-[363px]"
       />

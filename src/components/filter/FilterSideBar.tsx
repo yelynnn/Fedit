@@ -1,68 +1,91 @@
+import { useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
-import { Icon } from "@iconify/react/dist/iconify.js";
+import { Icon } from "@iconify/react";
 import NewFilterOption from "./NewFilterOption";
 import useFilteredData from "@/lib/filteredData";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type Props = {
-  onOpenFilter?: () => void;
-};
+function FilterSideBar({ onOpenFilter }: { onOpenFilter?: () => void }) {
+  const { resetFilter } = useFilterStore();
+  const data = useFilteredData();
 
-function FilterSideBar({ onOpenFilter }: Props) {
-  const { resetFilter } = useFilterStore((state) => state);
-
-  const {
-    selectedColors,
-    selectedGenders,
-    selectedDetails,
-    selectedPatterns,
-    selectedCategories,
-  } = useFilteredData();
-
-  
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedSeason, setSelectedSeason] = useState<string>("");
 
   return (
-    <aside className="relative flex flex-col px-4 pt-5 overflow-x-hidden overflow-y-auto bg-white hide-scrollbar w-52 border-[1px] border-[#ECEEF0] rounded-xl h-fit">
-      <div className="flex items-center justify-between">
-        <header className="flex items-center gap-2 text-base font-semibold leading-5 text-[#3D3F41]">
-          <div className="flex items-center justify-center rounded-lg w-8 h-8 border-[1px] border-[#56585A]">
-            <Icon icon="mage:filter" className="w-5 h-5 text-gray-500" />
-          </div>
-          <p>필터</p>
-        </header>
-        <div className="flex gap-1">
-          <p className="text-xs font-normal text-[#56585A]">초기화</p>
-          <Icon
-            icon="ri:reset-left-line"
-            className="w-3 text-gray-500 cursor-pointer"
-            onClick={() => resetFilter()}
-          />
-        </div>
+    <aside className="flex flex-col gap-3 w-53 h-fit p-2 bg-[#F8F9FA] rounded-xl ">
+      <div className="flex w-full gap-2">
+        <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <SelectTrigger className="flex-1 h-10 bg-white rounded-tl-lg border-none text-sm font-semibold text-[#3D3F41] shadow-none focus:ring-0 [&>span]:font-medium">
+            <SelectValue placeholder="2025년" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border-[#ECEEF0]">
+            <SelectItem value="2025">2025년</SelectItem>
+            <SelectItem value="2026">2026년</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+          <SelectTrigger className="flex-1 h-10 bg-white rounded-tr-lg border-none text-sm font-medium text-[#3D3F41] shadow-none focus:ring-0 [&>span]:font-medium">
+            <SelectValue placeholder="시즌" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border-[#ECEEF0]">
+            <SelectItem value="SS">SS</SelectItem>
+            <SelectItem value="FW">FW</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-      <NewFilterOption
-        filterName="성별"
-        filterList={selectedGenders}
-        onOpen={onOpenFilter}
-      />
-      <NewFilterOption
-        filterName="유형"
-        filterList={selectedCategories}
-        onOpen={onOpenFilter}
-      />
-      <NewFilterOption
-        filterName="색상"
-        filterList={selectedColors}
-        onOpen={onOpenFilter}
-      />
-      <NewFilterOption
-        filterName="디테일"
-        filterList={selectedDetails}
-        onOpen={onOpenFilter}
-      />
-      <NewFilterOption
-        filterName="패턴"
-        filterList={selectedPatterns}
-        onOpen={onOpenFilter}
-      />
+
+      <div className="flex flex-col gap-3">
+        <NewFilterOption
+          filterName="성별"
+          filterList={data.selectedGenders}
+          onOpen={onOpenFilter}
+        />
+        <NewFilterOption
+          filterName="유형"
+          filterList={data.selectedCategories}
+          onOpen={onOpenFilter}
+        />
+        <NewFilterOption
+          filterName="색상"
+          filterList={data.selectedColors}
+          onOpen={onOpenFilter}
+        />
+        <NewFilterOption
+          filterName="디테일"
+          filterList={data.selectedDetails}
+          onOpen={onOpenFilter}
+        />
+        <NewFilterOption
+          filterName="소재"
+          filterList={[]}
+          onOpen={onOpenFilter}
+        />
+        <NewFilterOption
+          filterName="패턴"
+          filterList={data.selectedPatterns}
+          onOpen={onOpenFilter}
+        />
+      </div>
+
+      <button
+        onClick={() => {
+          resetFilter();
+          setSelectedYear("");
+          setSelectedSeason("");
+        }}
+        className="flex items-center justify-center gap-2 w-full h-8 bg-white rounded-lg border border-[#ECEEF0] text-[#3D3F41] text-sm font-medium shadow-sm hover:bg-gray-50 active:scale-95 transition-all"
+      >
+        <Icon icon="nrk:rotate" className="w-4 h-4 text-[#3D3F41]" />
+        <span>초기화</span>
+      </button>
     </aside>
   );
 }

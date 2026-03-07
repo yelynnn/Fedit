@@ -1,6 +1,5 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useState, useEffect } from "react";
-import BrandFilterModal from "./BrandFilterModal";
+import { useEffect } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useProductStore } from "@/stores/ProductStore";
 import type { ApiDetail } from "@/types/Product";
@@ -43,7 +42,6 @@ const yymmdd = () => {
 };
 
 function BrandTab({ isProductTab }: Props) {
-  const [isBrandOpen, setBrandOpen] = useState(false);
   const { brandList } = useFilterStore((s) => s);
   const { resultLists } = useProductStore((s) => s);
 
@@ -68,7 +66,7 @@ function BrandTab({ isProductTab }: Props) {
       const idx = i + 1;
       if (
         ["details", "ai_description", "product_detail_url"].includes(
-          String(c.key)
+          String(c.key),
         )
       ) {
         ws.getColumn(idx).alignment = {
@@ -94,7 +92,9 @@ function BrandTab({ isProductTab }: Props) {
             p.categories?.[0]?.category ??
             "";
         else if (k === "colors")
-          r[k] = Array.isArray(p.colors) ? p.colors.join("/") : p.colors ?? "";
+          r[k] = Array.isArray(p.colors)
+            ? p.colors.join("/")
+            : (p.colors ?? "");
         else r[k] = (p as any)[k] ?? "";
       });
       ws.addRow(r);
@@ -151,22 +151,8 @@ function BrandTab({ isProductTab }: Props) {
   }
 
   return (
-    <section className="flex justify-between h-14 bg-[#ECEEF0] px-12 py-2 gap-2 relative">
+    <section className="flex justify-between h-14 bg-[#F6F8FA] px-12 py-2 gap-2 relative pl-32">
       <div className="flex items-center flex-1 min-w-0 gap-2">
-        <button
-          type="button"
-          onClick={() => setBrandOpen((prev) => !prev)}
-          className="text-[3D3F41] flex items-center h-10 gap-1 p-2 text-sm font-semibold bg-white rounded-lg w-18 border border-[#56585A] cursor-pointer select-none shrink-0"
-        >
-          <p>브랜드</p>
-          <Icon
-            icon="mingcute:down-fill"
-            color="6F7173"
-            className={`w-3 transition-transform duration-300 ${
-              isBrandOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
         <div
           className="flex-1 min-w-0 overflow-x-auto x-scroll-hide whitespace-nowrap"
           style={{
@@ -198,14 +184,6 @@ function BrandTab({ isProductTab }: Props) {
           <p>엑셀 다운로드</p>
         </button>
       )}
-
-      <BrandFilterModal
-        isOpen={isBrandOpen}
-        onClose={() => setBrandOpen(false)}
-        onSubmit={() => {
-          setBrandOpen(false);
-        }}
-      />
     </section>
   );
 }

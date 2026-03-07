@@ -27,4 +27,7 @@ export type ApiDetail = {
   release_date: string | null;
   ai_description: string | null;
   product_detail_url?: string | null;
+  views?: string | number | null;
+  sales?: string | number | null;
+  platform?: string | null;
 };
