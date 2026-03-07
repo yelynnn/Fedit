@@ -1,4 +1,3 @@
-import React from "react";
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
 
 interface ColorTreeMapProps {
