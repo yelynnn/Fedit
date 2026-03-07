@@ -7,16 +7,15 @@ type Props = FilterTitle & {
 };
 
 function NewFilterOption({ filterName, filterList, onOpen }: Props) {
+  const isSelected = filterList.length > 0;
   return (
     <div
-      className={`flex flex-col w-full h-fit py-5 ${
-        filterName === "패턴" ? "" : "border-b"
-      }`}
+      className={`flex flex-col w-full h-fit py-4 px-2  ${isSelected ? "bg-white rounded-lg" : ""}`}
     >
       <div className="flex items-center justify-between w-full text-sm font-semibold text-[#56585A]">
         <p>{filterName}</p>
         <Icon
-          icon="mingcute:right-line"
+          icon="iconoir:page-right"
           className="w-5 outline-none cursor-pointer focus:outline-none"
           onClick={() => onOpen?.(filterName)}
           tabIndex={0}
@@ -26,7 +25,7 @@ function NewFilterOption({ filterName, filterList, onOpen }: Props) {
         />
       </div>
       {filterList && (
-        <div className="flex flex-col gap-1 mt-2">
+        <div className="flex flex-wrap gap-2 mt-2">
           {filterList.map((filter) => (
             <FilterChip key={filter} filter={filter} />
           ))}

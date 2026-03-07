@@ -1,4 +1,3 @@
-import TitleHeader from "@/components/common/TitleHeader";
 import NewTypeBox from "@/components/type/NewTypeBox";
 import { MockNewTypeData } from "@/data/mock/MockNewTypeData";
 import { useEffect, useState } from "react";
@@ -23,7 +22,7 @@ function NewTypeAnalysis() {
         const list = (
           Array.isArray(res)
             ? res
-            : res?.brands ?? res?.items ?? res?.data ?? []
+            : (res?.brands ?? res?.items ?? res?.data ?? [])
         ) as TypeBlock[];
 
         setBlocks(list);
@@ -42,11 +41,15 @@ function NewTypeAnalysis() {
   }, []);
 
   return (
-    <div className="mt-14">
-      <TitleHeader
-        title="유형 분석"
-        sub_title="최근 주목받는 상품 유형과 연관 키워드를 탐색해보세요."
-      />
+    <div className="px-14">
+      <div className="flex flex-col gap-2">
+        <header className="text-2xl font-semibold leading-9 text-[#3D3F41]">
+          유형 분석
+        </header>
+        <p className="text-[#888A8C] leading-6 text-base font-semibold">
+          최근 주목받는 상품 유형과 연관 키워드를 탐색해보세요.
+        </p>
+      </div>
       <PasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setPasswordModalOpen(false)}

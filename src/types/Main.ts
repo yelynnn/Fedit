@@ -29,8 +29,8 @@ export type KeywordBox = {
 
 export type TitleBox = {
   title: string;
-  sub_title: string;
-  info?: string;
+  label: string;
+  infoText: string;
 };
 
 type ColorItem = {

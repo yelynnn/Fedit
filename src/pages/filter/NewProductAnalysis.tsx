@@ -2,15 +2,15 @@ import FilterSideBar from "@/components/filter/FilterSideBar";
 import ProductBox from "@/components/product/ProductBox";
 import ProductDetailContent from "@/components/product/ProductDetailContent";
 import { useProductStore } from "@/stores/ProductStore";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
-import { PostProductList } from "@/apis/AnalysisAPI";
 import { useFilterStore } from "@/stores/FilterStore";
 import type { ApiDetail } from "@/types/Product";
 import PasswordModal from "@/components/main/PasswordModal";
 import { isAxiosError } from "axios";
+import { GetProductList } from "@/apis/AnalysisAPI";
 
 function NewProductAnalysis() {
   const {
@@ -23,50 +23,96 @@ function NewProductAnalysis() {
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ApiDetail | null>(
-    null
+    null,
   );
 
-  const isDetailOpen = !!selectedProductId;
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  const isDetailOpen = !!selectedProductId;
   const { selectedColors, selectedGenders, selectedCategories } =
     useFilteredData();
-
   const { brandList } = useFilterStore();
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = useCallback(
+    async (cursor: string | null = null) => {
+      if (isFetching) return;
+
       try {
-        const data = await PostProductList({
+        setIsFetching(true);
+        const data = await GetProductList({
           brandList,
           selectedColors,
           selectedGenders,
           selectedCategories,
+          cursor,
         });
-        console.log("필터별 검색 결과 조회 성공", data);
 
-        const list = Array.isArray(data?.products) ? data.products : [];
-        setResultLists(list);
+        const newList = Array.isArray(data?.items) ? data.items : [];
+
+        if (!cursor) {
+          setResultLists(newList);
+        } else {
+          setResultLists((prev) => [...prev, ...newList]);
+        }
+
+        setNextCursor(data?.nextCursor || null);
       } catch (err) {
         if (isAxiosError(err) && err.response?.status === 401) {
           setPasswordModalOpen(true);
           return;
         }
-        console.error("필터별 검색 결과 조회 실패", err);
-        setResultLists([]);
+        console.error("데이터 로드 실패", err);
+      } finally {
+        setIsFetching(false);
       }
-    };
+    },
+    [
+      brandList,
+      selectedColors,
+      selectedGenders,
+      selectedCategories,
+      setResultLists,
+      isFetching,
+    ],
+  );
 
-    fetchData();
-  }, [
-    brandList,
-    selectedColors,
-    selectedGenders,
-    selectedCategories,
-    setResultLists,
-  ]);
+  useEffect(() => {
+    setNextCursor(null);
+    fetchData(null);
+  }, [brandList, selectedColors, selectedGenders, selectedCategories]);
+
+  useEffect(() => {
+    if (isFetching || !nextCursor) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isFetching) {
+          fetchData(nextCursor);
+        }
+      },
+      {
+        rootMargin: "200px", // 바닥에 닿기 200px 전에 미리 호출 (사용자 경험 개선)
+        threshold: 0,
+      },
+    );
+
+    const currentTarget = loadMoreRef.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+      observer.disconnect();
+    };
+  }, [nextCursor, isFetching, fetchData]);
 
   return (
-    <div className="flex gap-5 mt-14">
+    <div className="flex gap-5 px-4">
       <FilterSideBar onOpenFilter={() => setFilterOpen(true)} />
       <PasswordModal
         isOpen={isPasswordModalOpen}
@@ -83,8 +129,8 @@ function NewProductAnalysis() {
         <div
           className={
             isDetailOpen
-              ? "flex flex-col gap-4 h-screen overflow-y-auto hide-scrollbar"
-              : "grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))] overflow-y-auto hide-scrollbar"
+              ? "flex flex-col h-screen overflow-y-auto hide-scrollbar "
+              : "grid [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))] overflow-y-auto hide-scrollbar"
           }
         >
           {resultLists.map((product) => (
@@ -99,6 +145,18 @@ function NewProductAnalysis() {
               <ProductBox product={product} />
             </button>
           ))}
+
+          {!isFetching && nextCursor && resultLists.length > 0 && (
+            <div ref={loadMoreRef} className="w-full h-10 col-span-full" />
+          )}
+
+          {isFetching && (
+            <div className="flex items-center justify-center w-full h-24 col-span-full">
+              <div className="text-sm font-medium text-gray-400 animate-pulse">
+                상품 목록을 불러오고 있습니다...
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
