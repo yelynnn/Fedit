@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Icon } from "@iconify/react";
 import TrendIndexBox from "../product/TrendIndexBox";
 import dayjs from "dayjs";

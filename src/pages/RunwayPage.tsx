@@ -1,7 +1,6 @@
 import RunwayContainer from "@/components/runway/RunwayContainer";
 import RunwayBox from "@/components/runway/RunwayBox"; // 브랜드별 목록용
 import { Icon } from "@iconify/react";
-import React from "react";
 
 const TOTAL_RUNWAY_DATA = {
   season: "2025 Spring/Summer",

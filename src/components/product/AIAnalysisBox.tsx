@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { Icon } from "@iconify/react";
 
 interface AIAnalysisBoxProps {
