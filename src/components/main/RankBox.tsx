@@ -1,61 +1,73 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import TrendIndexBox from "../product/TrendIndexBox";
 import dayjs from "dayjs";
 import AIAnalysisBox from "../product/AIAnalysisBox";
-import FeedbackModal from "../product/FeedbackModal";
 import WeekModal from "./modal/WeekModal";
-
-interface RankingItem {
-  id: number;
-  brand: string;
-  name: string;
-}
-
-interface SimilarItem {
-  id: number;
-  brand: string;
-  name: string;
-  tags: string[];
-}
-
-const MOCK_RANKING_LIST: RankingItem[] = Array.from({ length: 10 }).map(
-  (_, i) => ({
-    id: i + 1,
-    brand: "브랜드명 text text text text text...",
-    name: "시티 레저 후디드 라이트 다운 자켓 [블랙]시티...",
-  }),
-);
-
-const MOCK_SIMILAR_ITEMS: SimilarItem[] = Array.from({ length: 8 }).map(
-  (_, i) => ({
-    id: i + 1,
-    brand: "무신사 스탠다드 키즈",
-    name: "시티 레저 후디드 라이트 다운 자켓",
-    tags: ["오버핏", "오버핏", "오버핏"],
-  }),
-);
+import { GetDashboardRanking, GetRankingItemDetail } from "@/apis/DashBoardAPI";
+import type { RankingProduct, RankingItemDetailResponse } from "@/types/Main";
 
 const PLATFORMS = ["무신사", "29CM", "W컨셉", "플랫폼 통합"];
 const CATEGORIES = ["상의", "아우터", "바지", "원피스/스커트"];
+
+const getWeekOfMonth = (date: dayjs.Dayjs) => {
+  const firstDayOfMonth = date.startOf("month").day();
+  return Math.ceil((date.date() + firstDayOfMonth) / 7);
+};
+
+const toApiDate = (date: dayjs.Dayjs) => {
+  const year = date.year();
+  const month = String(date.month() + 1).padStart(2, "0");
+  const week = String(getWeekOfMonth(date)).padStart(2, "0");
+  return `${year}-${month}-w${week}`;
+};
 
 export default function RankBox() {
   const [isWeekModalOpen, setIsWeekModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedPlatform, setSelectedPlatform] = useState<string>("무신사");
   const [selectedCategory, setSelectedCategory] = useState<string>("상의");
-  const [activeRankId, setActiveRankId] = useState<number>(1);
+  const [activeRank, setActiveRank] = useState<number>(1);
+  const [rankingList, setRankingList] = useState<RankingProduct[]>([]);
+  const [itemDetail, setItemDetail] =
+    useState<RankingItemDetailResponse | null>(null);
   const [similarCurrentPage, setSimilarCurrentPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
   const isCurrentWeek = currentDate.isSame(dayjs(), "week");
-  const ITEMS_PER_PAGE = 6;
-  const totalPages = Math.ceil(MOCK_SIMILAR_ITEMS.length / ITEMS_PER_PAGE);
+  const ITEMS_PER_PAGE = 4;
+  const relatedItems = itemDetail?.related_items ?? [];
+  const totalPages = Math.ceil(relatedItems.length / ITEMS_PER_PAGE);
 
-  const currentSimilarItems = MOCK_SIMILAR_ITEMS.slice(
+  const currentSimilarItems = relatedItems.slice(
     (similarCurrentPage - 1) * ITEMS_PER_PAGE,
     similarCurrentPage * ITEMS_PER_PAGE,
   );
   const MOCK_DATE_LIST = ["2026-01", "2026-02"];
+
+  useEffect(() => {
+    const activeItem = rankingList.find((item) => item.rank === activeRank);
+    if (!activeItem) return;
+    setSimilarCurrentPage(1);
+    setIsDetailLoading(true);
+    GetRankingItemDetail(activeItem.itemcode)
+      .then(setItemDetail)
+      .catch(console.error)
+      .finally(() => setIsDetailLoading(false));
+  }, [activeRank, rankingList]);
+
+  useEffect(() => {
+    GetDashboardRanking({
+      platform: selectedPlatform,
+      category: selectedCategory,
+      date: toApiDate(currentDate),
+    })
+      .then((res) => {
+        const result = res.rankData?.rankData?.result ?? [];
+        setRankingList(result);
+        setActiveRank(result[0]?.rank ?? 1);
+      })
+      .catch(console.error);
+  }, [selectedPlatform, selectedCategory, currentDate]);
 
   const handleWeekSelect = (year: number, month: number, week: number) => {
     let newDate = dayjs(`${year}-${month}-01`);
@@ -160,24 +172,29 @@ export default function RankBox() {
         </div>
       </div>
 
-      <div className="flex bg-white border border-gray-200 rounded-[24px] overflow-hidden h-[850px] shadow-sm">
+      <div className="flex bg-white border border-gray-200 rounded-[24px] overflow-hidden h-[650px] shadow-sm">
         <div className="flex flex-col flex-shrink-0 border-r border-gray-200 w-85">
           <div className="py-4 text-sm font-bold text-center text-gray-700 border-b border-gray-200">
             트렌드 항목
           </div>
           <ul className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {MOCK_RANKING_LIST.map((item, index) => {
-              const isActive = activeRankId === item.id;
+            {rankingList.map((item, index) => {
+              const isActive = activeRank === item.rank;
               return (
                 <li
-                  key={item.id}
-                  onClick={() => setActiveRankId(item.id)}
-                  className={`flex items-start gap-3 p-4 border-b border-gray-100 cursor-pointer transition-colors ${
+                  key={item.itemcode}
+                  onClick={() => setActiveRank(item.rank)}
+                  className={`flex items-start gap-3 p-2 border-b border-gray-100 cursor-pointer transition-colors ${
                     isActive ? "bg-[#F8F9FA]" : "hover:bg-gray-50"
                   }`}
                 >
-                  <div className="relative grid flex-shrink-0 bg-gray-100 border border-gray-200 rounded-md w-15 h-15 place-items-center">
-                    <div className="absolute top-1 left-1 flex items-center justify-center w-3 h-3 bg-white rounded text-[10px] font-normal text-gray-800 ">
+                  <div className="relative flex-shrink-0 w-18 h-18">
+                    <img
+                      src={item.thumbnail}
+                      alt={item.product_name}
+                      className="object-cover w-full h-full border border-gray-200 rounded-md"
+                    />
+                    <div className="absolute top-1 left-1 flex items-center justify-center w-3 h-3 bg-white rounded text-[10px] font-normal text-gray-800">
                       {index + 1}
                     </div>
                   </div>
@@ -187,7 +204,7 @@ export default function RankBox() {
                       {item.brand}
                     </span>
                     <span className="text-sm font-medium leading-tight text-gray-800 line-clamp-2">
-                      {item.name}
+                      {item.product_name}
                     </span>
                   </div>
                 </li>
@@ -196,14 +213,28 @@ export default function RankBox() {
           </ul>
         </div>
 
-        <div className="flex-1 p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="relative flex-1 p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {isDetailLoading && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/70 backdrop-blur-[2px]">
+              <div className="w-7 h-7 border-2 border-gray-200 border-t-gray-700 rounded-full animate-spin" />
+              <span className="text-sm text-gray-500">불러오는 중...</span>
+            </div>
+          )}
+
           <div className="px-8 mb-6 -mx-8">
-            <TrendIndexBox isEntered={true} />
+            <TrendIndexBox
+              itemCode={
+                rankingList.find((item) => item.rank === activeRank)
+                  ?.itemcode ?? ""
+              }
+            />
           </div>
 
           <AIAnalysisBox
-            content="이 아이템은 동일 카테고리 평균 대비 브랜드 반응과 유형 트렌드가 모두 높은 구간에 위치해 있으며, 실제 판매 발생이 동반된 '상업 검증 단계'에 진입한 상태입니다.이 아이템은 동일 카테고리 평균 대비 브랜드 반응과 유형 트렌드가 모두 높은 구간에 위치해 있으며, 실제 판매 발생이 동반된 '상업 검증 단계'에 진입한 상태입니다. 이 아이템은 동일 카테고리 평균 대비 브랜드 반응과 유형 트렌드가 모두 높은 구간에 위치해 있으며, 실제 판매 발생이 동반된 '상업 검증 단계'에 진입한 상태입니다. 이 아이템은 동일 카테고리 평균 대비 브랜드 반응과 유형 트렌드가 모두 높은 구간에 위치해 있으며, 실제 판매 발생이 동반된 '상업 검증 단계'에 진입한 상태입니다."
-            onDislikeClick={() => setIsModalOpen(true)}
+            content={itemDetail?.ai_description ?? ""}
+            itemcode={
+              rankingList.find((item) => item.rank === activeRank)?.itemcode ?? ""
+            }
             isRanking={true}
           />
 
@@ -218,25 +249,37 @@ export default function RankBox() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-5 h-[340px] content-start">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-5">
               {currentSimilarItems.map((item, idx) => (
                 <div key={idx} className="flex gap-4">
-                  <div className="flex-shrink-0 bg-gray-100 border border-gray-200 rounded-lg w-22 h-22"></div>
+                  <div className="flex-shrink-0 overflow-hidden bg-gray-100 border border-gray-200 rounded-lg w-22 h-22">
+                    {item.thumbnail ? (
+                      <img
+                        src={item.thumbnail}
+                        alt={item.product_name}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full" />
+                    )}
+                  </div>
                   <div className="flex flex-col justify-center gap-1.5">
                     <span className="text-xs text-gray-500">{item.brand}</span>
                     <span className="text-sm font-medium text-gray-800 line-clamp-2">
-                      {item.name}
+                      {item.product_name}
                     </span>
-                    <div className="flex gap-1.5 flex-wrap mt-1">
-                      {item.tags.map((tag, tIdx) => (
-                        <span
-                          key={tIdx}
-                          className="px-2 py-1 bg-[#E7F0FF] text-[#1A75FF] text-[11px] font-semibold rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    {item.details.length > 0 && (
+                      <div className="flex gap-1.5 flex-wrap mt-1">
+                        {item.details.map((detail, tIdx) => (
+                          <span
+                            key={tIdx}
+                            className="px-2 py-1 bg-[#E7F0FF] text-[#1A75FF] text-[11px] font-semibold rounded"
+                          >
+                            {detail}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -271,10 +314,6 @@ export default function RankBox() {
           </div>
         </div>
       </div>
-      <FeedbackModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
       <WeekModal
         isOpen={isWeekModalOpen}
         onClose={() => setIsWeekModalOpen(false)}

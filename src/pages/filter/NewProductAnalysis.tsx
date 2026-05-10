@@ -7,10 +7,10 @@ import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
 import { useFilterStore } from "@/stores/FilterStore";
-import type { ApiDetail } from "@/types/Product";
 import PasswordModal from "@/components/main/PasswordModal";
 import { isAxiosError } from "axios";
 import { GetProductList } from "@/apis/AnalysisAPI";
+import type { ApiDetail } from "@/types/Product";
 
 function NewProductAnalysis() {
   const {
@@ -21,14 +21,15 @@ function NewProductAnalysis() {
   } = useProductStore((s) => s);
 
   const [isFilterOpen, setFilterOpen] = useState(false);
+  const [filterInitialTab, setFilterInitialTab] = useState("성별");
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<ApiDetail | null>(
-    null,
-  );
+  const [selectedProduct, setSelectedProduct] = useState<ApiDetail | null>(null);
 
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const clickedItemRef = useRef<string | null>(null);
+  const itemButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const isDetailOpen = !!selectedProductId;
   const { selectedColors, selectedGenders, selectedCategories } =
@@ -79,6 +80,18 @@ function NewProductAnalysis() {
   );
 
   useEffect(() => {
+    setSelectedProductId(null);
+  }, [setSelectedProductId]);
+
+  useEffect(() => {
+    if (!selectedProductId || !clickedItemRef.current) return;
+    const el = itemButtonRefs.current[clickedItemRef.current];
+    if (el) {
+      requestAnimationFrame(() => el.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+    }
+  }, [selectedProductId]);
+
+  useEffect(() => {
     setNextCursor(null);
     fetchData(null);
   }, [brandList, selectedColors, selectedGenders, selectedCategories]);
@@ -113,7 +126,7 @@ function NewProductAnalysis() {
 
   return (
     <div className="flex gap-5 px-4">
-      <FilterSideBar onOpenFilter={() => setFilterOpen(true)} />
+      <FilterSideBar onOpenFilter={(tab) => { setFilterInitialTab(tab); setFilterOpen(true); }} />
       <PasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setPasswordModalOpen(false)}
@@ -136,7 +149,9 @@ function NewProductAnalysis() {
           {resultLists.map((product) => (
             <button
               key={product.itemcode}
+              ref={(el) => { itemButtonRefs.current[product.itemcode] = el; }}
               onClick={() => {
+                clickedItemRef.current = product.itemcode;
                 setSelectedProductId(product.itemcode);
                 setSelectedProduct(product);
               }}
@@ -171,7 +186,7 @@ function NewProductAnalysis() {
         overlayClassName="fixed inset-0 bg-black/30 flex items-center justify-center z-[100]"
         className="box-border flex flex-col py-4 bg-white shadow-xl outline-none w-125 h-138 rounded-xl"
       >
-        <SideFilterModal onClose={() => setFilterOpen(false)} />
+        <SideFilterModal onClose={() => setFilterOpen(false)} initialTab={filterInitialTab} />
       </Modal>
     </div>
   );

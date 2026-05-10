@@ -92,9 +92,11 @@ function BrandTab({ isProductTab }: Props) {
             p.categories?.[0]?.category ??
             "";
         else if (k === "colors")
-          r[k] = Array.isArray(p.colors)
-            ? p.colors.join("/")
-            : (p.colors ?? "");
+          r[k] = Array.isArray(p.vlm?.color) ? p.vlm.color.join("/") : "";
+        else if (k === "material")
+          r[k] = p.vlm?.material ?? "";
+        else if (k === "details")
+          r[k] = Array.isArray(p.vlm?.detail) ? p.vlm.detail.join(", ") : "";
         else r[k] = (p as any)[k] ?? "";
       });
       ws.addRow(r);
@@ -105,7 +107,7 @@ function BrandTab({ isProductTab }: Props) {
     const baseCellHeightPx = colCharsToPx(imgColWidthChars);
 
     for (let i = 0; i < rows.length; i++) {
-      const url = rows[i].front_image_url;
+      const url = rows[i].thumbnail || rows[i].front_image_url;
       if (!url) continue;
       try {
         const res = await fetch(url);

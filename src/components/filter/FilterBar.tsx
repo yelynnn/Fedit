@@ -7,6 +7,7 @@ import {
   ColorCategories,
   DetailCategories,
   GenderCategories,
+  MoodCategories,
   PatternCategories,
   TypeCategories,
 } from "@/data/FilterCategories";
@@ -70,7 +71,7 @@ function FilterBar({ setIsBrandOpen }: FilterBarProps) {
       <FilterOption title="색상" colorList={ColorCategories} />
       <FilterOption title="디테일" categoryList={DetailCategories} />
       <FilterOption title="패턴" categoryList={PatternCategories} />
-      {/* <FilterOption title="무드" categoryList={MoodCategories} /> */}
+      <FilterOption title="무드" categoryList={MoodCategories} />
     </aside>
   );
 }

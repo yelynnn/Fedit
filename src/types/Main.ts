@@ -61,3 +61,67 @@ export type TrendItem = {
 };
 
 export type chartProps = { charList: number[] };
+
+export type RankingProduct = {
+  product_name: string;
+  thumbnail: string;
+  brand: string;
+  rank: number;
+  itemcode: string;
+};
+
+export type DashboardRankingResponse = {
+  platform: string;
+  category: string;
+  date: string;
+  rankData: {
+    date: string;
+    category: string;
+    platform: string;
+    rankData: {
+      result: RankingProduct[];
+    };
+  };
+};
+
+export type GetDashboardRankingParams = {
+  platform: string;
+  category: string;
+  date: string;
+};
+
+export type TrendIndexResponse = {
+  isPlatform: boolean;
+  brand: {
+    brandScore: number;
+    brandPctl: number;
+    likes: number | null;
+    search: number | null;
+    marketScore: number | null;
+  };
+  purchase: {
+    purchaseScore: number;
+    purchasePctl: number;
+    sales: number;
+  };
+  category: {
+    categoryScore: number;
+    categoryPctl: number;
+    likes: number | null;
+    reorder: number | null;
+  };
+};
+
+export type RelatedItem = {
+  itemCode: string;
+  brand: string;
+  product_name: string;
+  thumbnail?: string;
+  details: string[];
+};
+
+export type RankingItemDetailResponse = {
+  product_detail_url: string;
+  ai_description: string;
+  related_items: RelatedItem[];
+};

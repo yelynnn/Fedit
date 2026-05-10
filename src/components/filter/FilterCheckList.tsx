@@ -1,17 +1,25 @@
 import { Icon } from "@iconify/react";
+import { useState, useEffect } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import {
   GenderCategories,
   TypeCategories,
   ColorCategories,
-  DetailCategories,
-  PatternCategories,
+  MoodCategories,
 } from "@/data/FilterCategories";
+import { GetPatternList, GetDetailList } from "@/apis/AnalysisAPI";
 
-type Props = { title: "성별" | "유형" | "색상" | "디테일" | "패턴" };
+type Props = { title: "성별" | "유형" | "색상" | "디테일" | "패턴" | "무드" };
 
 export default function FilterCheckList({ title }: Props) {
   const { filterList, addFilter, removeFilter } = useFilterStore((s) => s);
+  const [patternList, setPatternList] = useState<string[]>([]);
+  const [detailList, setDetailList] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (title === "패턴") GetPatternList().then(setPatternList);
+    if (title === "디테일") GetDetailList().then(setDetailList);
+  }, [title]);
 
   const toggle = (value: string) => {
     if (filterList.includes(value)) removeFilter(value);
@@ -155,7 +163,11 @@ export default function FilterCheckList({ title }: Props) {
                   className={[
                     "relative inline-flex w-6 h-6 rounded-full border border-gray-200",
                   ].join(" ")}
-                  style={{ backgroundColor: c.value }}
+                  style={
+                    c.value === "rainbow"
+                      ? { background: "linear-gradient(180deg, #FF0000, #FF7F00, #FFFF00, #00CC44, #2563EB, #8B00FF)" }
+                      : { backgroundColor: c.value }
+                  }
                 >
                   {checked && (
                     <Icon
@@ -186,15 +198,47 @@ export default function FilterCheckList({ title }: Props) {
     );
   }
 
-  const data = title === "디테일" ? DetailCategories : PatternCategories;
+  if (title === "무드") {
+    return (
+      <ul className={gridCls}>
+        {MoodCategories.map((v) => (
+          <li key={v} className="flex items-center gap-2 text-[#6B7A99]">
+            <Icon icon="tabler:lock" />
+            <span>{v}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  const apiData = title === "디테일" ? detailList : patternList;
   return (
     <ul className={gridCls}>
-      {data.map((v) => (
-        <li key={v} className="flex items-center gap-2 text-[#6B7A99]">
-          <Icon icon="tabler:lock" />
-          <span>{v}</span>
-        </li>
-      ))}
+      {apiData.map((v) => {
+        const checked = filterList.includes(v);
+        return (
+          <li key={v}>
+            <button
+              type="button"
+              onClick={() => toggle(v)}
+              className="flex items-center gap-3 cursor-pointer"
+            >
+              <span
+                className={`w-5 h-5 flex items-center justify-center border rounded transition-colors ${
+                  checked
+                    ? "bg-[#4A4C4E] border-[#4A4C4E]"
+                    : "border-[#D1D3D9]"
+                }`}
+              >
+                {checked && (
+                  <Icon icon="lucide:check" className="w-3.5 h-3.5 text-white" />
+                )}
+              </span>
+              <span className="text-sm text-[#242628]">{v}</span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }

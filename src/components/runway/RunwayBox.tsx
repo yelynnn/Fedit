@@ -6,7 +6,7 @@ interface RunwayBoxProps {
 }
 
 export default function RunwayBox({ brands }: RunwayBoxProps) {
-  const [activeTab, setActiveTab] = useState("channel");
+  const [activeTab, setActiveTab] = useState(() => brands[0]?.id ?? "");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 

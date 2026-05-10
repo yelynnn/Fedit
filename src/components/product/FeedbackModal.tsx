@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (feedback: string[]) => void;
 }
 
 const FEEDBACK_OPTIONS = [
@@ -14,7 +15,7 @@ const FEEDBACK_OPTIONS = [
   "실무에서 사용하는 표현과 차이가 있었어요",
 ];
 
-export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
+export default function FeedbackModal({ isOpen, onClose, onSubmit }: FeedbackModalProps) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [isDirectInputActive, setIsDirectInputActive] = useState(false);
   const [directInput, setDirectInput] = useState("");
@@ -37,7 +38,11 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     (isDirectInputActive && directInput.trim() !== "");
 
   const handleSubmit = () => {
-    console.log("피드백 제출:", { selectedOptions, directInput });
+    const feedback = [
+      ...selectedOptions,
+      ...(isDirectInputActive && directInput.trim() ? [directInput.trim()] : []),
+    ];
+    onSubmit(feedback);
     onClose();
   };
 

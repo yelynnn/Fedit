@@ -3,10 +3,10 @@ import { Icon } from "@iconify/react";
 
 // 매거진 아이콘 매핑
 const MAGAZINE_ICONS: Record<string, string> = {
-  vogue: "/src/assets/vogue.png",
-  elle: "/src/assets/elle.png",
-  w: "/src/assets/W.png",
-  bazaar: "/src/assets/bazaar.svg",
+  "vogue korea": "/src/assets/vogue.png",
+  "elle korea": "/src/assets/elle.png",
+  "w korea": "/src/assets/W.png",
+  "harper's bazaar korea": "/src/assets/bazaar.svg",
 };
 
 // 프롭 타입 정의
@@ -19,7 +19,11 @@ interface RunwayContainerProps {
     color_insight: string;
     texture: Array<{ image_url: string; name: string; detail: string }>;
     apply_point: string[];
-    items: Array<{ image_url: string; name: string; detail: string }>;
+    items: Array<{
+      image_url: string | string[];
+      name: string;
+      detail: string;
+    }>;
   };
 }
 
@@ -35,35 +39,41 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
       <header className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-xl font-semibold">{data.brand} 전반적 분석</h1>
+            <h1 className="text-xl font-semibold">
+              {data.brand === "all" ? "" : data.brand} 전반적 분석
+            </h1>
             <span className="bg-[#EBF2FF] text-[#3E7EFF] text-xs px-2 py-1 rounded-md font-bold">
               시즌 분석
             </span>
           </div>
         </div>
-        {/* 잡지 로고 영역 */}
         <div className="flex gap-1.5 rounded-md">
-          {data.magazine.map((m, i) => (
-            <a
-              key={i}
-              href={m.magazine_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden border border-[#BABCBE] hover:border-[#ADB5BD] transition-colors bg-white"
-            >
-              {MAGAZINE_ICONS[m.name.toLowerCase()] ? (
-                <img
-                  src={MAGAZINE_ICONS[m.name.toLowerCase()]}
-                  alt={m.name}
-                  className="object-contain w-full h-full"
-                />
-              ) : (
-                <span className="text-[10px] font-bold uppercase text-[#3D3F41]">
-                  {m.name.substring(0, 1)}
-                </span>
-              )}
-            </a>
-          ))}
+          {data.magazine.map((m, i) => {
+            // 소문자로 변환하여 매핑값 확인
+            const iconPath = MAGAZINE_ICONS[m.name.toLowerCase()];
+
+            return (
+              <a
+                key={i}
+                href={m.magazine_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden border border-[#BABCBE] hover:border-[#ADB5BD] transition-colors bg-white"
+              >
+                {iconPath ? (
+                  <img
+                    src={iconPath}
+                    alt={m.name}
+                    className="object-contain w-full h-full"
+                  />
+                ) : (
+                  <span className="text-[10px] font-bold uppercase text-[#3D3F41]">
+                    {m.name.substring(0, 1)}
+                  </span>
+                )}
+              </a>
+            );
+          })}
         </div>
       </header>
 
@@ -103,7 +113,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
           <div className="flex items-center gap-2 rounded-lg">
             <Icon
               icon="prime:arrow-circle-right"
-              className="w-5 h-5 text-[#3E7EFF]"
+              className="w-10 h-10 text-[#3E7EFF]"
             />
             <span className="text-base font-semibold">
               {data.color_insight}
@@ -116,16 +126,18 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
           <h3 className="mb-3 text-base font-semibold">주요 소재 & 텍스쳐</h3>
           <div className="flex gap-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {data.texture.map((t, i) => (
-              <div key={i} className="flex flex-col gap-2">
-                <span className="w-fit bg-[#EBF2FF] text-[#3E7EFF] text-sm px-1.5 py-0.5 rounded font-semibold">
-                  {t.name}
-                </span>
+              <div key={i} className="flex flex-col items-center gap-2 w-30 ">
+                <div className="h-9 flex items-center justify-center">
+                  <span className="w-fit bg-[#EBF2FF] text-[#3E7EFF] text-sm px-1.5 py-0.5 rounded font-semibold text-center leading-tight">
+                    {t.name}
+                  </span>
+                </div>
                 <img
                   src={t.image_url}
-                  className="object-cover bg-gray-100 rounded-lg w-23 h-23 aspect-square"
+                  className="object-cover bg-gray-100 rounded-lg h-25 w-25 aspect-square"
                   alt={t.name}
                 />
-                <span className="text-sm font-medium text-[#242628] whitespace-nowrap">
+                <span className="text-sm font-medium text-[#242628] text-center break-keep">
                   {t.detail}
                 </span>
               </div>
@@ -159,34 +171,44 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
       <section>
         <h3 className="mb-3 text-base font-semibold">주요 아이템 & 디테일</h3>
         <div className="grid grid-cols-6 gap-5">
-          {data.items.map((item, i) => (
-            <div
-              key={i}
-              className="relative flex flex-col gap-3 group"
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-            >
-              <div className="relative overflow-visible">
-                <img
-                  src={item.image_url}
-                  className="w-full aspect-[3/4] object-cover rounded-xl bg-gray-100 transition-transform duration-300 group-hover:brightness-90"
-                  alt={item.name}
-                />
+          {data.items
+            .flatMap((item) =>
+              (Array.isArray(item.image_url)
+                ? item.image_url
+                : [item.image_url]
+              ).map((url) => ({
+                ...item,
+                image_url: url,
+              })),
+            )
+            .map((item, i) => (
+              <div
+                key={i}
+                className="relative flex flex-col gap-3 group"
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+              >
+                <div className="relative overflow-visible">
+                  <img
+                    src={item.image_url}
+                    className="w-full aspect-[3/4] object-cover rounded-xl bg-gray-100 transition-transform duration-300 group-hover:brightness-90"
+                    alt={item.name}
+                  />
 
-                {hoveredIdx === i && (
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[180px]">
-                    <div className="bg-black/70 backdrop-blur-md text-white text-[11px] p-2 rounded-lg leading-snug shadow-xl relative text-center">
-                      {item.detail}
-                      <div className="absolute w-2 h-2 rotate-45 -translate-x-1/2 -bottom-1 left-1/2 bg-black/70" />
+                  {hoveredIdx === i && (
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[180px]">
+                      <div className="bg-black/70 backdrop-blur-md text-white text-[11px] p-2 rounded-lg leading-snug shadow-xl relative text-center">
+                        {item.detail}
+                        <div className="absolute w-2 h-2 rotate-45 -translate-x-1/2 -bottom-1 left-1/2 bg-black/70" />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+                <p className="text-sm font-semibold leading-tight text-center line-clamp-2">
+                  {item.name}
+                </p>
               </div>
-              <p className="text-sm font-semibold leading-tight text-center line-clamp-2">
-                {item.name}
-              </p>
-            </div>
-          ))}
+            ))}
         </div>
       </section>
     </div>

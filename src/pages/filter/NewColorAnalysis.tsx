@@ -10,6 +10,7 @@ import ColorBar from "@/components/color/ColorBar"; // 새로 만든 컴포넌�
 import { Icon } from "@iconify/react";
 import SubTitleBox from "@/components/main/SubTitleBox";
 import { useState } from "react";
+import BrandCompareModal from "@/components/filter/BrandCompareModal";
 import TrendColorBox, {
   type TrendColorData,
 } from "@/components/color/TrendColorBox";
@@ -111,6 +112,7 @@ const MOCK_TREND_COLORS: TrendColorData[] = [
 function NewColorAnalysis() {
   // const { brandList } = useFilterStore.getState();
   const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
+  const [isCompareModalOpen, setCompareModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [displayTreeMapBrands, setDisplayTreeMapBrands] = useState([
@@ -135,14 +137,14 @@ function NewColorAnalysis() {
   //   load();
   // }, [brandList]);
 
-  const handleAddTreeMap = () => {
-    if (displayTreeMapBrands.length >= 3) return;
-    const nextBrand = MOCK_GRAPHS.find(
-      (m) => !displayTreeMapBrands.some((d) => d.brand === m.brand),
-    );
-    if (nextBrand) {
-      setDisplayTreeMapBrands((prev) => [...prev, nextBrand]);
-    }
+  const handleCompareSubmit = (brands: string[]) => {
+    brands.forEach((brandName) => {
+      if (displayTreeMapBrands.length >= 3) return;
+      if (displayTreeMapBrands.some((d) => d.brand === brandName)) return;
+      const mock = MOCK_GRAPHS.find((m) => m.brand === brandName);
+      const entry = mock ?? { brand: brandName, data: MOCK_GRAPHS[0].data };
+      setDisplayTreeMapBrands((prev) => [...prev, entry]);
+    });
   };
 
   const handleRemoveTreeMap = (brandName: string) => {
@@ -226,7 +228,7 @@ function NewColorAnalysis() {
         {/* 브랜드 추가하기 버튼 */}
         {displayTreeMapBrands.length < 3 && (
           <button
-            onClick={handleAddTreeMap}
+            onClick={() => setCompareModalOpen(true)}
             className={`
               flex flex-col items-center justify-center h-91 
               bg-[#F8F9FA] border-2 border-dashed border-[#E9ECEF] rounded-xl
@@ -307,6 +309,12 @@ function NewColorAnalysis() {
           </aside>
         )}
       </div> */}
+      <BrandCompareModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setCompareModalOpen(false)}
+        onSubmit={handleCompareSubmit}
+        alreadyAdded={displayTreeMapBrands.map((b) => b.brand)}
+      />
     </div>
   );
 }

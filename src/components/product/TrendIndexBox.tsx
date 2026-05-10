@@ -1,135 +1,139 @@
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-
-interface TrendRawData {
-  value: string | number;
-  compareRate: string | number;
-  badgeRates?: (string | number)[];
-  extraValue?: string | number | (string | number)[];
-}
+import { GetTrendIndex } from "@/apis/DashBoardAPI";
+import type { TrendIndexResponse } from "@/types/Main";
 
 interface TrendIndexBoxProps {
-  isEntered: boolean;
+  itemCode: string;
 }
 
-function TrendIndexBox({ isEntered }: TrendIndexBoxProps) {
-  const mockApiData: Record<"brand" | "product" | "purchase", TrendRawData> = {
-    brand: {
-      value: isEntered ? 15 : 90,
-      compareRate: 12,
-      badgeRates: [20, 10],
-    },
-    product: {
-      value: isEntered ? 10 : 90,
-      compareRate: 8,
-      badgeRates: [15],
-      extraValue: isEntered ? ["90 (00)", "n 차 리오더 (26.04)"] : undefined,
-    },
-    purchase: {
-      value: isEntered ? 5 : "-",
-      compareRate: isEntered ? 25 : "--",
-      extraValue: isEntered ? 120 : "--",
-    },
-  };
+// null/undefined → "-", 숫자 → 콤마 포맷
+const fmt = (v: number | null | undefined): string =>
+  v == null ? "-" : v.toLocaleString("ko-KR");
+
+function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
+  const [trendData, setTrendData] = useState<TrendIndexResponse | null>(null);
+
+  useEffect(() => {
+    if (!itemCode) return;
+    GetTrendIndex(itemCode).then(setTrendData).catch(console.error);
+  }, [itemCode]);
+
+  if (!trendData) return null;
+
+  const { isPlatform, brand, purchase, category } = trendData;
 
   const renderCard = (
-    type: "brand" | "product" | "purchase",
-    data: TrendRawData,
+    title: string,
+    scoreVal: number | null,
+    pctlVal: number | null,
+    subBadges: { label: string; value: number | null }[],
+    extraValues?: (string | null)[],
+    isPurchase?: boolean,
   ) => {
-    let title = "";
-    let displayValue = "";
-    let displayCompareText = "";
-    let displaySubBadges: string[] = [];
-    let displayExtraInfo = data.extraValue;
+    const displayValue =
+      scoreVal == null
+        ? "-"
+        : isPlatform
+          ? `상위 ${fmt(scoreVal)}%`
+          : isPurchase
+            ? fmt(scoreVal)
+            : `${fmt(scoreVal)} 점`;
 
-    if (type === "brand") {
-      title = "브랜드 지수";
-      displayValue = isEntered ? `상위 ${data.value}%` : `${data.value}`;
-      displayCompareText = isEntered
-        ? `지난달 대비 ${data.compareRate}% 증가`
-        : `평균 대비 ${data.compareRate}%`;
-      displaySubBadges = isEntered
-        ? [
-            `플랫폼 화력도 ${data.badgeRates?.[0]}% 증가`,
-            `시장 주목도 ${data.badgeRates?.[1]}% 증가`,
-          ]
-        : [
-            `유사 브랜드 대비 ${data.badgeRates?.[0]}% 활성화`,
-            `시장 화력도 ${data.badgeRates?.[1]}% 활성화`,
-          ];
-    } else if (type === "product") {
-      title = "상품 지수";
-      displayValue = isEntered ? `상위 ${data.value}%` : `${data.value}`;
-      displayCompareText = isEntered
-        ? `지난달 대비 ${data.compareRate}% 증가`
-        : `평균 대비 ${data.compareRate}%`;
-      displaySubBadges = isEntered
-        ? ["상품 찜하기수", "리오더 여부"]
-        : [`타스타일 대비 ${data.badgeRates?.[0]}% 활성화`];
-    } else if (type === "purchase") {
-      title = "구매 화력도";
-      displayValue = isEntered ? `상위 ${data.value}%` : `${data.value}`;
-      displayCompareText = `지난달 대비 ${data.compareRate}% 증가`;
-      displaySubBadges = ["판매수량"];
-      displayExtraInfo = `지난달 ${data.extraValue}건`;
-    }
+    const displayCompareText = isPlatform
+      ? isPurchase
+        ? `지난달 대비 ${fmt(pctlVal)}% 증가`
+        : `지난달 대비 ${fmt(pctlVal)}% 증가`
+      : `평균 대비 ${fmt(pctlVal)}%`;
 
     return (
-      // 카드 내부 padding을 px-3 py-4 -> p-3으로 살짝 줄여 공간 확보
-      <div className="w-full box-border p-3 rounded-xl  bg-[#F9FAFB]">
-        {/* 타이틀 영역: text-base, 아이콘 w-4 h-4로 미세 축소 */}
+      <div className="w-full box-border p-3 rounded-xl bg-[#F9FAFB]">
         <div className="flex items-center gap-1 mb-2">
           <span className="text-base font-bold text-[#3D3F41]">{title}</span>
-          <Icon
-            icon="ph:question"
-            className="w-4 h-4 text-[#ADB5BD] cursor-pointer"
-          />
+          <Icon icon="ph:question" className="w-4 h-4 text-[#ADB5BD] cursor-pointer" />
         </div>
 
-        {/* 수치 및 비교 뱃지 영역: gap-1.5로 축소, 뱃지 패딩과 텍스트 크기 축소 */}
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
           <span className="text-base font-bold text-[#151515] whitespace-nowrap">
             {displayValue}
           </span>
-          <div className="px-1.5 py-0.5 bg-[#FFF4E5] rounded-md">
-            <span className="text-[11px] font-semibold text-[#FF9200] whitespace-nowrap">
-              {displayCompareText}
-            </span>
-          </div>
+          {/* isPlatform true일 때만 주황 뱃지 표시 */}
+          {isPlatform && (
+            <div className="px-1.5 py-0.5 bg-[#FFF4E5] rounded-md">
+              <span className="text-[11px] font-semibold text-[#FF9200] whitespace-nowrap">
+                {displayCompareText}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* 하단 뱃지 영역: gap 축소, 텍스트 크기 text-[11px], text-sm으로 미세 조정 */}
         <div className="flex flex-col gap-1.5">
-          {displaySubBadges.map((badge, idx) => (
-            <div key={idx} className="flex flex-wrap items-center gap-1.5">
-              <div
-                className={`px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap ${
-                  type === "purchase" || (type === "product" && isEntered)
-                    ? "bg-[#F1F3F5] text-[#56585A]"
-                    : "bg-[#E7F0FF] text-[#1A75FF]"
-                }`}
-              >
-                {badge}
+          {subBadges.map((badge, idx) => {
+            const isGray = isPurchase || (title === "상품 지수" && isPlatform);
+            const badgeText =
+              badge.value == null
+                ? `${badge.label} -`
+                : `${badge.label} ${fmt(badge.value)}%`;
+
+            return (
+              <div key={idx} className="flex flex-wrap items-center gap-1.5">
+                <div
+                  className={`px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap ${
+                    isGray
+                      ? "bg-[#F1F3F5] text-[#56585A]"
+                      : "bg-[#E7F0FF] text-[#1A75FF]"
+                  }`}
+                >
+                  {isPurchase ? badge.label : badgeText}
+                </div>
+                {extraValues && extraValues[idx] != null && (
+                  <span className="text-sm font-bold text-[#151515] whitespace-nowrap">
+                    {extraValues[idx]}
+                  </span>
+                )}
               </div>
-              {displayExtraInfo && (
-                <span className="text-sm font-bold text-[#151515] whitespace-nowrap">
-                  {Array.isArray(displayExtraInfo)
-                    ? displayExtraInfo[idx]
-                    : displayExtraInfo}
-                </span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
   };
 
+  // 브랜드 지수
+  const brandBadges = isPlatform
+    ? [
+        { label: "플랫폼 화력도", value: brand.likes },
+        { label: "시장 주목도", value: brand.search },
+      ]
+    : [{ label: "유사 브랜드 대비", value: brand.marketScore }];
+
+  // 상품 지수
+  const productBadges = isPlatform
+    ? [
+        { label: "상품 찜하기수", value: null },
+        { label: "리오더 여부", value: null },
+      ]
+    : [{ label: "타스타일 대비", value: category.categoryPctl }];
+
+  const productExtras = isPlatform
+    ? [
+        category.likes == null ? "-" : fmt(category.likes),
+        category.reorder == null ? "-" : `${category.reorder}차 리오더`,
+      ]
+    : undefined;
+
+  // 구매 화력도
+  const purchaseBadges = [{ label: "판매수량", value: null }];
+  const purchaseExtras = isPlatform
+    ? [`지난달 ${fmt(purchase.sales)}건`]
+    : ["-"];
+
   return (
     <div className="w-full p-2">
       <div className="grid grid-cols-3 gap-3">
-        {renderCard("brand", mockApiData.brand)}
-        {renderCard("product", mockApiData.product)}
-        {renderCard("purchase", mockApiData.purchase)}
+        {renderCard("브랜드 지수", brand.brandScore, brand.brandPctl, brandBadges)}
+        {renderCard("상품 지수", category.categoryScore, category.categoryPctl, productBadges, productExtras)}
+        {renderCard("구매 화력도", purchase.purchaseScore, purchase.purchasePctl, purchaseBadges, purchaseExtras, true)}
       </div>
     </div>
   );
