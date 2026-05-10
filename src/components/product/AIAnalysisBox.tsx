@@ -1,34 +1,51 @@
 import { useState, useRef, useLayoutEffect } from "react";
 import { Icon } from "@iconify/react";
+import FeedbackModal from "./FeedbackModal";
+import { PostJudge } from "@/apis/AnalysisAPI";
 
 interface AIAnalysisBoxProps {
   content: string;
-  onDislikeClick: () => void;
+  itemcode: string;
   isRanking: boolean;
 }
 
 export default function AIAnalysisBox({
   content,
-  onDislikeClick,
+  itemcode,
   isRanking,
 }: AIAnalysisBoxProps) {
   const [feedback, setFeedback] = useState<"none" | "like" | "dislike">("none");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
 
-  const handleLike = () =>
-    setFeedback((prev) => (prev === "like" ? "none" : "like"));
+  const handleLike = () => {
+    const next = feedback === "like" ? "none" : "like";
+    setFeedback(next);
+    if (next === "like") {
+      PostJudge({ itemcode, column: "ai_description", judge: 1, feedback: null }).catch(
+        console.error,
+      );
+    }
+  };
 
   const handleDislike = () => {
-    setFeedback((prev) => {
-      if (prev === "dislike") {
-        return "none";
-      } else {
-        onDislikeClick();
-        return "dislike";
-      }
-    });
+    if (feedback === "dislike") {
+      setFeedback("none");
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleModalSubmit = (selectedFeedback: string[]) => {
+    setFeedback("dislike");
+    PostJudge({
+      itemcode,
+      column: "ai_description",
+      judge: -1,
+      feedback: selectedFeedback,
+    }).catch(console.error);
   };
 
   useLayoutEffect(() => {
@@ -118,6 +135,12 @@ export default function AIAnalysisBox({
           </button>
         </div>
       </div>
+
+      <FeedbackModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleModalSubmit}
+      />
     </div>
   );
 }

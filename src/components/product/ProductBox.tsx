@@ -28,11 +28,19 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
   return (
     <section className="flex flex-col overflow-hidden rounded-lg w-55 bg-white border border-[#F2F4F6]">
       {/* 1. 상품 이미지 */}
-      <img
-        src={product.front_image_url || defaultImg}
-        alt={product.product_name}
-        className="object-cover w-full h-55"
-      />
+      <div className="relative w-full h-55">
+        <img
+          src={product.thumbnail || product.front_image_url || undefined}
+          onError={(e) => { e.currentTarget.src = defaultImg; }}
+          alt={product.product_name}
+          className="object-cover w-full h-full"
+        />
+        {product.platform && (
+          <div className="absolute bottom-2 left-2 flex items-center justify-center w-5 h-5 text-white bg-[#3D3F41] rounded text-xs font-medium">
+            {getPlatformLabel(product.platform)}
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-col w-full gap-2 p-2">
         {/* 2. 브랜드 & 카테고리 칩 */}
@@ -62,24 +70,17 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
           <div className="flex flex-wrap gap-1 mt-1">
             {product.views && (
               <div className="px-2 py-1 bg-[#EAF2FE] text-[#1A75FF] text-xs font-semibold rounded-md">
-                누적조회수 {product.views}
+                누적조회수 {Number(product.views).toLocaleString("ko-KR")}
               </div>
             )}
-            {product.sales && (
+            {product.sales!=1 && (
               <div className="px-2 py-1 bg-[#FFF5E9] text-[#FF9528] text-xs font-semibold rounded-md">
-                누적판매 {product.sales}
+                누적판매 {Number(product.sales).toLocaleString("ko-KR")}
               </div>
             )}
           </div>
         )}
 
-        {product.platform && (
-          <div className="flex mt-1">
-            <div className="flex items-center justify-center w-5 h-5 text-white bg-[#3D3F41] rounded text-xs font-medium">
-              {getPlatformLabel(product.platform)}
-            </div>
-          </div>
-        )}
       </div>
     </section>
   );

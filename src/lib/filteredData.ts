@@ -1,22 +1,28 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { brandData } from "@/data/BrandCategories";
 import {
   GenderCategories,
   ColorCategories,
-  DetailCategories,
-  PatternCategories,
   TypeCategories,
 } from "@/data/FilterCategories";
+import { GetDetailList, GetPatternList } from "@/apis/AnalysisAPI";
 
 export default function useFilteredData() {
   const { filterList } = useFilterStore((state) => state);
+  const [apiDetails, setApiDetails] = useState<string[]>([]);
+  const [apiPatterns, setApiPatterns] = useState<string[]>([]);
+
+  useEffect(() => {
+    GetDetailList().then(setApiDetails);
+    GetPatternList().then(setApiPatterns);
+  }, []);
 
   const allBrands = useMemo(() => Object.values(brandData).flat(), []);
   const allColors = useMemo(() => ColorCategories.map((c) => c.label), []);
   const allGenders = useMemo(() => GenderCategories, []);
-  const allDetails = useMemo(() => DetailCategories, []);
-  const allPatterns = useMemo(() => PatternCategories, []);
+  const allDetails = useMemo(() => apiDetails, [apiDetails]);
+  const allPatterns = useMemo(() => apiPatterns, [apiPatterns]);
   // const allMoods = useMemo(() => MoodCategories, []);
   const allTypes = useMemo(
     () => TypeCategories.flatMap((t) => [t.category, ...t.subcategories]),

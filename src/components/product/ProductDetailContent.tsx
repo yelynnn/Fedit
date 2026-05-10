@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useProductStore } from "@/stores/ProductStore";
@@ -8,7 +8,11 @@ import DetailItem from "./DetailItem";
 import defaultImg from "@/assets/logo/defaultImg.svg";
 import AIAnalysisBox from "./AIAnalysisBox";
 import TrendIndexBox from "./TrendIndexBox";
-import FeedbackModal from "./FeedbackModal";
+
+const hasValue = (v: string | string[] | undefined | null) =>
+  Array.isArray(v)
+    ? v.filter((s) => s.trim() !== "" && s.toLowerCase() !== "nan").length > 0
+    : !!v && v.trim() !== "" && v.toLowerCase() !== "nan";
 
 function formatPrice(price?: string | number | null) {
   if (price === null || price === undefined || price === "") return "";
@@ -21,34 +25,22 @@ function formatPrice(price?: string | number | null) {
 type RelatedItem = { itemcode?: string; product_image_url?: string };
 type Props = { product?: ApiDetail | null };
 
-export default function ProductDetailContent({ product }: Props) {
+export default function ProductDetailContent({ product }: Props = {}) {
   const { setSelectedProductId, selectedProductId } = useProductStore((s) => s);
-  const [detailData, setDetailData] = useState<ApiDetail | null>(
-    product ?? null,
-  );
+  const [detailData, setDetailData] = useState<ApiDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [related, setRelated] = useState<RelatedItem[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const skipNextDetailFetchRef = useRef(false);
-
-  useEffect(() => {
-    if (product) {
-      setDetailData(product);
-      skipNextDetailFetchRef.current = true;
-    } else {
-      skipNextDetailFetchRef.current = false;
-    }
-  }, [product]);
 
   useEffect(() => {
     if (!selectedProductId) return;
-    if (
-      skipNextDetailFetchRef.current &&
-      product?.itemcode === selectedProductId
-    ) {
-      skipNextDetailFetchRef.current = false;
+
+    // 목록에서 넘어온 데이터가 있으면 그대로 사용
+    if (product && product.itemcode === selectedProductId) {
+      setDetailData(product);
       return;
     }
+
+    // 없으면 /detail 호출 (대시보드, 색상분석 등)
     let canceled = false;
     (async () => {
       try {
@@ -66,7 +58,7 @@ export default function ProductDetailContent({ product }: Props) {
     return () => {
       canceled = true;
     };
-  }, [selectedProductId, product?.itemcode]);
+  }, [selectedProductId, product]);
 
   useEffect(() => {
     if (!selectedProductId) return;
@@ -125,7 +117,11 @@ export default function ProductDetailContent({ product }: Props) {
             <section className="flex flex-col gap-5 mb-6 lg:flex-row">
               <div className="relative flex-shrink-0">
                 <img
-                  src={detailData.front_image_url || defaultImg}
+                  src={
+                    detailData.thumbnail ||
+                    detailData.front_image_url ||
+                    defaultImg
+                  }
                   className="w-[400px] h-[530px] object-cover rounded-xl bg-[#F9FAFB]"
                   alt="product"
                 />
@@ -229,41 +225,40 @@ export default function ProductDetailContent({ product }: Props) {
                   </div>
                 </div>
 
-                <div className="flex gap-2 mb-8">
+                <div className="flex gap-2 mt-2 mb-6">
                   {detailData.views && (
                     <div className="px-3 py-1.5 bg-[#EBF2FF] text-[#3E7EFF] text-xs font-bold rounded-lg">
-                      누적조회수 {detailData.views}
+                      누적조회수{" "}
+                      {Number(detailData.views).toLocaleString("ko-KR")}
                     </div>
                   )}
-                  {detailData.sales && (
+                  {detailData.sales != 1 && (
                     <div className="px-3 py-1.5 bg-[#FFF5E9] text-[#FF9528] text-xs font-bold rounded-lg">
-                      누적판매 {detailData.sales}
+                      누적판매{" "}
+                      {Number(detailData.sales).toLocaleString("ko-KR")}
                     </div>
                   )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                  <DetailItem title="색상" content={detailData.colors || "-"} />
-                  <DetailItem title="소매" content="니트 울" />
-                  <DetailItem title="기장" content="미디" />
-                  <DetailItem title="소매 길이" content="긴팔" />
-                  <DetailItem title="넥라인" content="헨리넥" />
-                  <DetailItem title="핏" content="슬림핏" />
-                  <DetailItem
-                    title="디테일"
-                    content={detailData.details || "솔리드, 버튼업"}
-                  />
-                  <DetailItem title="패턴" content="솔리드" />
+                  {hasValue(detailData.vlm?.color) && <DetailItem title="색상" content={detailData.vlm!.color} itemcode={selectedProductId ?? ""} />}
+                  {hasValue(detailData.vlm?.material) && <DetailItem title="소재" content={detailData.vlm!.material} itemcode={selectedProductId ?? ""} />}
+                  {hasValue(detailData.vlm?.length) && <DetailItem title="기장" content={detailData.vlm!.length} itemcode={selectedProductId ?? ""} />}
+                  {hasValue(detailData.vlm?.sleeve) && <DetailItem title="소매 길이" content={detailData.vlm!.sleeve} itemcode={selectedProductId ?? ""} />}
+                  {hasValue(detailData.vlm?.neckline) && <DetailItem title="넥라인" content={detailData.vlm!.neckline} itemcode={selectedProductId ?? ""} />}
+                  {hasValue(detailData.vlm?.fit) && <DetailItem title="핏" content={detailData.vlm!.fit} itemcode={selectedProductId ?? ""} />}
+                  {hasValue(detailData.vlm?.detail) && <DetailItem title="디테일" content={detailData.vlm!.detail} itemcode={selectedProductId ?? ""} />}
+                  {hasValue(detailData.vlm?.pattern) && <DetailItem title="패턴" content={detailData.vlm!.pattern} itemcode={selectedProductId ?? ""} />}
                 </div>
               </div>
             </section>
 
             <AIAnalysisBox
               content={detailData.ai_description || ""}
-              onDislikeClick={() => setIsModalOpen(true)}
+              itemcode={selectedProductId ?? ""}
               isRanking={false}
             />
-            <TrendIndexBox isEntered={true} />
+            <TrendIndexBox itemCode={selectedProductId ?? ""} />
             <div className="h-[1px] w-full bg-[#E4E4E4] my-5" />
             <div className="flex flex-col gap-3">
               <span className="font-semibold text-[#56585A]">
@@ -288,11 +283,6 @@ export default function ProductDetailContent({ product }: Props) {
                 ))}
               </div>
             </div>
-
-            <FeedbackModal
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-            />
           </>
         )
       )}

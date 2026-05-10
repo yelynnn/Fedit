@@ -4,19 +4,53 @@ import BrandFilterModal from "../filter/BrandFilterModal";
 import BrandTab from "../filter/BrandTab";
 import { useState } from "react";
 
+// 사이드바와 동일한 설정 (이 설정은 별도 파일로 분리해서 공통으로 쓰는 것이 가장 좋습니다)
+const TABS_CONFIG = [
+  {
+    label: "대시보드",
+    activeIcon: "material-symbols:dashboard-rounded",
+    inactiveIcon: "material-symbols:dashboard-outline-rounded",
+  },
+  {
+    label: "패션쇼 분석",
+    activeIcon: "ph:dress-fill",
+    inactiveIcon: "ph:dress",
+  },
+  {
+    label: "상품 분석",
+    activeIcon: "fluent:tag-32-filled",
+    inactiveIcon: "fluent:tag-28-regular",
+  },
+  {
+    label: "색상 분석",
+    activeIcon: "zondicons:color-palette",
+    inactiveIcon: "qlementine-icons:color-swatch-16",
+  },
+  {
+    label: "유형 분석",
+    activeIcon: "ph:chart-pie-slice-fill",
+    inactiveIcon: "ph:chart-pie-slice",
+  },
+];
+
 export default function NewHeader() {
   const [isBrandOpen, setBrandOpen] = useState(false);
   const { selectedTab } = useFilterStore((s) => s);
   const brandList = useFilterStore((s) => s.brandList);
 
+  // 1. 현재 선택된 탭의 아이콘 정보를 찾습니다.
+  // 찾지 못할 경우(초기값 등)를 대비해 대시보드 아이콘을 기본값으로 설정합니다.
+  const currentTabConfig =
+    TABS_CONFIG.find((tab) => tab.label === selectedTab) || TABS_CONFIG[0];
+
   return (
-    /* 헤더 자체에 group/header를 주어 헤더 하단 어디든 기준을 잡을 수 있게 합니다. */
     <header className="relative flex items-center justify-between w-full h-15 px-16 bg-white border-b border-[#ECEEF0] sticky top-0 z-20">
       {/* 좌측 타이틀 영역 */}
       <div className="flex items-center gap-2">
         <div className="rounded-lg p-1 bg-[#F2F9E9] text-[#0B0E0F] border border-[#E8FFD8]">
+          {/* 2. 고정된 아이콘 대신 currentTabConfig.activeIcon 사용 */}
           <Icon
-            icon="material-symbols:dashboard-rounded"
+            icon={currentTabConfig.activeIcon}
             className="w-5 h-5 text-[#3D3F41]"
           />
         </div>

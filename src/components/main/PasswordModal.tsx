@@ -50,6 +50,7 @@ export default function PasswordModal({ isOpen, onClose }: Props) {
       await PostLogin(password);
 
       onClose();
+      window.location.reload();
 
       setPassword("");
       setTouched(false);

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-function FilterSideBar({ onOpenFilter }: { onOpenFilter?: () => void }) {
+function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void }) {
   const { resetFilter } = useFilterStore();
   const data = useFilteredData();
 
@@ -64,13 +64,13 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: () => void }) {
           onOpen={onOpenFilter}
         />
         <NewFilterOption
-          filterName="소재"
-          filterList={[]}
+          filterName="패턴"
+          filterList={data.selectedPatterns}
           onOpen={onOpenFilter}
         />
         <NewFilterOption
-          filterName="패턴"
-          filterList={data.selectedPatterns}
+          filterName="무드"
+          filterList={[]}
           onOpen={onOpenFilter}
         />
       </div>

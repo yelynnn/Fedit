@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import FilterTabs from "./FilterModalTab";
 import FilterCheckList from "./FilterCheckList";
 import { useFilterStore } from "@/stores/FilterStore";
 
-const TAB_LABELS = ["성별", "유형", "색상", "디테일", "패턴"];
+const TAB_LABELS = ["성별", "유형", "색상", "디테일", "패턴", "무드"];
 
-type Props = { onClose: () => void };
+type Props = { onClose: () => void; initialTab?: string };
 
-export default function SideFilterModal({ onClose }: Props) {
-  const [active, setActive] = useState<string>("성별");
+export default function SideFilterModal({ onClose, initialTab }: Props) {
+  const [active, setActive] = useState<string>(initialTab ?? "성별");
+
+  useEffect(() => {
+    if (initialTab) setActive(initialTab);
+  }, [initialTab]);
   const { resetFilter } = useFilterStore((state) => state);
 
   return (
@@ -29,6 +33,7 @@ export default function SideFilterModal({ onClose }: Props) {
         {active === "색상" && <FilterCheckList title="색상" />}
         {active === "디테일" && <FilterCheckList title="디테일" />}
         {active === "패턴" && <FilterCheckList title="패턴" />}
+        {active === "무드" && <FilterCheckList title="무드" />}
       </div>
 
       <div className="flex flex-col gap-3 p-4">

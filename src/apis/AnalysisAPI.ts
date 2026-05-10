@@ -3,9 +3,7 @@ import { axiosInstance } from "./AxiosInstance";
 
 const GetDetailInfo = async ({ itemcode }: { itemcode: string }) => {
   try {
-    const response = await axiosInstance.get(
-      `/api/v1/color-analysis/detailInfo/${itemcode}`,
-    );
+    const response = await axiosInstance.get(`/detail/${itemcode}`);
     console.log("상품 상세 정보 조회 성공");
     return response.data;
   } catch (error) {
@@ -134,6 +132,48 @@ const GetProductList = async (
   return res.data;
 };
 
+const GetPatternList = async (): Promise<string[]> => {
+  try {
+    const res = await axiosInstance.get("/menu/pattern");
+    return Array.isArray(res.data?.patterns) ? res.data.patterns : [];
+  } catch (error) {
+    console.error("패턴 목록 가져오기 실패", error);
+    return [];
+  }
+};
+
+const GetDetailList = async (): Promise<string[]> => {
+  try {
+    const res = await axiosInstance.get("/menu/detail");
+    return Array.isArray(res.data?.details) ? res.data.details : [];
+  } catch (error) {
+    console.error("디테일 목록 가져오기 실패", error);
+    return [];
+  }
+};
+
+type JudgePayload = {
+  itemcode: string;
+  column: string;
+  judge: 1 | -1;
+  feedback: string[] | null;
+};
+
+const PostJudge = async (payload: JudgePayload): Promise<void> => {
+  try {
+    await axiosInstance.post("/judge", payload);
+  } catch (error: any) {
+    if (error?.response) {
+      const e = new Error(
+        error.response?.data?.message || "요청 실패",
+      ) as Error & { status?: number };
+      e.status = error.response.status;
+      throw e;
+    }
+    throw error;
+  }
+};
+
 export {
   GetDetailInfo,
   GetColorGraph,
@@ -142,4 +182,7 @@ export {
   GetProductList,
   GetBrandList,
   GetRelatedItemInfo,
+  PostJudge,
+  GetPatternList,
+  GetDetailList,
 };

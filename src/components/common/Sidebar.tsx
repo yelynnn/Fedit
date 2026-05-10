@@ -3,11 +3,44 @@ import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
 import feditLogo from "@/assets/logo/feditLogo.svg";
 
-const TABS = ["대시보드", "패션쇼 분석", "상품 분석", "색상 분석", "유형 분석"];
+const TABS_CONFIG = [
+  {
+    label: "대시보드",
+    activeIcon: "material-symbols:dashboard-rounded",
+    inactiveIcon: "material-symbols:dashboard-outline-rounded",
+  },
+  {
+    label: "패션쇼 분석",
+    activeIcon: "ph:dress-fill",
+    inactiveIcon: "ph:dress",
+  },
+  {
+    label: "상품 분석",
+    activeIcon: "fluent:tag-32-filled",
+    inactiveIcon: "fluent:tag-28-regular",
+  },
+  {
+    label: "색상 분석",
+    activeIcon: "zondicons:color-palette",
+    inactiveIcon: "qlementine-icons:color-swatch-16",
+  },
+  {
+    label: "유형 분석",
+    activeIcon: "ph:chart-pie-slice-fill",
+    inactiveIcon: "ph:chart-pie-slice",
+  },
+];
 
 export default function Sidebar() {
   const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(
+    () => localStorage.getItem("sidebar-collapsed") === "true",
+  );
+
+  const toggleCollapsed = (value: boolean) => {
+    setIsCollapsed(value);
+    localStorage.setItem("sidebar-collapsed", String(value));
+  };
 
   return (
     <aside
@@ -21,7 +54,7 @@ export default function Sidebar() {
           <>
             <img src={feditLogo} alt="fedit logo" className="h-7" />
             <button
-              onClick={() => setIsCollapsed(true)}
+              onClick={() => toggleCollapsed(true)}
               className="p-1 transition-colors rounded hover:bg-gray-100"
             >
               <Icon
@@ -33,16 +66,13 @@ export default function Sidebar() {
         ) : (
           <div
             className="relative flex items-center justify-center flex-shrink-0 w-10 h-10 overflow-hidden bg-black rounded-md cursor-pointer group transition-all duration-200 hover:bg-[#F6F8FA]"
-            onClick={() => setIsCollapsed(false)}
+            onClick={() => toggleCollapsed(false)}
           >
-            {/* 기본 로고 이미지 (호버 시 투명해짐) */}
             <img
               src="/feditIcon.png"
               alt="Fedit Icon"
               className="object-contain w-full h-full transition-opacity duration-200 rounded-md group-hover:opacity-0"
             />
-
-            {/* 호버 시 나타나는 오른쪽 화살표 아이콘 */}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20 backdrop-blur-[2px]">
               <Icon
                 icon="lucide:chevrons-right"
@@ -52,13 +82,15 @@ export default function Sidebar() {
           </div>
         )}
       </div>
+
       <nav className={`flex-1 px-2 space-y-2 ${isCollapsed ? "mt-2" : "mt-4"}`}>
-        {TABS.map((label) => {
-          const active = selectedTab === label;
+        {/* 2. TABS_CONFIG를 기반으로 맵핑 */}
+        {TABS_CONFIG.map((tab) => {
+          const active = selectedTab === tab.label;
           return (
             <button
-              key={label}
-              onClick={() => setSelectedTab(label)}
+              key={tab.label}
+              onClick={() => setSelectedTab(tab.label)}
               className={`w-full flex transition-all duration-200 
           ${
             isCollapsed
@@ -77,31 +109,26 @@ export default function Sidebar() {
     }
   `}
               >
+                {/* 3. 현재 탭의 상태(active)에 따라 아이콘 변경 */}
                 <Icon
-                  icon={
-                    active
-                      ? "material-symbols:dashboard-rounded"
-                      : "material-symbols:dashboard-outline-rounded"
-                  }
+                  icon={active ? tab.activeIcon : tab.inactiveIcon}
                   className={`${isCollapsed ? "w-7 h-7" : "w-6 h-6"}`}
                 />
               </div>
 
-              {/* 텍스트 영역 */}
               <span
                 className={`font-semibold tracking-tighter whitespace-nowrap
           ${isCollapsed ? "text-[11px] leading-tight mt-1" : "text-base"}
           ${active && isCollapsed ? "text-[#0B0E0F]" : ""}
         `}
               >
-                {label}
+                {tab.label}
               </span>
             </button>
           );
         })}
       </nav>
 
-      {/* 하단 설정 */}
       <div className="p-2 border-t border-[#ECEEF0]">
         <button
           className={`w-full flex items-center rounded-xl text-[#6F7173]

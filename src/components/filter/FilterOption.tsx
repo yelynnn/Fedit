@@ -1,7 +1,8 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFilterStore } from "../../stores/FilterStore";
 import type { FilterOptionProps } from "@/types/Filter";
+import { GetPatternList, GetDetailList } from "@/apis/AnalysisAPI";
 
 function FilterOption({
   title,
@@ -17,6 +18,12 @@ function FilterOption({
   const isTypeCategory = title === "유형";
   const isBrandCategory = title === "브랜드";
   const [openCategory, setOpenCategory] = useState(false);
+  const [fetchedList, setFetchedList] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (title === "패턴") GetPatternList().then(setFetchedList);
+    if (title === "디테일") GetDetailList().then(setFetchedList);
+  }, [title]);
 
   const isAllSubChecked = (subs: string[]) =>
     subs.every((sub) => filterList.includes(sub));
@@ -74,7 +81,11 @@ function FilterOption({
                             ? "border-[#95A4FC] scale-110"
                             : "border-gray-300"
                         }`}
-                        style={{ backgroundColor: color.value }}
+                        style={
+                          color.value === "rainbow"
+                            ? { background: "linear-gradient(180deg, #FF0000, #FF7F00, #FFFF00, #00CC44, #2563EB, #8B00FF)" }
+                            : { backgroundColor: color.value }
+                        }
                         title={color.label}
                       />
                     </label>
@@ -153,9 +164,9 @@ function FilterOption({
             </ul>
           ) : (
             <ul className="ml-6 mb-4 mt-2 flex flex-col gap-2 text-sm text-[#4B4B4B]">
-              {categoryList?.map((category) => {
+              {(title === "패턴" || title === "디테일" ? fetchedList : categoryList ?? []).map((category) => {
                 const isChecked = filterList.includes(category);
-                const isLocked = title === "패턴" || title === "디테일";
+                const isLocked = title === "무드";
 
                 return (
                   <li key={category} className="flex items-center gap-2">
