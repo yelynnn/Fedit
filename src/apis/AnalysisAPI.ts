@@ -116,7 +116,6 @@ const GetProductList = async (
 
   const res = await axiosInstance.get("/products", {
     params,
-    // [수정] 배열 파라미터에서 []를 제거하고 동일한 키를 반복하도록 설정
     paramsSerializer: (params) => {
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {

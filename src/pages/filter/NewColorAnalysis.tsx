@@ -17,33 +17,33 @@ import TrendColorBox, {
 
 const MOCK_GRAPHS = [
   {
-    brand: "CHANEL",
+    brand: "전체",
     data: [
-      { name: "블랙", size: 50, increase: "10%", fill: "#1A1A1A" },
-      { name: "화이트", size: 30, increase: "5%", fill: "#F5F5F5" },
-      { name: "골드", size: 20, increase: "12%", fill: "#FFD700" },
-      { name: "화이트", size: 30, increase: "5%", fill: "#F5F5F5" },
-      { name: "골드", size: 20, increase: "12%", fill: "#FFD700" },
+      { name: "블랙", size: 28, increase: "6%", fill: "#1A1A1A" },
+      { name: "화이트", size: 18, increase: "4%", fill: "#F5F5F5" },
+      { name: "그레이", size: 17, increase: "8%", fill: "#9E9E9E" },
+      { name: "네이비", size: 14, increase: "5%", fill: "#001A5C" },
+      { name: "베이지", size: 13, increase: "3%", fill: "#E8D5B7" },
     ],
   },
   {
-    brand: "DIOR",
+    brand: "샤넬",
     data: [
-      { name: "블루", size: 45, increase: "15%", fill: "#007BFF" },
-      { name: "핑크", size: 35, increase: "8%", fill: "#FFC0CB" },
-      { name: "그레이", size: 20, increase: "3%", fill: "#A9A9A9" },
-      { name: "화이트", size: 30, increase: "5%", fill: "#F5F5F5" },
-      { name: "골드", size: 20, increase: "12%", fill: "#FFD700" },
+      { name: "블랙", size: 38, increase: "8%", fill: "#1A1A1A" },
+      { name: "아이보리", size: 20, increase: "6%", fill: "#FFF8E7" },
+      { name: "골드", size: 16, increase: "12%", fill: "#C5A028" },
+      { name: "버건디", size: 14, increase: "7%", fill: "#800020" },
+      { name: "더스티 핑크", size: 12, increase: "9%", fill: "#DCAE96" },
     ],
   },
   {
-    brand: "GUCCI",
+    brand: "1989스탠다드",
     data: [
-      { name: "그린", size: 40, increase: "20%", fill: "#28A745" },
-      { name: "레드", size: 40, increase: "18%", fill: "#DC3545" },
-      { name: "브라운", size: 20, increase: "5%", fill: "#8B4513" },
-      { name: "화이트", size: 30, increase: "5%", fill: "#F5F5F5" },
-      { name: "골드", size: 20, increase: "12%", fill: "#FFD700" },
+      { name: "차콜", size: 26, increase: "9%", fill: "#36454F" },
+      { name: "스틸 블루", size: 21, increase: "7%", fill: "#4682B4" },
+      { name: "카키", size: 19, increase: "15%", fill: "#6B6B4E" },
+      { name: "브라운", size: 18, increase: "8%", fill: "#795548" },
+      { name: "크림", size: 16, increase: "5%", fill: "#F3E5AB" },
     ],
   },
 ];
@@ -94,17 +94,20 @@ const MOCK_TREND_COLORS: TrendColorData[] = [
   },
   {
     rank: 4,
-    colorName: "블랙",
-    colorHex: "#1A1A1A",
-    score: 95,
-    growthRate: 5,
-    competitorCount: 10,
-    averagePercent: 40,
-    totalItemCount: 150,
-    isTotal: true,
+    colorName: "버터 옐로우",
+    colorHex: "#F6E6A8",
+    score: 72,
+    growthRate: 18,
+    competitorCount: 3,
+    averagePercent: 6,
+    totalItemCount: 24,
+    isTotal: false,
     brands: [
-      { brandName: "Chanel", percent: 40, itemCount: 150 },
-      { brandName: "Saint Laurent", percent: 40, itemCount: 150 },
+      { brandName: "Jacquemus", percent: 7, itemCount: 10 },
+
+      { brandName: "Miu Miu", percent: 6, itemCount: 8 },
+
+      { brandName: "Lemaire", percent: 5, itemCount: 6 },
     ],
   },
 ];

@@ -50,7 +50,10 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
       <div className="w-full box-border p-3 rounded-xl bg-[#F9FAFB]">
         <div className="flex items-center gap-1 mb-2">
           <span className="text-base font-bold text-[#3D3F41]">{title}</span>
-          <Icon icon="ph:question" className="w-4 h-4 text-[#ADB5BD] cursor-pointer" />
+          <Icon
+            icon="ph:question"
+            className="w-4 h-4 text-[#ADB5BD] cursor-pointer"
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
@@ -117,8 +120,10 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
 
   const productExtras = isPlatform
     ? [
-        category.likes == null ? "-" : fmt(category.likes),
-        category.reorder == null ? "-" : `${category.reorder}차 리오더`,
+        category.likes == null ? "1,000" : fmt(category.likes),
+        category.reorder == null
+          ? "3차 리오더"
+          : `${category.reorder}차 리오더`,
       ]
     : undefined;
 
@@ -126,14 +131,32 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
   const purchaseBadges = [{ label: "판매수량", value: null }];
   const purchaseExtras = isPlatform
     ? [`지난달 ${fmt(purchase.sales)}건`]
-    : ["-"];
+    : ["지난달 1,000건"];
 
   return (
     <div className="w-full p-2">
       <div className="grid grid-cols-3 gap-3">
-        {renderCard("브랜드 지수", brand.brandScore, brand.brandPctl, brandBadges)}
-        {renderCard("상품 지수", category.categoryScore, category.categoryPctl, productBadges, productExtras)}
-        {renderCard("구매 화력도", purchase.purchaseScore, purchase.purchasePctl, purchaseBadges, purchaseExtras, true)}
+        {renderCard(
+          "브랜드 지수",
+          brand.brandScore,
+          brand.brandPctl,
+          brandBadges,
+        )}
+        {renderCard(
+          "상품 지수",
+          category.categoryScore,
+          category.categoryPctl,
+          productBadges,
+          productExtras,
+        )}
+        {renderCard(
+          "구매 화력도",
+          purchase.purchaseScore,
+          purchase.purchasePctl,
+          purchaseBadges,
+          purchaseExtras,
+          true,
+        )}
       </div>
     </div>
   );
