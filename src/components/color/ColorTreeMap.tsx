@@ -21,7 +21,7 @@ const CustomContent = (props: any) => {
         height={height}
         style={{
           fill: fill || "#eee",
-          fillOpacity: 0.3,
+          fillOpacity: 0.4,
           stroke: "none",
         }}
       />
