@@ -1,151 +1,103 @@
-// import { useProductStore } from "@/stores/ProductStore";
-// import { useEffect, useState } from "react";
-// import { GetColorGraph } from "@/apis/AnalysisAPI";
-// import { useFilterStore } from "@/stores/FilterStore";
-// import { isAxiosError } from "axios";
-import PasswordModal from "@/components/main/PasswordModal";
+import { useEffect, useState } from "react";
+
+
 
 import ColorTreeMap from "@/components/color/ColorTreeMap";
-import ColorBar from "@/components/color/ColorBar"; // 새로 만든 컴포넌트 추가
+import ColorBar from "@/components/color/ColorBar";
 import { Icon } from "@iconify/react";
 import SubTitleBox from "@/components/main/SubTitleBox";
-import { useState } from "react";
 import BrandCompareModal from "@/components/filter/BrandCompareModal";
 import TrendColorBox, {
   type TrendColorData,
 } from "@/components/color/TrendColorBox";
+import { useFilterStore } from "@/stores/FilterStore";
+import { GetColorGraph, GetTrendColor } from "@/apis/ColorAPI";
+import type { BrandColorData, TrendColorItem } from "@/apis/ColorAPI";
 
-const MOCK_GRAPHS = [
-  {
-    brand: "전체",
-    data: [
-      { name: "블랙", size: 28, increase: "6%", fill: "#1A1A1A" },
-      { name: "화이트", size: 18, increase: "4%", fill: "#F5F5F5" },
-      { name: "그레이", size: 17, increase: "8%", fill: "#9E9E9E" },
-      { name: "네이비", size: 14, increase: "5%", fill: "#001A5C" },
-      { name: "베이지", size: 13, increase: "3%", fill: "#E8D5B7" },
-    ],
-  },
-  {
-    brand: "샤넬",
-    data: [
-      { name: "블랙", size: 38, increase: "8%", fill: "#1A1A1A" },
-      { name: "아이보리", size: 20, increase: "6%", fill: "#FFF8E7" },
-      { name: "골드", size: 16, increase: "12%", fill: "#C5A028" },
-      { name: "버건디", size: 14, increase: "7%", fill: "#800020" },
-      { name: "더스티 핑크", size: 12, increase: "9%", fill: "#DCAE96" },
-    ],
-  },
-  {
-    brand: "1989스탠다드",
-    data: [
-      { name: "차콜", size: 26, increase: "9%", fill: "#36454F" },
-      { name: "스틸 블루", size: 21, increase: "7%", fill: "#4682B4" },
-      { name: "카키", size: 19, increase: "15%", fill: "#6B6B4E" },
-      { name: "브라운", size: 18, increase: "8%", fill: "#795548" },
-      { name: "크림", size: 16, increase: "5%", fill: "#F3E5AB" },
-    ],
-  },
-];
+const toTrendColorData = (item: TrendColorItem): TrendColorData => ({
+  rank: item.rank,
+  colorName: item.color_name,
+  colorHex: item.color_hex,
+  score: item.score,
+  growthRate: item.growth_rate,
+  competitorCount: item.competitor_count,
+  averagePercent: item.average_percent,
+  totalItemCount: item.total_item_count,
+  isTotal: item.is_total,
+  brands: item.brands.map((b) => ({
+    brandName: b.brand_name,
+    percent: b.percent,
+    itemCount: b.item_count,
+  })),
+});
 
-const MOCK_TREND_COLORS: TrendColorData[] = [
-  {
-    rank: 1,
-    colorName: "세이지 그린",
-    colorHex: "#B2AC88",
-    score: 88,
-    growthRate: 15,
-    competitorCount: 2,
-    averagePercent: 4,
-    totalItemCount: 33,
-    isTotal: false,
-    brands: [
-      { brandName: "A.P.C.", percent: 4, itemCount: 33 },
-      { brandName: "Maison Kitsuné", percent: 4, itemCount: 33 },
-      { brandName: "AMI", percent: 4, itemCount: 33 },
-    ],
-  },
-  {
-    rank: 2,
-    colorName: "딥 네이비",
-    colorHex: "#000080",
-    score: 82,
-    growthRate: 10,
-    competitorCount: 4,
-    averagePercent: 12,
-    totalItemCount: 45,
-    isTotal: false,
-    brands: [
-      { brandName: "Polo Ralph Lauren", percent: 12, itemCount: 45 },
-      { brandName: "Lacoste", percent: 12, itemCount: 45 },
-    ],
-  },
-  {
-    rank: 3,
-    colorName: "더스티 핑크",
-    colorHex: "#DCAE96",
-    score: 75,
-    growthRate: 20,
-    competitorCount: 3,
-    averagePercent: 5,
-    totalItemCount: 28,
-    isTotal: false,
-    brands: [{ brandName: "Cos", percent: 5, itemCount: 28 }],
-  },
-  {
-    rank: 4,
-    colorName: "버터 옐로우",
-    colorHex: "#F6E6A8",
-    score: 72,
-    growthRate: 18,
-    competitorCount: 3,
-    averagePercent: 6,
-    totalItemCount: 24,
-    isTotal: false,
-    brands: [
-      { brandName: "Jacquemus", percent: 7, itemCount: 10 },
+type TreeMapEntry = {
+  brand: string;
+  data: { name: string; size: number; fill: string }[];
+};
 
-      { brandName: "Miu Miu", percent: 6, itemCount: 8 },
-
-      { brandName: "Lemaire", percent: 5, itemCount: 6 },
-    ],
-  },
-];
+const toTreeMapEntry = (brandData: BrandColorData): TreeMapEntry => ({
+  brand: brandData.brand === "ALL" ? "전체" : brandData.brand,
+  data: brandData.colors.map((c) => ({
+    name: c.name,
+    size: c.value,
+    fill: c.color,
+  })),
+});
 
 function NewColorAnalysis() {
-  // const { brandList } = useFilterStore.getState();
-  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
+  const { brandList } = useFilterStore();
   const [isCompareModalOpen, setCompareModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const [displayTreeMapBrands, setDisplayTreeMapBrands] = useState([
-    MOCK_GRAPHS[0],
-  ]);
+  const [allBrandData, setAllBrandData] = useState<TreeMapEntry[]>([]);
+  const [displayTreeMapBrands, setDisplayTreeMapBrands] = useState<
+    TreeMapEntry[]
+  >([]);
+  const [trendColors, setTrendColors] = useState<TrendColorData[]>([]);
 
-  // useEffect(() => {
-  //   const load = async () => {
-  //     try {
-  //       setLoading(true);
-  //       const res = await GetColorGraph();
-  //       setBlocks(Array.isArray(res?.brands) ? res.brands : []);
-  //     } catch (e) {
-  //       if (isAxiosError(e) && e.response?.status === 401) {
-  //         setPasswordModalOpen(true);
-  //         return;
-  //       }
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //   load();
-  // }, [brandList]);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await GetColorGraph();
+        const mapped = Array.isArray(res?.brands)
+          ? res.brands.map(toTreeMapEntry)
+          : [];
+        setAllBrandData(mapped);
+
+        const initial = mapped.find((b) => b.brand === "전체") ?? mapped[0];
+        if (initial) setDisplayTreeMapBrands([initial]);
+      } catch {
+        // 색상 그래프 로드 실패 시 빈 배열 유지
+      }
+    };
+    load();
+  }, [brandList]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await GetTrendColor();
+        setTrendColors(
+          Array.isArray(res?.trend_color)
+            ? res.trend_color.map(toTrendColorData)
+            : [],
+        );
+      } catch {
+        // 트렌드 색상 로드 실패 시 빈 배열 유지
+      }
+    };
+    load();
+  }, [brandList]);
 
   const handleCompareSubmit = (brands: string[]) => {
     brands.forEach((brandName) => {
       if (displayTreeMapBrands.length >= 3) return;
       if (displayTreeMapBrands.some((d) => d.brand === brandName)) return;
-      const mock = MOCK_GRAPHS.find((m) => m.brand === brandName);
-      const entry = mock ?? { brand: brandName, data: MOCK_GRAPHS[0].data };
+      const entry = allBrandData.find((b) => b.brand === brandName) ?? {
+        brand: brandName,
+        data: [],
+      };
       setDisplayTreeMapBrands((prev) => [...prev, entry]);
     });
   };
@@ -202,27 +154,21 @@ function NewColorAnalysis() {
           </button>
         </div>
       </div>
-      <PasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-      />
       {/* 그래프 영역: viewMode에 따라 TreeMap 또는 ColorBar를 보여줌 */}
-      <div
-        className={`flex w-full gap-5 items-start  transition-all duration-500`}
-      >
+      <div className="flex w-full gap-5 items-start transition-all duration-500">
         {displayTreeMapBrands.map((block) => (
           <div key={block.brand} className="flex-1 min-w-0">
             {viewMode === "grid" ? (
               <ColorTreeMap
                 title={block.brand}
                 data={block.data}
-                onClose={() => handleRemoveTreeMap(block.brand)}
+                onClose={block.brand !== "전체" ? () => handleRemoveTreeMap(block.brand) : undefined}
               />
             ) : (
               <ColorBar
                 title={block.brand}
                 data={block.data}
-                onClose={() => handleRemoveTreeMap(block.brand)}
+                onClose={block.brand !== "전체" ? () => handleRemoveTreeMap(block.brand) : undefined}
               />
             )}
           </div>
@@ -233,7 +179,7 @@ function NewColorAnalysis() {
           <button
             onClick={() => setCompareModalOpen(true)}
             className={`
-              flex flex-col items-center justify-center h-91 
+              flex flex-col items-center justify-center h-91
               bg-[#F8F9FA] border-2 border-dashed border-[#E9ECEF] rounded-xl
               hover:bg-[#F1F3F5] transition-all group shrink-0
               ${displayTreeMapBrands.length === 1 ? "w-70" : "w-30"}
@@ -249,7 +195,7 @@ function NewColorAnalysis() {
                   icon="lucide:plus"
                   width="16"
                   height="16"
-                  className="stroke-[3]" // 두께 유지
+                  className="stroke-[3]"
                 />
               </div>
             </div>
@@ -265,53 +211,10 @@ function NewColorAnalysis() {
         모든 경쟁사가 소량으로 동시 출시 중인 유행 색상입니다.
       </p>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {MOCK_TREND_COLORS.map((item) => (
+        {trendColors.map((item) => (
           <TrendColorBox key={item.rank} data={item} />
         ))}
       </div>
-      {/* 하단 리스트 영역 */}
-      {/* <div
-        className={
-          isDetailOpen
-            ? "mt-8 grid grid-cols-[450px_1fr] gap-6 items-start h-[80vh]"
-            : "mt-8 grid gap-6"
-        }
-        style={
-          !isDetailOpen
-            ? {
-                gridTemplateColumns:
-                  "repeat(auto-fill, minmax(430px, max-content))",
-              }
-            : undefined
-        }
-      >
-        <div
-          className={
-            isDetailOpen
-              ? "flex flex-col gap-6 h-full overflow-y-auto min-h-0 hide-scrollbar pr-1"
-              : "contents"
-          }
-        >
-          {loading && (
-            <div className="px-1 text-sm text-gray-500">불러오는 중…</div>
-          )}
-          {!loading && blocks.length === 0 && (
-            <div className="px-1 text-sm text-gray-500">
-              표시할 데이터가 없어요.
-            </div>
-          )}
-          {!loading &&
-            blocks
-              .filter((block) => block.brand !== "전체")
-              .map((block) => <NewColorBox key={block.brand} block={block} />)}
-        </div>
-
-        {isDetailOpen && (
-          <aside className="min-w-0 px-5 py-8 bg-white rounded-xl shadow-[0_0_8px_0_rgba(0,0,0,0.15)] h-full overflow-y-auto min-h-0 hide-scrollbar">
-            <ProductDetailContent />
-          </aside>
-        )}
-      </div> */}
       <BrandCompareModal
         isOpen={isCompareModalOpen}
         onClose={() => setCompareModalOpen(false)}

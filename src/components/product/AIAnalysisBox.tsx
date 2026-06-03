@@ -7,12 +7,14 @@ interface AIAnalysisBoxProps {
   content: string;
   itemcode: string;
   isRanking: boolean;
+  onDetailClick?: () => void;
 }
 
 export default function AIAnalysisBox({
   content,
   itemcode,
   isRanking,
+  onDetailClick,
 }: AIAnalysisBoxProps) {
   const [feedback, setFeedback] = useState<"none" | "like" | "dislike">("none");
   const [isExpanded, setIsExpanded] = useState(false);
@@ -68,7 +70,10 @@ export default function AIAnalysisBox({
           AI 개요 <Icon icon="ph:question" className="w-4 h-4 text-gray-400" />
         </div>
         {isRanking && (
-          <button className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-black">
+          <button
+            onClick={onDetailClick}
+            className="flex items-center gap-1 text-sm font-semibold text-gray-700 hover:text-black"
+          >
             상품 상세 보기 <Icon icon="ph:caret-right" />
           </button>
         )}

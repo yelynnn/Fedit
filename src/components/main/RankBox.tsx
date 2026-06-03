@@ -6,6 +6,7 @@ import AIAnalysisBox from "../product/AIAnalysisBox";
 import WeekModal from "./modal/WeekModal";
 import { GetDashboardRanking, GetRankingItemDetail } from "@/apis/DashBoardAPI";
 import type { RankingProduct, RankingItemDetailResponse } from "@/types/Main";
+import { useProductStore } from "@/stores/ProductStore";
 
 const PLATFORMS = ["무신사", "29CM", "W컨셉", "플랫폼 통합"];
 const CATEGORIES = ["상의", "아우터", "바지", "원피스/스커트"];
@@ -23,6 +24,7 @@ const toApiDate = (date: dayjs.Dayjs) => {
 };
 
 export default function RankBox() {
+  const { setModalProductId } = useProductStore((s) => s);
   const [isWeekModalOpen, setIsWeekModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedPlatform, setSelectedPlatform] = useState<string>("무신사");
@@ -236,6 +238,10 @@ export default function RankBox() {
               rankingList.find((item) => item.rank === activeRank)?.itemcode ?? ""
             }
             isRanking={true}
+            onDetailClick={() => {
+              const itemcode = rankingList.find((item) => item.rank === activeRank)?.itemcode;
+              if (itemcode) setModalProductId(itemcode);
+            }}
           />
 
           <div>

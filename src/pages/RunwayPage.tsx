@@ -4,8 +4,8 @@ import RunwayContainer from "@/components/runway/RunwayContainer";
 import RunwayBox from "@/components/runway/RunwayBox";
 import { Icon } from "@iconify/react";
 import { GetFashionShow } from "@/apis/RunwayAPI";
-import { isAxiosError } from "axios";
-import PasswordModal from "@/components/main/PasswordModal";
+
+
 
 const SEASONS = [
   { label: "2026 Fall/Winter", value: "2026FW" },
@@ -21,7 +21,6 @@ function RunwayPage() {
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,12 +53,8 @@ function RunwayPage() {
             description: b.insight,
           }))
         );
-      } catch (err) {
-        if (isAxiosError(err) && err.response?.status === 401) {
-          setPasswordModalOpen(true);
-        } else {
-          setError("데이터를 불러오는 데 실패했습니다.");
-        }
+      } catch {
+        setError("데이터를 불러오는 데 실패했습니다.");
       } finally {
         setLoading(false);
       }
@@ -146,10 +141,6 @@ function RunwayPage() {
           )}
         </>
       )}
-      <PasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-      />
     </div>
   );
 }

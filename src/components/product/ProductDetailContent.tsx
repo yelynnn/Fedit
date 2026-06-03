@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useProductStore } from "@/stores/ProductStore";
-import { GetDetailInfo, GetRelatedItemInfo } from "@/apis/AnalysisAPI";
+import { GetDetailInfo, GetProductByItemCode, GetRelatedItemInfo } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
 import DetailItem from "./DetailItem";
 import defaultImg from "@/assets/logo/defaultImg.svg";
@@ -23,31 +23,35 @@ function formatPrice(price?: string | number | null) {
 }
 
 type RelatedItem = { itemcode?: string; product_image_url?: string };
-type Props = { product?: ApiDetail | null };
+type Props = {
+  product?: ApiDetail | null;
+  itemcodeOverride?: string;
+  onClose?: () => void;
+  onItemClick?: (id: string) => void;
+};
 
-export default function ProductDetailContent({ product }: Props = {}) {
+export default function ProductDetailContent({ product, itemcodeOverride, onClose, onItemClick }: Props = {}) {
   const { setSelectedProductId, selectedProductId } = useProductStore((s) => s);
+  const effectiveId = itemcodeOverride ?? selectedProductId;
   const [detailData, setDetailData] = useState<ApiDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [related, setRelated] = useState<RelatedItem[]>([]);
 
   useEffect(() => {
-    if (!selectedProductId) return;
+    if (!effectiveId) return;
 
-    // 목록에서 넘어온 데이터가 있으면 그대로 사용
-    if (product && product.itemcode === selectedProductId) {
+    if (product && product.itemcode === effectiveId) {
       setDetailData(product);
       return;
     }
 
-    // 없으면 /detail 호출 (대시보드, 색상분석 등)
     let canceled = false;
     (async () => {
       try {
         setLoading(true);
-        const res: ApiDetail = await GetDetailInfo({
-          itemcode: selectedProductId,
-        });
+        const res: ApiDetail = itemcodeOverride
+          ? await GetProductByItemCode(effectiveId)
+          : await GetDetailInfo({ itemcode: effectiveId });
         if (!canceled) setDetailData(res ?? null);
       } catch {
         if (!canceled) setDetailData(null);
@@ -58,14 +62,14 @@ export default function ProductDetailContent({ product }: Props = {}) {
     return () => {
       canceled = true;
     };
-  }, [selectedProductId, product]);
+  }, [effectiveId, product, itemcodeOverride]);
 
   useEffect(() => {
-    if (!selectedProductId) return;
+    if (!effectiveId) return;
     let canceled = false;
     (async () => {
       try {
-        const res = await GetRelatedItemInfo({ itemcode: selectedProductId });
+        const res = await GetRelatedItemInfo({ itemcode: effectiveId });
         const items = Array.isArray(res)
           ? res
           : (res as any)?.related_item || [];
@@ -77,7 +81,7 @@ export default function ProductDetailContent({ product }: Props = {}) {
     return () => {
       canceled = true;
     };
-  }, [selectedProductId]);
+  }, [effectiveId]);
 
   const mainCategory = useMemo(
     () => detailData?.categories?.[0]?.main_category ?? "",
@@ -103,7 +107,7 @@ export default function ProductDetailContent({ product }: Props = {}) {
     return p;
   };
 
-  if (!selectedProductId && !detailData) return null;
+  if (!effectiveId && !detailData) return null;
 
   return (
     <div className="relative bg-white rounded-2xl">
@@ -128,7 +132,7 @@ export default function ProductDetailContent({ product }: Props = {}) {
 
                 <div className="absolute flex items-center justify-between top-4 left-4 right-4">
                   <button
-                    onClick={() => setSelectedProductId(null)}
+                    onClick={() => onClose ? onClose() : setSelectedProductId(null)}
                     className="flex items-center justify-center w-8 h-8 transition-colors bg-white rounded-lg shadow-md hover:bg-gray-50"
                   >
                     <Icon
@@ -241,24 +245,24 @@ export default function ProductDetailContent({ product }: Props = {}) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                  {hasValue(detailData.vlm?.color) && <DetailItem title="색상" content={detailData.vlm!.color} itemcode={selectedProductId ?? ""} />}
-                  {hasValue(detailData.vlm?.material) && <DetailItem title="소재" content={detailData.vlm!.material} itemcode={selectedProductId ?? ""} />}
-                  {hasValue(detailData.vlm?.length) && <DetailItem title="기장" content={detailData.vlm!.length} itemcode={selectedProductId ?? ""} />}
-                  {hasValue(detailData.vlm?.sleeve) && <DetailItem title="소매 길이" content={detailData.vlm!.sleeve} itemcode={selectedProductId ?? ""} />}
-                  {hasValue(detailData.vlm?.neckline) && <DetailItem title="넥라인" content={detailData.vlm!.neckline} itemcode={selectedProductId ?? ""} />}
-                  {hasValue(detailData.vlm?.fit) && <DetailItem title="핏" content={detailData.vlm!.fit} itemcode={selectedProductId ?? ""} />}
-                  {hasValue(detailData.vlm?.detail) && <DetailItem title="디테일" content={detailData.vlm!.detail} itemcode={selectedProductId ?? ""} />}
-                  {hasValue(detailData.vlm?.pattern) && <DetailItem title="패턴" content={detailData.vlm!.pattern} itemcode={selectedProductId ?? ""} />}
+                  {hasValue(detailData.vlm?.color) && <DetailItem title="색상" content={detailData.vlm!.color} itemcode={effectiveId ?? ""} />}
+                  {hasValue(detailData.vlm?.material) && <DetailItem title="소재" content={detailData.vlm!.material} itemcode={effectiveId ?? ""} />}
+                  {hasValue(detailData.vlm?.length) && <DetailItem title="기장" content={detailData.vlm!.length} itemcode={effectiveId ?? ""} />}
+                  {hasValue(detailData.vlm?.sleeve) && <DetailItem title="소매 길이" content={detailData.vlm!.sleeve} itemcode={effectiveId ?? ""} />}
+                  {hasValue(detailData.vlm?.neckline) && <DetailItem title="넥라인" content={detailData.vlm!.neckline} itemcode={effectiveId ?? ""} />}
+                  {hasValue(detailData.vlm?.fit) && <DetailItem title="핏" content={detailData.vlm!.fit} itemcode={effectiveId ?? ""} />}
+                  {hasValue(detailData.vlm?.detail) && <DetailItem title="디테일" content={detailData.vlm!.detail} itemcode={effectiveId ?? ""} />}
+                  {hasValue(detailData.vlm?.pattern) && <DetailItem title="패턴" content={detailData.vlm!.pattern} itemcode={effectiveId ?? ""} />}
                 </div>
               </div>
             </section>
 
             <AIAnalysisBox
               content={detailData.ai_description || ""}
-              itemcode={selectedProductId ?? ""}
+              itemcode={effectiveId ?? ""}
               isRanking={false}
             />
-            <TrendIndexBox itemCode={selectedProductId ?? ""} />
+            <TrendIndexBox itemCode={effectiveId ?? ""} />
             <div className="h-[1px] w-full bg-[#E4E4E4] my-5" />
             <div className="flex flex-col gap-3">
               <span className="font-semibold text-[#56585A]">
@@ -271,7 +275,7 @@ export default function ProductDetailContent({ product }: Props = {}) {
                     type="button"
                     className="flex-shrink-0"
                     onClick={() =>
-                      r.itemcode && setSelectedProductId(r.itemcode)
+                      r.itemcode && (onItemClick ? onItemClick(r.itemcode) : setSelectedProductId(r.itemcode))
                     }
                   >
                     <img

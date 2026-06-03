@@ -9,53 +9,92 @@ interface ColorTreeMapProps {
 const CustomContent = (props: any) => {
   const { x, y, width, height, name, size, fill, depth } = props;
 
-  if (depth === 0 || !name || width < 45 || height < 60) return null;
+  if (depth === 0 || !name) return null;
+
+  const clipId = `treemap-clip-${Math.round(x)}-${Math.round(y)}`;
+
+  // 셀 크기에 따라 텍스트 레이아웃 결정
+  const isLarge = width >= 90 && height >= 65;
+  const isMedium = width >= 50 && height >= 42;
+  const isSmall = width >= 28 && height >= 22;
+
+  const pad = 7;
 
   return (
     <g>
-      {/* 1. 배경 사각형 */}
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={x + 1} y={y + 1} width={width - 2} height={height - 2} />
+        </clipPath>
+      </defs>
+
+      {/* 배경 사각형 — 항상 렌더 */}
       <rect
         x={x}
         y={y}
         width={width}
         height={height}
-        style={{
-          fill: fill || "#eee",
-          fillOpacity: 0.4,
-          stroke: "none",
-        }}
+        style={{ fill: fill || "#eee", fillOpacity: 0.4, stroke: "none" }}
       />
 
-      {/* 2. 메인 텍스트 (색상명 % ) - 왼쪽 여백을 조금 줄임 */}
-      <text x={x + 10} y={y + 28} fill="#333" fontSize="14px" fontWeight="700">
-        {`${name} ${size}%`}
-      </text>
+      {/* 텍스트: clipPath로 셀 밖으로 절대 안 넘침 */}
+      <g clipPath={`url(#${clipId})`}>
+        {isLarge && (
+          /* 충분히 크면: 이름 + % 한 줄 */
+          <text
+            x={x + pad}
+            y={y + 24}
+            fill="#333"
+            fontSize="13"
+            fontWeight="700"
+          >
+            {name}
+            <tspan fontSize="12" fontWeight="600">
+              {" "}
+              {size}%
+            </tspan>
+          </text>
+        )}
 
-      {/* 3. 정보 배지 배경: x 여백을 10으로 줄여서 왼쪽으로 더 밀착 */}
-      {/* <rect
-        x={x + 10}
-        y={y + 44}
-        width={92}
-        height={38}
-        rx={8}
-        ry={8}
-        fill="#ffffff"
-        fillOpacity={0.9}
-      />
+        {!isLarge && isMedium && (
+          /* 중간 크기: 이름 / % 두 줄 */
+          <>
+            <text
+              x={x + pad}
+              y={y + 16}
+              fill="#333"
+              fontSize="11"
+              fontWeight="700"
+            >
+              {name}
+            </text>
+            <text
+              x={x + pad}
+              y={y + 30}
+              fill="#555"
+              fontSize="11"
+              fontWeight="600"
+            >
+              {size}%
+            </text>
+          </>
+        )}
 
-      {/* 4. 배지 내부 텍스트: 배경에 맞춰 x 위치 조정 */}
-      {/* <text
-        x={x + 18}
-        y={y + 58}
-        fill="#555"
-        fontSize="10.5px"
-        fontWeight="600"
-      >
-        <tspan x={x + 18} dy="0">
-          전 시즌 대비
-        </tspan>
-        <tspan x={x + 18} dy="15">{`${increase} 증가`}</tspan>
-      </text>  */}
+        {!isMedium && isSmall && (
+          /* 작은 셀: % 숫자만 */
+          <text
+            x={x + 4}
+            y={y + 14}
+            fill="#444"
+            fontSize="9"
+            fontWeight="700"
+          >
+            {size}%
+          </text>
+        )}
+
+        {/* 아주 작은 셀은 색상만 보여줌 (텍스트 없음) */}
+      </g>
     </g>
   );
 };

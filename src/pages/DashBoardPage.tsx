@@ -1,6 +1,6 @@
 import { GetTrendKeyword } from "@/apis/DashBoardAPI";
 import NewMainKeywordBox from "@/components/main/NewMainKeywordBox";
-import PasswordModal from "@/components/main/PasswordModal";
+
 import RankBox from "@/components/main/RankBox";
 import SubTitleBox from "@/components/main/SubTitleBox";
 import { useTypeStore } from "@/stores/TypeStore";
@@ -12,7 +12,6 @@ import MonthModal from "@/components/main/modal/MonthModal";
 function DashBoardPage() {
   const [keywordList, setKeywordList] = useState<any[]>([]);
   const [crawledDate, setCrawledDate] = useState<string | null>(null);
-  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
   const { audienceType, selectedMonth, setAudienceType, setSelectedMonth } =
     useTypeStore();
 
@@ -39,10 +38,7 @@ function DashBoardPage() {
 
         const baseRes = await GetTrendKeyword(baseParams);
 
-        if (baseRes?.status === 401) {
-          setPasswordModalOpen(true);
-          return;
-        }
+
 
         const baseArray = Array.isArray(baseRes)
           ? baseRes
@@ -87,10 +83,7 @@ function DashBoardPage() {
       } catch (e: any) {
         console.log("Fetch error:", e);
 
-        if (e?.status === 401) {
-          setPasswordModalOpen(true);
-          return;
-        }
+
 
         setKeywordList([]);
         setCrawledDate(null);
@@ -102,10 +95,7 @@ function DashBoardPage() {
 
   return (
     <div className="w-full h-full px-14">
-      <PasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-      />
+
 
       <section>
         <div className="flex items-center justify-between p-1 bg-white border border-[#56585A] rounded-full w-64 mt-3">

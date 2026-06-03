@@ -120,9 +120,9 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
 
   const productExtras = isPlatform
     ? [
-        category.likes == null ? "1,000" : fmt(category.likes),
+        category.likes == null ? "-" : fmt(category.likes),
         category.reorder == null
-          ? "3차 리오더"
+          ? "- 차 리오더"
           : `${category.reorder}차 리오더`,
       ]
     : undefined;
@@ -131,7 +131,7 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
   const purchaseBadges = [{ label: "판매수량", value: null }];
   const purchaseExtras = isPlatform
     ? [`지난달 ${fmt(purchase.sales)}건`]
-    : ["지난달 1,000건"];
+    : ["지난달 - 건"];
 
   return (
     <div className="w-full p-2">
