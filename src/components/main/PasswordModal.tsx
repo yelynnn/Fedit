@@ -47,7 +47,7 @@ export default function PasswordModal({ isOpen, onClose }: Props) {
 
     setIsSubmitting(true);
     try {
-      await PostLogin(password);
+      await PostLogin("", password);
 
       onClose();
       window.location.reload();
