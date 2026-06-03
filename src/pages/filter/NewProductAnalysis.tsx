@@ -7,8 +7,8 @@ import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
 import { useFilterStore } from "@/stores/FilterStore";
-import PasswordModal from "@/components/main/PasswordModal";
-import { isAxiosError } from "axios";
+
+
 import { GetProductList } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
 
@@ -22,7 +22,6 @@ function NewProductAnalysis() {
 
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [filterInitialTab, setFilterInitialTab] = useState("성별");
-  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ApiDetail | null>(null);
 
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -60,10 +59,6 @@ function NewProductAnalysis() {
 
         setNextCursor(data?.nextCursor || null);
       } catch (err) {
-        if (isAxiosError(err) && err.response?.status === 401) {
-          setPasswordModalOpen(true);
-          return;
-        }
         console.error("데이터 로드 실패", err);
       } finally {
         setIsFetching(false);
@@ -127,10 +122,6 @@ function NewProductAnalysis() {
   return (
     <div className="flex gap-5 px-4">
       <FilterSideBar onOpenFilter={(tab) => { setFilterInitialTab(tab); setFilterOpen(true); }} />
-      <PasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-      />
       <section
         className={[
           "transition-all duration-200",

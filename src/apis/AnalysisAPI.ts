@@ -1,6 +1,13 @@
 import { useFilterStore } from "@/stores/FilterStore";
 import { axiosInstance } from "./AxiosInstance";
 
+const GetProductByItemCode = async (itemcode: string) => {
+  const response = await axiosInstance.get("/products", {
+    params: { itemCode: itemcode },
+  });
+  return response.data as import("@/types/Product").ApiDetail;
+};
+
 const GetDetailInfo = async ({ itemcode }: { itemcode: string }) => {
   try {
     const response = await axiosInstance.get(`/detail/${itemcode}`);
@@ -174,6 +181,7 @@ const PostJudge = async (payload: JudgePayload): Promise<void> => {
 };
 
 export {
+  GetProductByItemCode,
   GetDetailInfo,
   GetColorGraph,
   GetColorProduct,

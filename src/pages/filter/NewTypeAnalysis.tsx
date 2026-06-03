@@ -2,15 +2,14 @@ import NewTypeBox from "@/components/type/NewTypeBox";
 import { MockNewTypeData } from "@/data/mock/MockNewTypeData";
 import { useEffect, useState } from "react";
 import { GetCategoryGraph } from "@/apis/AnalysisAPI";
-import PasswordModal from "@/components/main/PasswordModal";
-import { isAxiosError } from "axios";
+
+
 
 type TypeBlock = (typeof MockNewTypeData)[number];
 
 function NewTypeAnalysis() {
   const [blocks, setBlocks] = useState<TypeBlock[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isPasswordModalOpen, setPasswordModalOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -27,10 +26,7 @@ function NewTypeAnalysis() {
 
         setBlocks(list);
       } catch (e) {
-        if (isAxiosError(e) && e.response?.status === 401) {
-          setPasswordModalOpen(true);
-          return;
-        }
+
         console.error("유형 그래프 불러오기 실패:", e);
         setBlocks([]);
       } finally {
@@ -50,10 +46,7 @@ function NewTypeAnalysis() {
           최근 주목받는 상품 유형과 연관 키워드를 탐색해보세요.
         </p>
       </div>
-      <PasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-      />
+
       <div
         className="grid justify-start gap-6 mt-8"
         style={{

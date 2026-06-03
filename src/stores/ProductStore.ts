@@ -6,6 +6,9 @@ export interface ProductStore {
   selectedProductId: string | null;
   setSelectedProductId: (id: string | null) => void;
 
+  modalProductId: string | null;
+  setModalProductId: (id: string | null) => void;
+
   resultLists: ApiDetail[];
   setResultLists: (
     rows: ApiDetail[] | ((prev: ApiDetail[]) => ApiDetail[]),
@@ -18,6 +21,9 @@ export const useProductStore = create<ProductStore>()(
     (set) => ({
       selectedProductId: null,
       setSelectedProductId: (id) => set({ selectedProductId: id }),
+
+      modalProductId: null,
+      setModalProductId: (id) => set({ modalProductId: id }),
 
       resultLists: [],
       setResultLists: (input) =>

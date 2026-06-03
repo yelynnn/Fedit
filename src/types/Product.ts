@@ -14,7 +14,7 @@ type Vlm = {
   neckline: string;
   sleeve: string;
   fit: string;
-  pattern: string;
+  pattern: string | string[];
   detail: string[];
   color: string[];
 };

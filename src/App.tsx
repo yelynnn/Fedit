@@ -2,6 +2,7 @@ import "./App.css";
 import Router from "./routes/Router";
 import { useEffect } from "react";
 import Modal from "react-modal";
+import ProductDetailModal from "@/components/product/ProductDetailModal";
 
 function App() {
   useEffect(() => {
@@ -11,6 +12,7 @@ function App() {
   return (
     <>
       <Router />
+      <ProductDetailModal />
     </>
   );
 }

@@ -6,6 +6,12 @@ import RootNewLayout from "./RootNewLayout";
 import LandingPage from "@/pages/LandingPage";
 import AskPage from "@/pages/AskPage";
 import AskSuccessPage from "@/pages/AskSuccessPage";
+import LoginPage from "@/pages/Auth/LoginPage";
+import SignupSelectPage from "@/pages/Auth/SignupSelectPage";
+import CompanySignupPage from "@/pages/Auth/CompanySignupPage";
+import PersonalSignupPage from "@/pages/Auth/PersonalSignupPage";
+import NextSignupPage from "@/pages/Auth/NextSignupPage";
+import CorporateVerifyPage from "@/pages/Auth/CorporateVerifyPage";
 
 const router = createBrowserRouter([
   {
@@ -50,6 +56,31 @@ const router = createBrowserRouter([
       {
         path: "success",
         element: <AskSuccessPage />,
+      },
+      {
+        path: "login",
+        element: <LoginPage />,
+      },
+      {
+        path: "signup",
+        element: <SignupSelectPage />,
+      },
+      {
+        path: "/signup/personal",
+        element: <PersonalSignupPage />,
+      },
+      {
+        path: "/signup/personal/next",
+        element: <NextSignupPage />,
+      },
+
+      {
+        path: "/signup/company",
+        element: <CompanySignupPage />,
+      },
+      {
+        path: "/signup/company/verify",
+        element: <CorporateVerifyPage />,
       },
     ],
   },
