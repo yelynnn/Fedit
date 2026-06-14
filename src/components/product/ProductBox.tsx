@@ -26,7 +26,7 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
   };
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-lg w-55 bg-white border border-[#F2F4F6]">
+    <section className="flex flex-col h-93 overflow-hidden rounded-lg w-55 bg-white border border-[#F2F4F6]">
       {/* 1. 상품 이미지 */}
       <div className="relative w-full h-55">
         <img

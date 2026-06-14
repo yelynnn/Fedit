@@ -12,6 +12,8 @@ import CompanySignupPage from "@/pages/Auth/CompanySignupPage";
 import PersonalSignupPage from "@/pages/Auth/PersonalSignupPage";
 import NextSignupPage from "@/pages/Auth/NextSignupPage";
 import CorporateVerifyPage from "@/pages/Auth/CorporateVerifyPage";
+import TermsOfServicePage from "@/pages/Auth/TermsOfServicePage";
+import ProtectedRoute from "./ProtectedRoute";
 
 const router = createBrowserRouter([
   {
@@ -30,16 +32,12 @@ const router = createBrowserRouter([
   },
   {
     path: "/main",
-    element: <RootNewLayout />,
+    element: <ProtectedRoute />,
     children: [
-      // {
-      //   index: true,
-      //   element: <FilterLayout />,
-      // },
-      // {
-      //   path: "product/:id",
-      //   element: <ProductDetailPage />,
-      // },
+      {
+        index: true,
+        element: <RootNewLayout />,
+      },
     ],
   },
   {
@@ -81,6 +79,10 @@ const router = createBrowserRouter([
       {
         path: "/signup/company/verify",
         element: <CorporateVerifyPage />,
+      },
+      {
+        path: "/terms",
+        element: <TermsOfServicePage />,
       },
     ],
   },

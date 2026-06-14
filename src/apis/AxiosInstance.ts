@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/stores/AuthStore";
 
 const axiosInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_BASE_URL}`,
@@ -15,5 +16,15 @@ axiosInstance.interceptors.request.use((config) => {
   }
   return config;
 });
+
+axiosInstance.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error?.response?.status === 401) {
+      useAuthStore.getState().setSessionExpired(true);
+    }
+    return Promise.reject(error);
+  },
+);
 
 export { axiosInstance };

@@ -4,11 +4,13 @@ import { useState } from "react";
 import LoginHeader from "@/components/common/LoginHeader";
 import { useNavigate } from "react-router-dom";
 import { PostLogin } from "@/apis/AuthAPI";
+import { useFilterStore } from "@/stores/FilterStore";
 
 type LoginType = "personal" | "company";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
   const [loginType, setLoginType] = useState<LoginType>("personal");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +31,7 @@ const LoginPage = () => {
 
     try {
       await PostLogin(id.trim(), password);
+      setSelectedTab("상품 분석");
       navigate("/main");
     } catch (error: any) {
       setErrorMessage(error.message);
@@ -153,6 +156,7 @@ const LoginPage = () => {
               기업 회원 전용 서비스가 궁금하다면?
               <button
                 type="button"
+                onClick={() => navigate("/ask")}
                 className="ml-2 border-b border-[#222222] text-[#222222]"
               >
                 기업제휴 문의

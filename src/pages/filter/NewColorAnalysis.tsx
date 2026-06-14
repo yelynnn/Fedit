@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 
-
-
 import ColorTreeMap from "@/components/color/ColorTreeMap";
 import ColorBar from "@/components/color/ColorBar";
 import { Icon } from "@iconify/react";
@@ -111,7 +109,7 @@ function NewColorAnalysis() {
 
   return (
     <div className="min-h-screen px-14">
-      <div className="w-full px-3 py-2 bg-[#F8F9FA] rounded-lg border border-[#F1F3F5] flex items-center justify-between cursor-pointer">
+      {/* <div className="w-full px-3 py-2 bg-[#F8F9FA] rounded-lg border border-[#F1F3F5] flex items-center justify-between cursor-pointer">
         <div className="flex items-center gap-9">
           <span className="text-sm font-medium text-[#6F7173]">시즌선택</span>
           <span className="text-base font-semibold text-[#3D3F41]">
@@ -119,7 +117,7 @@ function NewColorAnalysis() {
           </span>
         </div>
         <Icon icon="ph:caret-down-bold" className="w-4 h-4 text-[#868E96]" />
-      </div>
+      </div> */}
       <div className="flex items-start justify-between mt-8 mb-5">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
@@ -155,20 +153,35 @@ function NewColorAnalysis() {
         </div>
       </div>
       {/* 그래프 영역: viewMode에 따라 TreeMap 또는 ColorBar를 보여줌 */}
-      <div className="flex w-full gap-5 items-start transition-all duration-500">
+      {brandList.length === 0 ? (
+        <div className="flex items-center justify-center w-full h-91 bg-[#F8F9FA] border border-[#F1F3F5] rounded-xl">
+          <p className="text-[#888A8C] text-base font-medium">
+            브랜드를 선택해주세요
+          </p>
+        </div>
+      ) : (
+      <div className="flex items-start w-full gap-5 transition-all duration-500">
         {displayTreeMapBrands.map((block) => (
           <div key={block.brand} className="flex-1 min-w-0">
             {viewMode === "grid" ? (
               <ColorTreeMap
                 title={block.brand}
                 data={block.data}
-                onClose={block.brand !== "전체" ? () => handleRemoveTreeMap(block.brand) : undefined}
+                onClose={
+                  block.brand !== "전체"
+                    ? () => handleRemoveTreeMap(block.brand)
+                    : undefined
+                }
               />
             ) : (
               <ColorBar
                 title={block.brand}
                 data={block.data}
-                onClose={block.brand !== "전체" ? () => handleRemoveTreeMap(block.brand) : undefined}
+                onClose={
+                  block.brand !== "전체"
+                    ? () => handleRemoveTreeMap(block.brand)
+                    : undefined
+                }
               />
             )}
           </div>
@@ -202,6 +215,7 @@ function NewColorAnalysis() {
           </button>
         )}
       </div>
+      )}
       <SubTitleBox
         title="신규 주목 색상"
         label="트렌드 컬러"

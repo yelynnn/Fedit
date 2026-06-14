@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
+import vogueIcon from "../../assets/vogue.png";
+import elleIcon from "../../assets/elle.png";
+import wIcon from "../../assets/W.png";
+import bazaarIcon from "../../assets/bazaar.svg";
 
 // 매거진 아이콘 매핑
 const MAGAZINE_ICONS: Record<string, string> = {
-  "vogue korea": "/src/assets/vogue.png",
-  "elle korea": "/src/assets/elle.png",
-  "w korea": "/src/assets/W.png",
-  "harper's bazaar korea": "/src/assets/bazaar.svg",
+  "vogue korea": vogueIcon,
+  "elle korea": elleIcon,
+  "w korea": wIcon,
+  "harper's bazaar korea": bazaarIcon,
 };
 
 // 프롭 타입 정의

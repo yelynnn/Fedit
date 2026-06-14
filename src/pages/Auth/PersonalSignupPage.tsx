@@ -4,8 +4,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^01[0-9]-?\d{3,4}-?\d{4}$/;
+const PHONE_REGEX = /^01[0-9]-\d{3,4}-\d{4}$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,20}$/;
+
+const formatPhone = (digits: string) => {
+  const d = digits.slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+};
 
 const PersonalSignupPage = () => {
   const navigate = useNavigate();
@@ -35,7 +42,7 @@ const PersonalSignupPage = () => {
 
   const phoneError =
     touched.phone && form.phone.trim() !== "" && !PHONE_REGEX.test(form.phone)
-      ? "올바른 연락처 형식을 입력해주세요. (예: 010-1234-5678)"
+      ? "올바른 연락처 형식을 입력해주세요."
       : null;
 
   const isFormValid =
@@ -54,6 +61,24 @@ const PersonalSignupPage = () => {
         [key]: e.target.value,
       }));
     };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cleaned = e.target.value.replace(/[^\d-]/g, "");
+    const digits = cleaned.replace(/-/g, "");
+    const auto = formatPhone(digits);
+
+    // 사용자가 직접 입력한 '-'가 자동 포맷 위치와 맞으면 auto-format 적용,
+    // 아니면 직접 입력한 값 그대로 사용
+    let compatible = true;
+    for (let i = 0; i < Math.min(cleaned.length, auto.length); i++) {
+      if (cleaned[i] === "-" && auto[i] !== "-") {
+        compatible = false;
+        break;
+      }
+    }
+
+    setForm((prev) => ({ ...prev, phone: compatible ? auto : cleaned.slice(0, 13) }));
+  };
 
   const handleBlur = (key: keyof typeof touched) => () => {
     setTouched((prev) => ({ ...prev, [key]: true }));
@@ -80,7 +105,7 @@ const PersonalSignupPage = () => {
     <div className="flex min-h-screen flex-col bg-white text-[#222222]">
       <LoginHeader />
 
-      <main className="flex flex-1 justify-center px-5 pt-[74px]">
+      <main className="flex flex-1 justify-center px-5 pt-[74px] pb-[60px]">
         <section className="w-full max-w-[458px]">
           <div className="mb-[38px]">
             <h1 className="text-[24px] font-bold leading-[1.35] tracking-[-0.04em] text-[#222222]">
@@ -123,11 +148,12 @@ const PersonalSignupPage = () => {
 
             <InputField
               label="연락처를 알려주세요."
-              placeholder="중요한 안내가 있을 때만 사용해요."
+              placeholder="010-0000-0000"
               value={form.phone}
-              onChange={handleChange("phone")}
+              onChange={handlePhoneChange}
               onBlur={handleBlur("phone")}
               error={phoneError}
+              type="tel"
             />
           </div>
 

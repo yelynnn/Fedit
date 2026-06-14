@@ -3,7 +3,7 @@ import { Icon } from "@iconify/react";
 import TrendIndexBox from "../product/TrendIndexBox";
 import dayjs from "dayjs";
 import AIAnalysisBox from "../product/AIAnalysisBox";
-import WeekModal from "./modal/WeekModal";
+import MonthModal from "./modal/MonthModal";
 import { GetDashboardRanking, GetRankingItemDetail } from "@/apis/DashBoardAPI";
 import type { RankingProduct, RankingItemDetailResponse } from "@/types/Main";
 import { useProductStore } from "@/stores/ProductStore";
@@ -11,21 +11,11 @@ import { useProductStore } from "@/stores/ProductStore";
 const PLATFORMS = ["무신사", "29CM", "W컨셉", "플랫폼 통합"];
 const CATEGORIES = ["상의", "아우터", "바지", "원피스/스커트"];
 
-const getWeekOfMonth = (date: dayjs.Dayjs) => {
-  const firstDayOfMonth = date.startOf("month").day();
-  return Math.ceil((date.date() + firstDayOfMonth) / 7);
-};
-
-const toApiDate = (date: dayjs.Dayjs) => {
-  const year = date.year();
-  const month = String(date.month() + 1).padStart(2, "0");
-  const week = String(getWeekOfMonth(date)).padStart(2, "0");
-  return `${year}-${month}-w${week}`;
-};
+const toApiDate = (date: dayjs.Dayjs) => date.format("YYYY-MM");
 
 export default function RankBox() {
   const { setModalProductId } = useProductStore((s) => s);
-  const [isWeekModalOpen, setIsWeekModalOpen] = useState(false);
+  const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedPlatform, setSelectedPlatform] = useState<string>("무신사");
   const [selectedCategory, setSelectedCategory] = useState<string>("상의");
@@ -35,7 +25,7 @@ export default function RankBox() {
     useState<RankingItemDetailResponse | null>(null);
   const [similarCurrentPage, setSimilarCurrentPage] = useState(1);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
-  const isCurrentWeek = currentDate.isSame(dayjs(), "week");
+  const isCurrentMonth = currentDate.isSame(dayjs(), "month");
   const ITEMS_PER_PAGE = 4;
   const relatedItems = itemDetail?.related_items ?? [];
   const totalPages = Math.ceil(relatedItems.length / ITEMS_PER_PAGE);
@@ -71,15 +61,9 @@ export default function RankBox() {
       .catch(console.error);
   }, [selectedPlatform, selectedCategory, currentDate]);
 
-  const handleWeekSelect = (year: number, month: number, week: number) => {
-    let newDate = dayjs(`${year}-${month}-01`);
-
-    const firstDayOfMonth = newDate.startOf("month").day();
-    const daysToAdd = (week - 1) * 7 - firstDayOfMonth + 1;
-    newDate = newDate.add(daysToAdd > 0 ? daysToAdd : 0, "day");
-
-    setCurrentDate(newDate);
-    setIsWeekModalOpen(false);
+  const handleMonthSelect = (value: string) => {
+    setCurrentDate(dayjs(`${value}-01`));
+    setIsMonthModalOpen(false);
   };
 
   const handlePrevPage = () => {
@@ -91,50 +75,49 @@ export default function RankBox() {
       setSimilarCurrentPage((prev) => prev + 1);
   };
 
-  const handlePrevWeek = () => setCurrentDate(currentDate.subtract(1, "week"));
-  const handleNextWeek = () => setCurrentDate(currentDate.add(1, "week"));
+  const handlePrevMonth = () =>
+    setCurrentDate(currentDate.subtract(1, "month"));
+  const handleNextMonth = () => setCurrentDate(currentDate.add(1, "month"));
 
-  const getWeekOfMonth = (date: dayjs.Dayjs) => {
-    const firstDayOfMonth = date.startOf("month").day();
-    return Math.ceil((date.date() + firstDayOfMonth) / 7);
-  };
-
-  const prevWeek = currentDate.subtract(1, "week");
-  const nextWeek = currentDate.add(1, "week");
+  const prevMonth = currentDate.subtract(1, "month");
+  const nextMonth = currentDate.add(1, "month");
 
   return (
     <div className="relative w-full min-h-screen mx-auto overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => setIsWeekModalOpen(true)}
+      <div className="flex items-center mb-4">
+        {/* <button
+          onClick={() => setIsMonthModalOpen(true)}
           className="flex items-center gap-1.5 text-base font-semibold text-[#6F7173] hover:text-[#212121] transition-colors"
         >
-          {currentDate.isSame(dayjs(), "week")
-            ? `이번 주(${currentDate.month() + 1}월 ${getWeekOfMonth(currentDate)}주차)`
-            : `${currentDate.month() + 1}월 ${getWeekOfMonth(currentDate)}주차`}
+          {isCurrentMonth
+            ? `이번 달(${currentDate.format("YYYY.MM")})`
+            : currentDate.format("YYYY년 M월")}
           <Icon icon="ph:caret-down" className="w-4 h-4 text-gray-500" />
-        </button>
-        <div className="flex items-center gap-4 text-sm font-medium text-[#3D3F41]">
+        </button> */}
+        <div className="text-base font-semibold text-[#6F7173]">
+          {" "}
+          이번 달({currentDate.format("YYYY.MM")})
+        </div>
+        <div className="ml-auto flex items-center gap-4 text-sm font-medium text-[#3D3F41]">
+          {" "}
           <button
-            onClick={handlePrevWeek}
+            onClick={handlePrevMonth}
             className="flex items-center gap-1 transition-colors hover:text-[#151515]"
           >
             <Icon icon="ph:caret-left" />
-            {prevWeek.month() + 1}월 {getWeekOfMonth(prevWeek)}주차
+            {prevMonth.month() + 1}월
           </button>
-
           <div className="w-[1px] h-3 bg-gray-300"></div>
-
           <button
-            onClick={handleNextWeek}
-            disabled={isCurrentWeek}
+            onClick={handleNextMonth}
+            disabled={isCurrentMonth}
             className={`flex items-center gap-1 transition-colors ${
-              isCurrentWeek
+              isCurrentMonth
                 ? "text-[#ADB5BD] cursor-not-allowed"
                 : "hover:text-[#151515]"
             }`}
           >
-            {nextWeek.month() + 1}월 {getWeekOfMonth(nextWeek)}주차
+            {nextMonth.month() + 1}월
             <Icon icon="ph:caret-right" />
           </button>
         </div>
@@ -215,15 +198,15 @@ export default function RankBox() {
           </ul>
         </div>
 
-        <div className="relative flex-1 p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="relative flex-1 py-4 px-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {isDetailLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/70 backdrop-blur-[2px]">
-              <div className="w-7 h-7 border-2 border-gray-200 border-t-gray-700 rounded-full animate-spin" />
+              <div className="border-2 border-gray-200 rounded-full w-7 h-7 border-t-gray-700 animate-spin" />
               <span className="text-sm text-gray-500">불러오는 중...</span>
             </div>
           )}
 
-          <div className="px-8 mb-6 -mx-8">
+          <div className="px-8 mb-3 -mx-8">
             <TrendIndexBox
               itemCode={
                 rankingList.find((item) => item.rank === activeRank)
@@ -235,11 +218,14 @@ export default function RankBox() {
           <AIAnalysisBox
             content={itemDetail?.ai_description ?? ""}
             itemcode={
-              rankingList.find((item) => item.rank === activeRank)?.itemcode ?? ""
+              rankingList.find((item) => item.rank === activeRank)?.itemcode ??
+              ""
             }
             isRanking={true}
             onDetailClick={() => {
-              const itemcode = rankingList.find((item) => item.rank === activeRank)?.itemcode;
+              const itemcode = rankingList.find(
+                (item) => item.rank === activeRank,
+              )?.itemcode;
               if (itemcode) setModalProductId(itemcode);
             }}
           />
@@ -257,7 +243,11 @@ export default function RankBox() {
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-5">
               {currentSimilarItems.map((item, idx) => (
-                <div key={idx} className="flex gap-4">
+                <div
+                  key={idx}
+                  onClick={() => setModalProductId(item.itemCode)}
+                  className="flex gap-4 cursor-pointer"
+                >
                   <div className="flex-shrink-0 overflow-hidden bg-gray-100 border border-gray-200 rounded-lg w-22 h-22">
                     {item.thumbnail ? (
                       <img
@@ -292,7 +282,7 @@ export default function RankBox() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex justify-center gap-3">
+              <div className="flex justify-center gap-3 pt-3">
                 <button
                   onClick={handlePrevPage}
                   disabled={similarCurrentPage === 1}
@@ -320,10 +310,10 @@ export default function RankBox() {
           </div>
         </div>
       </div>
-      <WeekModal
-        isOpen={isWeekModalOpen}
-        onClose={() => setIsWeekModalOpen(false)}
-        onSelect={handleWeekSelect}
+      <MonthModal
+        isOpen={isMonthModalOpen}
+        onClose={() => setIsMonthModalOpen(false)}
+        onSelect={handleMonthSelect}
         dateList={MOCK_DATE_LIST}
       />
     </div>

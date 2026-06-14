@@ -2,12 +2,11 @@ import FilterSideBar from "@/components/filter/FilterSideBar";
 import ProductBox from "@/components/product/ProductBox";
 import ProductDetailContent from "@/components/product/ProductDetailContent";
 import { useProductStore } from "@/stores/ProductStore";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
 import { useFilterStore } from "@/stores/FilterStore";
-
 
 import { GetProductList } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
@@ -22,30 +21,42 @@ function NewProductAnalysis() {
 
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [filterInitialTab, setFilterInitialTab] = useState("성별");
-  const [selectedProduct, setSelectedProduct] = useState<ApiDetail | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ApiDetail | null>(
+    null,
+  );
 
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
+  const isFetchingRef = useRef(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const clickedItemRef = useRef<string | null>(null);
   const itemButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const sectionRef = useRef<HTMLElement | null>(null);
 
   const isDetailOpen = !!selectedProductId;
-  const { selectedColors, selectedGenders, selectedCategories } =
-    useFilteredData();
+  const {
+    selectedColors,
+    selectedGenders,
+    selectedCategories,
+    selectedDetails,
+    selectedPatterns,
+  } = useFilteredData();
   const { brandList } = useFilterStore();
 
   const fetchData = useCallback(
     async (cursor: string | null = null) => {
-      if (isFetching) return;
+      if (isFetchingRef.current) return;
 
       try {
+        isFetchingRef.current = true;
         setIsFetching(true);
         const data = await GetProductList({
           brandList,
           selectedColors,
           selectedGenders,
           selectedCategories,
+          selectedDetails,
+          selectedPatterns,
           cursor,
         });
 
@@ -61,6 +72,7 @@ function NewProductAnalysis() {
       } catch (err) {
         console.error("데이터 로드 실패", err);
       } finally {
+        isFetchingRef.current = false;
         setIsFetching(false);
       }
     },
@@ -69,8 +81,9 @@ function NewProductAnalysis() {
       selectedColors,
       selectedGenders,
       selectedCategories,
+      selectedDetails,
+      selectedPatterns,
       setResultLists,
-      isFetching,
     ],
   );
 
@@ -78,30 +91,37 @@ function NewProductAnalysis() {
     setSelectedProductId(null);
   }, [setSelectedProductId]);
 
-  useEffect(() => {
-    if (!selectedProductId || !clickedItemRef.current) return;
-    const el = itemButtonRefs.current[clickedItemRef.current];
-    if (el) {
-      requestAnimationFrame(() => el.scrollIntoView({ block: "nearest", behavior: "smooth" }));
-    }
-  }, [selectedProductId]);
+  // 상세 닫힐 때 클릭했던 상품이 보이도록 스크롤 복원
+  useLayoutEffect(() => {
+    if (isDetailOpen || !clickedItemRef.current) return;
+    const el = itemButtonRefs.current[clickedItemRef.current!];
+    el?.scrollIntoView({ block: "center", behavior: "instant" });
+  }, [isDetailOpen]);
 
   useEffect(() => {
     setNextCursor(null);
     fetchData(null);
-  }, [brandList, selectedColors, selectedGenders, selectedCategories]);
+  }, [
+    brandList,
+    selectedColors,
+    selectedGenders,
+    selectedCategories,
+    selectedDetails,
+    selectedPatterns,
+    fetchData,
+  ]);
 
   useEffect(() => {
-    if (isFetching || !nextCursor) return;
+    if (!nextCursor) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isFetching) {
+        if (entries[0].isIntersecting && !isFetchingRef.current) {
           fetchData(nextCursor);
         }
       },
       {
-        rootMargin: "200px", // 바닥에 닿기 200px 전에 미리 호출 (사용자 경험 개선)
+        rootMargin: "200px",
         threshold: 0,
       },
     );
@@ -117,14 +137,20 @@ function NewProductAnalysis() {
       }
       observer.disconnect();
     };
-  }, [nextCursor, isFetching, fetchData]);
+  }, [nextCursor, fetchData]);
 
   return (
-    <div className="flex gap-5 px-4">
-      <FilterSideBar onOpenFilter={(tab) => { setFilterInitialTab(tab); setFilterOpen(true); }} />
+    <div className="flex h-full gap-5 px-4 overflow-hidden">
+      <FilterSideBar
+        onOpenFilter={(tab) => {
+          setFilterInitialTab(tab);
+          setFilterOpen(true);
+        }}
+      />
       <section
+        ref={sectionRef}
         className={[
-          "transition-all duration-200",
+          "h-full hide-scrollbar",
           isDetailOpen
             ? "w-[220px] shrink-0 overflow-y-auto"
             : "flex-1 min-w-0 overflow-auto",
@@ -133,14 +159,16 @@ function NewProductAnalysis() {
         <div
           className={
             isDetailOpen
-              ? "flex flex-col h-screen overflow-y-auto hide-scrollbar "
+              ? "flex flex-col overflow-y-auto hide-scrollbar"
               : "grid [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))] overflow-y-auto hide-scrollbar"
           }
         >
           {resultLists.map((product) => (
             <button
               key={product.itemcode}
-              ref={(el) => { itemButtonRefs.current[product.itemcode] = el; }}
+              ref={(el) => {
+                itemButtonRefs.current[product.itemcode] = el;
+              }}
               onClick={() => {
                 clickedItemRef.current = product.itemcode;
                 setSelectedProductId(product.itemcode);
@@ -167,7 +195,7 @@ function NewProductAnalysis() {
       </section>
 
       {isDetailOpen && (
-        <aside className="flex-1 min-w-0 px-5 py-8 overflow-y-auto bg-white hide-scrollbar rounded-xl shadow-[0_0_8px_0_rgba(0,0,0,0.15)] h-fit">
+        <aside className="flex-1 min-w-0 h-full px-5 py-8 overflow-y-auto bg-white hide-scrollbar rounded-xl shadow-[0_0_8px_0_rgba(0,0,0,0.15)]">
           <ProductDetailContent product={selectedProduct} />
         </aside>
       )}
@@ -177,7 +205,10 @@ function NewProductAnalysis() {
         overlayClassName="fixed inset-0 bg-black/30 flex items-center justify-center z-[100]"
         className="box-border flex flex-col py-4 bg-white shadow-xl outline-none w-125 h-138 rounded-xl"
       >
-        <SideFilterModal onClose={() => setFilterOpen(false)} initialTab={filterInitialTab} />
+        <SideFilterModal
+          onClose={() => setFilterOpen(false)}
+          initialTab={filterInitialTab}
+        />
       </Modal>
     </div>
   );

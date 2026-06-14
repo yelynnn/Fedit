@@ -127,7 +127,7 @@ function NewMainKeywordBox({
         )}
 
         {audienceType === "kids" && !isMonthly && (
-          <div className="flex text-[#3D3F41] text-sm font-semibold py-3 justify-center items-center gap-6 w-full border-b border-[#E5E7EB] mb-5 px-5">
+          <div className="flex text-[#3D3F41] text-sm font-semibold py-3 justify-center items-center gap-6 w-full border-b border-[#E5E7EB] mb-5">
             출산육아 / 키즈 키워드
           </div>
         )}

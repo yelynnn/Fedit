@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronRight } from "lucide-react";
 import LoginHeader from "@/components/common/LoginHeader";
 import Footer from "@/components/common/Footer";
 import { PostPersonalSignup } from "@/apis/AuthAPI";
@@ -19,6 +19,10 @@ interface PrevData {
   email: string;
   password: string;
   phone_number: string;
+  companyName?: string;
+  job?: string;
+  companySize?: string;
+  agreed?: boolean;
 }
 
 const NextSignupPage = () => {
@@ -26,9 +30,10 @@ const NextSignupPage = () => {
   const location = useLocation();
   const prevData = location.state as PrevData | null;
 
-  const [companyName, setCompanyName] = useState("");
-  const [job, setJob] = useState("");
-  const [companySize, setCompanySize] = useState("");
+  const [companyName, setCompanyName] = useState(prevData?.companyName ?? "");
+  const [job, setJob] = useState(prevData?.job ?? "");
+  const [companySize, setCompanySize] = useState(prevData?.companySize ?? "");
+  const [isTermsAgreed] = useState(prevData?.agreed ?? false);
 
   const [isJobOpen, setIsJobOpen] = useState(false);
   const [isCompanySizeOpen, setIsCompanySizeOpen] = useState(false);
@@ -38,7 +43,10 @@ const NextSignupPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const isFormValid =
-    companyName.trim() !== "" && job.trim() !== "" && companySize.trim() !== "";
+    companyName.trim() !== "" &&
+    job.trim() !== "" &&
+    companySize.trim() !== "" &&
+    isTermsAgreed;
 
   const handlePrev = () => {
     navigate(-1);
@@ -152,7 +160,39 @@ const NextSignupPage = () => {
             </p>
           )}
 
-          <div className="mt-[28px] grid grid-cols-[76px_1fr] gap-[16px]">
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/terms", {
+                state: {
+                  from: "/signup/personal/next",
+                  returnState: {
+                    ...prevData,
+                    companyName,
+                    job,
+                    companySize,
+                    agreed: isTermsAgreed,
+                  },
+                },
+              })
+            }
+            className="mt-[28px] flex h-[42px] w-full items-center justify-between rounded-[6px] border border-[#dddddd] bg-[#fbfbfc] px-[14px] text-[13px] font-bold tracking-[-0.03em] text-[#222222] transition hover:bg-[#f7f7f8]"
+          >
+            <span className="flex items-center gap-[10px]">
+              <CheckCircle
+                size={18}
+                strokeWidth={2}
+                className={
+                  isTermsAgreed ? "fill-[#222222] text-white" : "text-[#8d949e]"
+                }
+              />
+              약관 동의
+            </span>
+
+            <ChevronRight size={18} strokeWidth={2} className="text-[#777777]" />
+          </button>
+
+          <div className="mt-[16px] grid grid-cols-[76px_1fr] gap-[16px]">
             <button
               type="button"
               onClick={handlePrev}
