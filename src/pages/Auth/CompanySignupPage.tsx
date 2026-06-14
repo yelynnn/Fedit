@@ -1,15 +1,22 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle, ChevronRight } from "lucide-react";
 import LoginHeader from "@/components/common/LoginHeader";
 import Footer from "@/components/common/Footer";
 import { PostCorporateAuthRequest } from "@/apis/AuthAPI";
 
+interface CompanySignupNavState {
+  email?: string;
+  agreed?: boolean;
+}
+
 const CompanySignupPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navState = location.state as CompanySignupNavState | null;
 
-  const [email, setEmail] = useState("");
-  const [isTermsAgreed, setIsTermsAgreed] = useState(false);
+  const [email, setEmail] = useState(navState?.email ?? "");
+  const [isTermsAgreed] = useState(navState?.agreed ?? false);
   const [isTouched, setIsTouched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -101,7 +108,14 @@ const CompanySignupPage = () => {
 
             <button
               type="button"
-              onClick={() => setIsTermsAgreed((prev) => !prev)}
+              onClick={() =>
+                navigate("/terms", {
+                  state: {
+                    from: "/signup/company",
+                    returnState: { email, agreed: isTermsAgreed },
+                  },
+                })
+              }
               className="mb-[30px] flex h-[42px] w-full items-center justify-between rounded-[6px] border border-[#dddddd] bg-[#fbfbfc] px-[14px] text-[13px] font-bold tracking-[-0.03em] text-[#222222] transition hover:bg-[#f7f7f8]"
             >
               <span className="flex items-center gap-[10px]">

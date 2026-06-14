@@ -7,7 +7,7 @@ import { useTypeStore } from "@/stores/TypeStore";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Icon } from "@iconify/react";
-import MonthModal from "@/components/main/modal/MonthModal";
+// import MonthModal from "@/components/main/modal/MonthModal";
 
 function DashBoardPage() {
   const [keywordList, setKeywordList] = useState<any[]>([]);
@@ -16,9 +16,9 @@ function DashBoardPage() {
     useTypeStore();
 
   const [currentDate, setCurrentDate] = useState(dayjs());
-  const isToday = currentDate.isSame(dayjs(), "day");
+  // const isToday = currentDate.isSame(dayjs(), "day");
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
-  const [isMonthModalOpen, setMonthModalOpen] = useState(false);
+  // const [isMonthModalOpen, setMonthModalOpen] = useState(false);
 
   const dateListOptions = [
     "2025-10",
@@ -37,8 +37,6 @@ function DashBoardPage() {
             : { audienceType };
 
         const baseRes = await GetTrendKeyword(baseParams);
-
-
 
         const baseArray = Array.isArray(baseRes)
           ? baseRes
@@ -83,8 +81,6 @@ function DashBoardPage() {
       } catch (e: any) {
         console.log("Fetch error:", e);
 
-
-
         setKeywordList([]);
         setCrawledDate(null);
       }
@@ -95,8 +91,6 @@ function DashBoardPage() {
 
   return (
     <div className="w-full h-full px-14">
-
-
       <section>
         <div className="flex items-center justify-between p-1 bg-white border border-[#56585A] rounded-full w-64 mt-3">
           {["adult", "kids"].map((type) => (
@@ -124,7 +118,7 @@ function DashBoardPage() {
 
         {audienceType === "adult" && (
           <div className="flex items-center justify-between w-full pl-1 mb-4">
-            <div className="relative">
+            {/* <div className="relative">
               <button
                 onClick={() => setMonthModalOpen(true)}
                 className="flex items-center gap-1.5 text-base font-semibold text-[#6F7173] hover:opacity-80 transition-opacity"
@@ -145,6 +139,10 @@ function DashBoardPage() {
                 }}
                 dateList={dateListOptions}
               />
+            </div> */}
+            <div className="text-base font-semibold text-[#6F7173]">
+              {" "}
+              오늘({currentDate.format("YYYY.MM.DD")})
             </div>
 
             <div className="flex items-center gap-4 text-sm font-medium pr-2 text-[#3D3F41]">
@@ -198,18 +196,20 @@ function DashBoardPage() {
         </div>
       </section>
 
-      <section className="mt-8">
-        <div className="flex items-end gap-2 mb-3">
-          <SubTitleBox
-            title="플랫폼 내 인기 랭킹"
-            label="플랫폼 랭킹"
-            infoText="매일 오전 10시, 무신사·W컨셉·네이버 등 주요 패션 플랫폼의 검색어 데이터를 자동 수집하며, 매거진·SNS 언급량 분석을 결합해 월별 종합 랭킹과 최근 주목도가 급상승한 패션 트렌드를 함께 제공합니다."
-          />
-        </div>
-        <div>
-          <RankBox />
-        </div>
-      </section>
+      {audienceType === "adult" && (
+        <section className="mt-8">
+          <div className="flex items-end gap-2 mb-3">
+            <SubTitleBox
+              title="플랫폼 내 인기 랭킹"
+              label="플랫폼 랭킹"
+              infoText="매일 오전 10시, 무신사·W컨셉·네이버 등 주요 패션 플랫폼의 검색어 데이터를 자동 수집하며, 매거진·SNS 언급량 분석을 결합해 월별 종합 랭킹과 최근 주목도가 급상승한 패션 트렌드를 함께 제공합니다."
+            />
+          </div>
+          <div>
+            <RankBox />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

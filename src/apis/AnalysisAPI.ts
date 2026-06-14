@@ -99,6 +99,8 @@ type ProductFilterPayload = {
   selectedColors: string[];
   selectedGenders: string[];
   selectedCategories: string[];
+  selectedDetails: string[];
+  selectedPatterns: string[];
 };
 
 const GetProductList = async (
@@ -109,6 +111,8 @@ const GetProductList = async (
     selectedColors,
     selectedGenders,
     selectedCategories,
+    selectedDetails,
+    selectedPatterns,
     cursor,
   } = payload;
 
@@ -117,6 +121,8 @@ const GetProductList = async (
     selectedColors,
     selectedGenders,
     selectedCategories,
+    selectedDetails,
+    selectedPatterns,
     size: 50,
     cursor: cursor || undefined,
   };

@@ -1,6 +1,7 @@
 import Sidebar from "@/components/common/Sidebar";
 import NewHeader from "@/components/common/NewHeader";
 import { NewFilterTabPanels } from "@/components/filter/NewFilterTabBar";
+import SessionExpiredModal from "@/components/common/SessionExpiredModal";
 
 function RootNewLayout() {
   return (
@@ -18,6 +19,8 @@ function RootNewLayout() {
       </div>
 
       <div id="modal-root" />
+
+      <SessionExpiredModal />
     </div>
   );
 }
