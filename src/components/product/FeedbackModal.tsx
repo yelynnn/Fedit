@@ -5,6 +5,7 @@ interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (feedback: string[]) => void;
+  fixed?: boolean;
 }
 
 const FEEDBACK_OPTIONS = [
@@ -15,10 +16,17 @@ const FEEDBACK_OPTIONS = [
   "실무에서 사용하는 표현과 차이가 있었어요",
 ];
 
-export default function FeedbackModal({ isOpen, onClose, onSubmit }: FeedbackModalProps) {
+export default function FeedbackModal({ isOpen, onClose, onSubmit, fixed = false }: FeedbackModalProps) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [isDirectInputActive, setIsDirectInputActive] = useState(false);
   const [directInput, setDirectInput] = useState("");
+
+  const handleClose = () => {
+    setSelectedOptions([]);
+    setIsDirectInputActive(false);
+    setDirectInput("");
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -43,14 +51,14 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit }: FeedbackMod
       ...(isDirectInputActive && directInput.trim() ? [directInput.trim()] : []),
     ];
     onSubmit(feedback);
-    onClose();
+    handleClose();
   };
 
   return (
-    <div className="absolute inset-0 z-[110] flex items-center justify-center p-4">
+    <div className={`${fixed ? "fixed" : "absolute"} inset-0 z-[110] flex items-center justify-center p-4`}>
       <div
         className="absolute inset-0 bg-white/60 backdrop-blur-[2px]"
-        onClick={onClose}
+        onClick={handleClose}
       />
       <div className="relative w-full max-w-[440px] bg-white rounded-2xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-[#ECEEF0]">
         <div className="flex items-start justify-between mb-2">
@@ -58,7 +66,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit }: FeedbackMod
             아쉬웠던 점을 선택해주세요.
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-[#91929D] hover:text-black transition-colors"
           >
             <Icon icon="material-symbols:close" className="w-6 h-6" />

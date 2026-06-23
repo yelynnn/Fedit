@@ -3,9 +3,18 @@ import RunwayContainer from "./RunwayContainer";
 
 interface RunwayBoxProps {
   brands: any[];
+  season: string;
 }
 
-export default function RunwayBox({ brands }: RunwayBoxProps) {
+function formatSeason(season: string): string {
+  const year = season.slice(0, 4);
+  const code = season.slice(4).toUpperCase();
+  if (code === "FW") return `${year} F/W`;
+  if (code === "SS") return `${year} S/S`;
+  return season;
+}
+
+export default function RunwayBox({ brands, season }: RunwayBoxProps) {
   const [activeTab, setActiveTab] = useState(() => brands[0]?.id ?? "");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -75,7 +84,7 @@ export default function RunwayBox({ brands }: RunwayBoxProps) {
                   {currentBrandData.name}
                 </h2>
                 <span className="text-xs font-semibold bg-[#F2F4F6] px-2 py-1 rounded text-[#888A8C]">
-                  2025 S/S
+                  {formatSeason(season)}
                 </span>
               </div>
 

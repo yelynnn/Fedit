@@ -47,6 +47,24 @@ export interface TrendColorResponse {
   trend_color: TrendColorItem[];
 }
 
+export interface ColorProductItem {
+  itemcode: string;
+  thumbnail: string;
+}
+
+const GetColorRelatedProducts = async (params: {
+  brand: string;
+  color_hex: string;
+}): Promise<ColorProductItem[]> => {
+  const response = await axiosInstance.get("/color/product", {
+    params: {
+      brand: params.brand,
+      color_hex: params.color_hex,
+    },
+  });
+  return Array.isArray(response.data) ? response.data : [];
+};
+
 const GetColorGraph = async (): Promise<ColorGraphResponse> => {
   const { brandList } = useFilterStore.getState();
   const query = brandList.join(",");
@@ -65,4 +83,4 @@ const GetTrendColor = async (): Promise<TrendColorResponse> => {
   return response.data;
 };
 
-export { GetColorGraph, GetTrendColor };
+export { GetColorGraph, GetTrendColor, GetColorRelatedProducts };

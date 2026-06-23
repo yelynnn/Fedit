@@ -162,11 +162,6 @@ const LoginPage = () => {
                 기업제휴 문의
               </button>
             </p>
-
-            <p className="flex items-center">
-              <span className="mr-1">☆</span>
-              비밀번호 분실 시, 회사 내 운영 담당자에게 문의하세요.
-            </p>
           </div>
         </section>
       </main>

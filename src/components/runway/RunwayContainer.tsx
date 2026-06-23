@@ -5,12 +5,17 @@ import elleIcon from "../../assets/elle.png";
 import wIcon from "../../assets/W.png";
 import bazaarIcon from "../../assets/bazaar.svg";
 
-// 매거진 아이콘 매핑
+// 매거진 아이콘 매핑 (소문자 키로 통일)
 const MAGAZINE_ICONS: Record<string, string> = {
+  vogue: vogueIcon,
   "vogue korea": vogueIcon,
+  elle: elleIcon,
   "elle korea": elleIcon,
+  w: wIcon,
   "w korea": wIcon,
+  "harper's bazaar": bazaarIcon,
   "harper's bazaar korea": bazaarIcon,
+  bazaar: bazaarIcon,
 };
 
 // 프롭 타입 정의
@@ -54,7 +59,12 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
         <div className="flex gap-1.5 rounded-md">
           {data.magazine.map((m, i) => {
             // 소문자로 변환하여 매핑값 확인
-            const iconPath = MAGAZINE_ICONS[m.name.toLowerCase()];
+            const nameLower = m.name.toLowerCase();
+            const iconPath =
+              MAGAZINE_ICONS[nameLower] ??
+              Object.entries(MAGAZINE_ICONS).find(([key]) =>
+                nameLower.startsWith(key),
+              )?.[1];
 
             return (
               <a
@@ -131,7 +141,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
           <div className="flex gap-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {data.texture.map((t, i) => (
               <div key={i} className="flex flex-col items-center gap-2 w-30 ">
-                <div className="h-9 flex items-center justify-center">
+                <div className="flex items-center justify-center h-9">
                   <span className="w-fit bg-[#EBF2FF] text-[#3E7EFF] text-sm px-1.5 py-0.5 rounded font-semibold text-center leading-tight">
                     {t.name}
                   </span>

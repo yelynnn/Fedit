@@ -35,6 +35,7 @@ const NextSignupPage = () => {
   const [companySize, setCompanySize] = useState(prevData?.companySize ?? "");
   const [isTermsAgreed] = useState(prevData?.agreed ?? false);
 
+  const [customJob, setCustomJob] = useState("");
   const [isJobOpen, setIsJobOpen] = useState(false);
   const [isCompanySizeOpen, setIsCompanySizeOpen] = useState(false);
 
@@ -42,9 +43,11 @@ const NextSignupPage = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const effectiveJob = job === "기타" ? customJob : job;
+
   const isFormValid =
     companyName.trim() !== "" &&
-    job.trim() !== "" &&
+    effectiveJob.trim() !== "" &&
     companySize.trim() !== "" &&
     isTermsAgreed;
 
@@ -66,7 +69,7 @@ const NextSignupPage = () => {
         phone_number: prevData.phone_number,
         company_name: companyName,
         company_size: companySize,
-        job_title: job,
+        job_title: effectiveJob,
       });
       setShowSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
@@ -134,8 +137,17 @@ const NextSignupPage = () => {
               onSelect={(value) => {
                 setJob(value);
                 setIsJobOpen(false);
+                if (value !== "기타") setCustomJob("");
               }}
             />
+            {job === "기타" && (
+              <InputField
+                label="기타 선택 시 직접 입력해주세요."
+                placeholder="직업 또는 직무를 입력해주세요."
+                value={customJob}
+                onChange={(e) => setCustomJob(e.target.value)}
+              />
+            )}
 
             <SelectField
               label="회사 규모를 알려주세요."
@@ -169,7 +181,7 @@ const NextSignupPage = () => {
                   returnState: {
                     ...prevData,
                     companyName,
-                    job,
+                    job: effectiveJob,
                     companySize,
                     agreed: isTermsAgreed,
                   },
