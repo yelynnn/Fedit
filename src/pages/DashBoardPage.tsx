@@ -96,14 +96,22 @@ function DashBoardPage() {
           {["adult", "kids"].map((type) => (
             <button
               key={type}
-              onClick={() => setAudienceType(type)}
-              className={`w-1/2 h-9 rounded-full text-sm font-semibold transition-colors duration-200 ${
+              onClick={() => type !== "kids" && setAudienceType(type)}
+              disabled={type === "kids"}
+              className={`relative w-1/2 h-9 rounded-full text-sm font-semibold transition-colors duration-200 ${
                 audienceType === type
                   ? "bg-[#1A1A1A] text-white"
-                  : "text-gray-500 hover:bg-gray-100"
+                  : "text-gray-400 cursor-not-allowed"
               }`}
             >
-              {type === "adult" ? "어덜트" : "키즈"}
+              {type === "adult" ? (
+                "어덜트"
+              ) : (
+                <span className="flex items-center justify-center gap-1">
+                  <Icon icon="si:lock-duotone" className="w-4 h-8" />
+                  키즈
+                </span>
+              )}
             </button>
           ))}
         </div>

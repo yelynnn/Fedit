@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from "react";
+import { useState, useRef, useLayoutEffect, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import FeedbackModal from "./FeedbackModal";
 import { PostJudge } from "@/apis/AnalysisAPI";
@@ -16,15 +16,33 @@ export default function AIAnalysisBox({
   isRanking,
   onDetailClick,
 }: AIAnalysisBoxProps) {
-  const [feedback, setFeedback] = useState<"none" | "like" | "dislike">("none");
+  const storageKey = `ai-feedback-${itemcode}`;
+  const [feedback, setFeedback] = useState<"none" | "like" | "dislike">(() => {
+    const stored = localStorage.getItem(storageKey);
+    return (stored as "none" | "like" | "dislike") || "none";
+  });
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
 
+  useEffect(() => {
+    const stored = localStorage.getItem(`ai-feedback-${itemcode}`);
+    setFeedback((stored as "none" | "like" | "dislike") || "none");
+  }, [itemcode]);
+
+  const saveFeedback = (value: "none" | "like" | "dislike") => {
+    setFeedback(value);
+    if (value === "none") {
+      localStorage.removeItem(`ai-feedback-${itemcode}`);
+    } else {
+      localStorage.setItem(`ai-feedback-${itemcode}`, value);
+    }
+  };
+
   const handleLike = () => {
     const next = feedback === "like" ? "none" : "like";
-    setFeedback(next);
+    saveFeedback(next);
     if (next === "like") {
       PostJudge({ itemcode, column: "ai_description", judge: 1, feedback: null }).catch(
         console.error,
@@ -34,14 +52,14 @@ export default function AIAnalysisBox({
 
   const handleDislike = () => {
     if (feedback === "dislike") {
-      setFeedback("none");
+      saveFeedback("none");
     } else {
       setIsModalOpen(true);
     }
   };
 
   const handleModalSubmit = (selectedFeedback: string[]) => {
-    setFeedback("dislike");
+    saveFeedback("dislike");
     PostJudge({
       itemcode,
       column: "ai_description",

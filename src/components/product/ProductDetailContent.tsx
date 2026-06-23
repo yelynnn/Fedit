@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useProductStore } from "@/stores/ProductStore";
@@ -36,6 +36,87 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
   const [detailData, setDetailData] = useState<ApiDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [related, setRelated] = useState<RelatedItem[]>([]);
+
+  type BoardItem = { itemcode: string; imageUrl: string };
+  type Board = { id: string; name: string; items: BoardItem[] };
+  const [boards, setBoards] = useState<Board[]>(() => {
+    try { return JSON.parse(localStorage.getItem("fedit-boards") || "[]"); } catch { return []; }
+  });
+  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(
+    () => localStorage.getItem("fedit-recent-board"),
+  );
+  const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
+  const [createBoardOpen, setCreateBoardOpen] = useState(false);
+  const [newBoardName, setNewBoardName] = useState("");
+  const [toast, setToast] = useState<{ boardName: string; imageUrl: string } | null>(null);
+  const boardDropdownRef = useRef<HTMLDivElement>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const selectedBoard = boards.find((b) => b.id === selectedBoardId) ?? boards[boards.length - 1] ?? null;
+  const isSaved = !!(effectiveId && selectedBoard?.items.some((i) => i.itemcode === effectiveId));
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (boardDropdownRef.current && !boardDropdownRef.current.contains(e.target as Node)) {
+        setBoardDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const persistBoards = (updated: Board[]) => {
+    setBoards(updated);
+    localStorage.setItem("fedit-boards", JSON.stringify(updated));
+  };
+
+  const handleSelectBoard = (id: string) => {
+    setSelectedBoardId(id);
+    localStorage.setItem("fedit-recent-board", id);
+    setBoardDropdownOpen(false);
+  };
+
+  const handleCreateBoard = () => {
+    if (!newBoardName.trim()) return;
+    const newBoard: Board = { id: Date.now().toString(), name: newBoardName.trim(), items: [] };
+    const updated = [...boards, newBoard];
+    persistBoards(updated);
+    setSelectedBoardId(newBoard.id);
+    localStorage.setItem("fedit-recent-board", newBoard.id);
+    setNewBoardName("");
+    setCreateBoardOpen(false);
+  };
+
+  const handleSave = () => {
+    if (!effectiveId) return;
+    if (!selectedBoard) { setCreateBoardOpen(true); return; }
+    persistBoards(
+      boards.map((b) =>
+        b.id === selectedBoard.id && !b.items.some((i) => i.itemcode === effectiveId)
+          ? { ...b, items: [...b.items, { itemcode: effectiveId, imageUrl: detailData?.thumbnail || detailData?.front_image_url || "" }] }
+          : b,
+      ),
+    );
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({
+      boardName: selectedBoard.name,
+      imageUrl: detailData?.thumbnail || detailData?.front_image_url || "",
+    });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleUndoSave = () => {
+    if (!effectiveId || !selectedBoard) return;
+    persistBoards(
+      boards.map((b) =>
+        b.id === selectedBoard.id
+          ? { ...b, items: b.items.filter((item) => item.itemcode !== effectiveId) }
+          : b,
+      ),
+    );
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(null);
+  };
 
   useEffect(() => {
     if (!effectiveId) return;
@@ -174,18 +255,57 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 cursor-pointer group">
-                      <span className="text-[#3D3F41] text-sm font-semibold group-hover:text-[#242628] transition-colors">
-                        폴더명
-                      </span>
-                      <Icon
-                        icon="mingcute:down-line"
-                        className="w-5 h-5 text-[#3D3F41] group-hover:text-[#242628] transition-colors"
-                      />
+                    <div className="relative" ref={boardDropdownRef}>
+                      <div
+                        className="flex items-center gap-1 cursor-pointer group"
+                        onClick={() => setBoardDropdownOpen((prev) => !prev)}
+                      >
+                        <span className="text-[#3D3F41] text-sm font-semibold group-hover:text-[#242628] transition-colors">
+                          {selectedBoard?.name ?? "폴더명"}
+                        </span>
+                        <Icon
+                          icon="mingcute:down-line"
+                          className="w-5 h-5 text-[#3D3F41] group-hover:text-[#242628] transition-colors"
+                        />
+                      </div>
+
+                      {boardDropdownOpen && (
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#ECEEF0] z-50 overflow-hidden">
+                          <div className="max-h-48 overflow-y-auto">
+                            {boards.length === 0 ? (
+                              <div className="px-4 py-3 text-sm text-[#91929D]">보드가 없습니다</div>
+                            ) : (
+                              boards.map((b) => (
+                                <button
+                                  key={b.id}
+                                  onClick={() => handleSelectBoard(b.id)}
+                                  className={`w-full text-left px-4 py-3 text-sm hover:bg-[#F6F8FA] transition-colors ${
+                                    selectedBoard?.id === b.id ? "font-semibold text-[#242628]" : "text-[#3D3F41]"
+                                  }`}
+                                >
+                                  {b.name}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                          <div className="border-t border-[#ECEEF0]">
+                            <button
+                              onClick={() => { setBoardDropdownOpen(false); setCreateBoardOpen(true); }}
+                              className="w-full text-left px-4 py-3 text-sm text-[#3D3F41] hover:bg-[#F6F8FA] transition-colors flex items-center gap-2"
+                            >
+                              <Icon icon="ph:plus" className="w-4 h-4" />
+                              보드 만들기
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <button className="flex items-center gap-1 px-3 py-2 bg-[#242628] text-white rounded-lg text-base font-semibold">
-                      저장하기
+                    <button
+                      onClick={handleSave}
+                      className="flex items-center gap-1 px-3 py-2 bg-[#242628] text-white rounded-lg text-base font-semibold"
+                    >
+                      {isSaved ? "저장됨" : "저장하기"}
                     </button>
                   </div>
                 </div>
@@ -289,6 +409,56 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
             </div>
           </>
         )
+      )}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-3 bg-[#3D3F41] text-white px-4 py-3 rounded-2xl shadow-xl">
+          {toast.imageUrl && (
+            <img src={toast.imageUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
+          )}
+          <span className="text-sm font-semibold whitespace-nowrap">
+            <span className="font-bold">{toast.boardName}</span>에 저장됨
+          </span>
+          <button
+            onClick={handleUndoSave}
+            className="bg-white text-[#3D3F41] text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+          >
+            실행 취소
+          </button>
+        </div>
+      )}
+
+      {createBoardOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setCreateBoardOpen(false)} />
+          <div className="relative bg-white rounded-2xl p-8 w-full max-w-[400px] shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-[#242628]">보드 만들기</h2>
+              <button onClick={() => setCreateBoardOpen(false)}>
+                <Icon icon="material-symbols:close" className="w-6 h-6 text-[#91929D] hover:text-black transition-colors" />
+              </button>
+            </div>
+            <div className="border border-[#ECEEF0] rounded-xl px-4 py-3 mb-6">
+              <div className="text-xs text-[#91929D] mb-1">보드 이름</div>
+              <input
+                className="w-full text-sm font-semibold text-[#242628] outline-none placeholder:font-normal placeholder:text-[#C4C6C8]"
+                placeholder="보드 이름을 입력하세요"
+                value={newBoardName}
+                onChange={(e) => setNewBoardName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreateBoard()}
+                autoFocus
+              />
+            </div>
+            <button
+              onClick={handleCreateBoard}
+              disabled={!newBoardName.trim()}
+              className={`w-full py-3 rounded-xl font-bold text-base transition-colors ${
+                newBoardName.trim() ? "bg-[#242628] text-white hover:bg-black cursor-pointer" : "bg-[#F6F8FA] text-[#A1A3A5] cursor-not-allowed"
+              }`}
+            >
+              만들기
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -8,6 +8,8 @@ import NewTypeAnalysis from "@/pages/filter/NewTypeAnalysis";
 import { useProductStore } from "@/stores/ProductStore";
 import { useEffect } from "react";
 import RunwayPage from "@/pages/RunwayPage";
+import BoardsPage from "@/pages/BoardsPage";
+import SettingsPage from "@/pages/SettingsPage";
 
 type TabOption = { label: string; icon: string };
 
@@ -58,7 +60,7 @@ export function NewFilterTabBar() {
           );
         })}
       </nav>
-      {selectedTab !== "대시보드" && (
+      {selectedTab !== "대시보드" && selectedTab !== "내 보드" && (
         <BrandTab isProductTab={selectedTab === "상품 분석"} />
       )}
     </div>
@@ -74,6 +76,8 @@ export function NewFilterTabPanels() {
       {selectedTab === "상품 분석" && <NewProductAnalysis />}
       {selectedTab === "색상 분석" && <NewColorAnalysis />}
       {selectedTab === "유형 분석" && <NewTypeAnalysis />}
+      {selectedTab === "내 보드" && <BoardsPage />}
+      {selectedTab === "설정" && <SettingsPage />}
     </div>
   );
 }

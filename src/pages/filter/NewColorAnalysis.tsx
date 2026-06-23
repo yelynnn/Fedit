@@ -176,6 +176,7 @@ function NewColorAnalysis() {
             ) : (
               <ColorBar
                 title={block.brand}
+                brand={block.brand === "전체" ? "ALL" : block.brand}
                 data={block.data}
                 onClose={
                   block.brand !== "전체"

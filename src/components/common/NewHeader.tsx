@@ -35,7 +35,7 @@ const TABS_CONFIG = [
 
 export default function NewHeader() {
   const [isBrandOpen, setBrandOpen] = useState(false);
-  const { selectedTab } = useFilterStore((s) => s);
+  const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
   const brandList = useFilterStore((s) => s.brandList);
 
   // 1. 현재 선택된 탭의 아이콘 정보를 찾습니다.
@@ -81,7 +81,10 @@ export default function NewHeader() {
             </div>
           </div>
 
-          <div className="cursor-pointer flex items-center h-10 px-4 bg-[#F8F9FA] rounded-r-2xl hover:bg-[#F1F3F5] transition-colors">
+          <div
+            onClick={() => setSelectedTab("내 보드")}
+            className="cursor-pointer flex items-center h-10 px-4 bg-[#F8F9FA] rounded-r-2xl hover:bg-[#F1F3F5] transition-colors"
+          >
             <span className="text-[15px] font-bold text-[#495057] mr-1.5">
               내 보드
             </span>
@@ -92,10 +95,10 @@ export default function NewHeader() {
           </div>
         </div>
 
-        {/* 사용자 아바타 */}
+        {/* 사용자 아바타
         <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center text-white font-bold text-sm shadow-sm">
           E
-        </div>
+        </div> */}
       </div>
 
       <BrandFilterModal

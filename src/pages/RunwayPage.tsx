@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import RunwayContainer from "@/components/runway/RunwayContainer";
 import RunwayBox from "@/components/runway/RunwayBox";
+import FeedbackModal from "@/components/product/FeedbackModal";
 import { Icon } from "@iconify/react";
 import { GetFashionShow } from "@/apis/RunwayAPI";
+import { PostJudge } from "@/apis/AnalysisAPI";
 
 
 
@@ -22,6 +24,42 @@ function RunwayPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const storageKey = `runway-feedback-${seasonValue}`;
+  const [feedback, setFeedback] = useState<"none" | "like" | "dislike">(() => {
+    const stored = localStorage.getItem(storageKey);
+    return (stored as "none" | "like" | "dislike") || "none";
+  });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(`runway-feedback-${seasonValue}`);
+    setFeedback((stored as "none" | "like" | "dislike") || "none");
+  }, [seasonValue]);
+
+  const saveFeedback = (value: "none" | "like" | "dislike") => {
+    setFeedback(value);
+    if (value === "none") localStorage.removeItem(`runway-feedback-${seasonValue}`);
+    else localStorage.setItem(`runway-feedback-${seasonValue}`, value);
+  };
+
+  const handleLike = () => {
+    const next = feedback === "like" ? "none" : "like";
+    saveFeedback(next);
+    if (next === "like") {
+      PostJudge({ itemcode: seasonValue, column: "runway", judge: 1, feedback: null }).catch(console.error);
+    }
+  };
+
+  const handleDislike = () => {
+    if (feedback === "dislike") saveFeedback("none");
+    else setIsModalOpen(true);
+  };
+
+  const handleModalSubmit = (selectedFeedback: string[]) => {
+    saveFeedback("dislike");
+    PostJudge({ itemcode: seasonValue, column: "runway", judge: -1, feedback: selectedFeedback }).catch(console.error);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -64,15 +102,38 @@ function RunwayPage() {
   }, [seasonValue]);
 
   return (
-    <div className="min-h-screen px-16 mx-auto">
+    <div className="relative min-h-screen px-16 mx-auto">
       <div className="mb-2">
         <h1 className="text-[28px] font-semibold text-[#111] tracking-tight">
           Fashion Week Runway Analysis
         </h1>
-        <p className="text-[#6F7173] text-base font-semibold mt-2">
-          주요 브랜드 런웨이 비교 분석 & 시즌 트렌드 인사이트
-        </p>
+        <div className="flex items-center gap-3 mt-2">
+          <p className="text-[#6F7173] text-base font-semibold">
+            주요 브랜드 런웨이 비교 분석 & 시즌 트렌드 인사이트
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleLike}
+              className={`flex items-center transition-colors ${feedback === "like" ? "text-[#6F7173]" : "text-gray-300 hover:text-gray-500"}`}
+            >
+              <Icon icon={feedback === "like" ? "ph:thumbs-up-fill" : "ph:thumbs-up"} className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleDislike}
+              className={`flex items-center transition-colors ${feedback === "dislike" ? "text-[#6F7173]" : "text-gray-300 hover:text-gray-500"}`}
+            >
+              <Icon icon={feedback === "dislike" ? "ph:thumbs-down-fill" : "ph:thumbs-down"} className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       </div>
+
+      <FeedbackModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleModalSubmit}
+        fixed
+      />
 
       <div className="relative mt-5" ref={dropdownRef}>
         <div
@@ -136,7 +197,7 @@ function RunwayPage() {
           )}
           {brands.length > 0 && (
             <section className="mb-20">
-              <RunwayBox brands={brands} />
+              <RunwayBox brands={brands} season={seasonValue} />
             </section>
           )}
         </>
