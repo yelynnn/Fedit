@@ -207,7 +207,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                     detailData.front_image_url ||
                     defaultImg
                   }
-                  className="w-[400px] h-[530px] object-cover rounded-xl bg-[#F9FAFB]"
+                  className="w-[400px] h-[530px] object-cover rounded-xl bg-fill-bg-strong"
                   alt="product"
                 />
 
@@ -218,7 +218,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                   >
                     <Icon
                       icon="lucide:arrow-left"
-                      className="w-4 h-4 text-[#242628]"
+                      className="w-4 h-4 text-tx-default"
                     />
                   </button>
 
@@ -227,7 +227,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                       href={detailData.product_detail_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-2 py-[2px] bg-white/90 backdrop-blur-sm rounded-lg shadow-md text-xs font-medium text-[#6F7173] hover:bg-white transition-colors"
+                      className="flex items-center gap-1 px-2 py-[2px] bg-white/90 backdrop-blur-sm rounded-lg shadow-md text-xs font-medium text-tx-alt hover:bg-white transition-colors"
                     >
                       상세페이지
                       <Icon icon="lucide:external-link" className="w-2 h-2" />
@@ -237,7 +237,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
 
                 {detailData.platform && (
                   <div className="absolute bottom-4 left-4">
-                    <div className="flex items-center justify-center w-5 h-5 text-white bg-[#3D3F41] rounded text-xs font-medium">
+                    <div className="flex items-center justify-center w-5 h-5 text-white bg-tx-neutral rounded text-xs font-medium">
                       {getPlatformLabel(detailData.platform)}
                     </div>
                   </div>
@@ -247,10 +247,10 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between ">
                   <div className="flex flex-col gap-1">
-                    <span className="text-sm font-bold text-[#242628]">
+                    <span className="text-sm font-bold text-tx-default">
                       {detailData.brand || "-"}
                     </span>
-                    <div className="text-xs text-[#91929D] mb-4">
+                    <div className="text-xs text-tx-assistive mb-4">
                       {mainCategory} {subCategory && ` / ${subCategory}`}
                     </div>
                   </div>
@@ -260,27 +260,27 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                         className="flex items-center gap-1 cursor-pointer group"
                         onClick={() => setBoardDropdownOpen((prev) => !prev)}
                       >
-                        <span className="text-[#3D3F41] text-sm font-semibold group-hover:text-[#242628] transition-colors">
+                        <span className="text-tx-neutral text-sm font-semibold group-hover:text-tx-default transition-colors">
                           {selectedBoard?.name ?? "폴더명"}
                         </span>
                         <Icon
                           icon="mingcute:down-line"
-                          className="w-5 h-5 text-[#3D3F41] group-hover:text-[#242628] transition-colors"
+                          className="w-5 h-5 text-tx-neutral group-hover:text-tx-default transition-colors"
                         />
                       </div>
 
                       {boardDropdownOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#ECEEF0] z-50 overflow-hidden">
+                        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-line-divider z-50 overflow-hidden">
                           <div className="max-h-48 overflow-y-auto">
                             {boards.length === 0 ? (
-                              <div className="px-4 py-3 text-sm text-[#91929D]">보드가 없습니다</div>
+                              <div className="px-4 py-3 text-sm text-tx-assistive">보드가 없습니다</div>
                             ) : (
                               boards.map((b) => (
                                 <button
                                   key={b.id}
                                   onClick={() => handleSelectBoard(b.id)}
-                                  className={`w-full text-left px-4 py-3 text-sm hover:bg-[#F6F8FA] transition-colors ${
-                                    selectedBoard?.id === b.id ? "font-semibold text-[#242628]" : "text-[#3D3F41]"
+                                  className={`w-full text-left px-4 py-3 text-sm hover:bg-surface-base transition-colors ${
+                                    selectedBoard?.id === b.id ? "font-semibold text-tx-default" : "text-tx-neutral"
                                   }`}
                                 >
                                   {b.name}
@@ -288,10 +288,10 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                               ))
                             )}
                           </div>
-                          <div className="border-t border-[#ECEEF0]">
+                          <div className="border-t border-line-divider">
                             <button
                               onClick={() => { setBoardDropdownOpen(false); setCreateBoardOpen(true); }}
-                              className="w-full text-left px-4 py-3 text-sm text-[#3D3F41] hover:bg-[#F6F8FA] transition-colors flex items-center gap-2"
+                              className="w-full text-left px-4 py-3 text-sm text-tx-neutral hover:bg-surface-base transition-colors flex items-center gap-2"
                             >
                               <Icon icon="ph:plus" className="w-4 h-4" />
                               보드 만들기
@@ -303,47 +303,47 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
 
                     <button
                       onClick={handleSave}
-                      className="flex items-center gap-1 px-3 py-2 bg-[#242628] text-white rounded-lg text-base font-semibold"
+                      className="flex items-center gap-1 px-3 py-2 bg-fill-primary text-white rounded-lg text-base font-semibold"
                     >
                       {isSaved ? "저장됨" : "저장하기"}
                     </button>
                   </div>
                 </div>
 
-                <h1 className="text-2xl font-semibold text-[#0B0E0F] mb-5 break-all leading-tight">
+                <h1 className="text-2xl font-semibold text-tx-strong mb-5 break-all leading-tight">
                   {detailData.product_name}
                 </h1>
 
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     {detailData.regular_price && (
-                      <span className="text-sm font-semibold text-[#91929D] line-through">
+                      <span className="text-sm font-semibold text-tx-assistive line-through">
                         {formatPrice(detailData.regular_price)}
                       </span>
                     )}
-                    <span className="text-base font-bold text-[#242628]">
+                    <span className="text-base font-bold text-tx-default">
                       {formatPrice(detailData.current_price)}
                     </span>
                   </div>
 
-                  <div className="w-[1px] h-4 bg-[#E4E4E4]" />
+                  <div className="w-[1px] h-4 bg-line-alt" />
 
                   <div className="flex items-center gap-2">
-                    <span className="bg-[#ECEEF0] px-2 py-1 rounded text-[11px] font-bold text-[#6F7173]">
+                    <span className="bg-line-divider px-2 py-1 rounded text-[11px] font-bold text-tx-alt">
                       성별
                     </span>
-                    <span className="text-xs font-medium text-[#242628]">
+                    <span className="text-xs font-medium text-tx-default">
                       {detailData.gender || "-"}
                     </span>
                   </div>
 
-                  <div className="w-[1px] h-4 bg-[#E4E4E4]" />
+                  <div className="w-[1px] h-4 bg-line-alt" />
 
                   <div className="flex items-center gap-2">
-                    <span className="bg-[#ECEEF0] px-2 py-1 rounded text-[11px] font-bold text-[#6F7173]">
+                    <span className="bg-line-divider px-2 py-1 rounded text-[11px] font-bold text-tx-alt">
                       신상 업데이트
                     </span>
-                    <span className="text-xs font-medium text-[#242628]">
+                    <span className="text-xs font-medium text-tx-default">
                       {releaseText}
                     </span>
                   </div>
@@ -351,13 +351,13 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
 
                 <div className="flex gap-2 mt-2 mb-6">
                   {detailData.views && (
-                    <div className="px-3 py-1.5 bg-[#EBF2FF] text-[#3E7EFF] text-xs font-bold rounded-lg">
+                    <div className="px-3 py-1.5 bg-falling-bg text-[#3E7EFF] text-xs font-bold rounded-lg">
                       누적조회수{" "}
                       {Number(detailData.views).toLocaleString("ko-KR")}
                     </div>
                   )}
                   {detailData.sales != 1 && (
-                    <div className="px-3 py-1.5 bg-[#FFF5E9] text-[#FF9528] text-xs font-bold rounded-lg">
+                    <div className="px-3 py-1.5 bg-data-orange-light text-status-warning text-xs font-bold rounded-lg">
                       누적판매{" "}
                       {Number(detailData.sales).toLocaleString("ko-KR")}
                     </div>
@@ -383,9 +383,9 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
               isRanking={false}
             />
             <TrendIndexBox itemCode={effectiveId ?? ""} />
-            <div className="h-[1px] w-full bg-[#E4E4E4] my-5" />
+            <div className="h-[1px] w-full bg-line-alt my-5" />
             <div className="flex flex-col gap-3">
-              <span className="font-semibold text-[#56585A]">
+              <span className="font-semibold text-tx-alt">
                 유사한 스타일 아이템
               </span>
               <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -411,7 +411,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
         )
       )}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-3 bg-[#3D3F41] text-white px-4 py-3 rounded-2xl shadow-xl">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-3 bg-tx-neutral text-white px-4 py-3 rounded-2xl shadow-xl">
           {toast.imageUrl && (
             <img src={toast.imageUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
           )}
@@ -420,7 +420,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
           </span>
           <button
             onClick={handleUndoSave}
-            className="bg-white text-[#3D3F41] text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+            className="bg-white text-tx-neutral text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
           >
             실행 취소
           </button>
@@ -432,15 +432,15 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
           <div className="absolute inset-0 bg-black/30" onClick={() => setCreateBoardOpen(false)} />
           <div className="relative bg-white rounded-2xl p-8 w-full max-w-[400px] shadow-xl">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-[#242628]">보드 만들기</h2>
+              <h2 className="text-xl font-bold text-tx-default">보드 만들기</h2>
               <button onClick={() => setCreateBoardOpen(false)}>
-                <Icon icon="material-symbols:close" className="w-6 h-6 text-[#91929D] hover:text-black transition-colors" />
+                <Icon icon="material-symbols:close" className="w-6 h-6 text-tx-assistive hover:text-black transition-colors" />
               </button>
             </div>
-            <div className="border border-[#ECEEF0] rounded-xl px-4 py-3 mb-6">
-              <div className="text-xs text-[#91929D] mb-1">보드 이름</div>
+            <div className="border border-line-divider rounded-xl px-4 py-3 mb-6">
+              <div className="text-xs text-tx-assistive mb-1">보드 이름</div>
               <input
-                className="w-full text-sm font-semibold text-[#242628] outline-none placeholder:font-normal placeholder:text-[#C4C6C8]"
+                className="w-full text-sm font-semibold text-tx-default outline-none placeholder:font-normal placeholder:text-[#C4C6C8]"
                 placeholder="보드 이름을 입력하세요"
                 value={newBoardName}
                 onChange={(e) => setNewBoardName(e.target.value)}
@@ -452,7 +452,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
               onClick={handleCreateBoard}
               disabled={!newBoardName.trim()}
               className={`w-full py-3 rounded-xl font-bold text-base transition-colors ${
-                newBoardName.trim() ? "bg-[#242628] text-white hover:bg-black cursor-pointer" : "bg-[#F6F8FA] text-[#A1A3A5] cursor-not-allowed"
+                newBoardName.trim() ? "bg-fill-primary text-white hover:bg-black cursor-pointer" : "bg-surface-base text-tx-assistive cursor-not-allowed"
               }`}
             >
               만들기

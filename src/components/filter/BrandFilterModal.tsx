@@ -139,8 +139,8 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       onClick={onClick}
       className={
         checked
-          ? "px-1 h-8 rounded-lg border-1 border-[#3D3F41] bg-white text-[#3D3F41] flex items-center justify-center text-xs"
-          : "px-1 h-8 rounded-lg border border-[#ECEEF0] bg-[#F9FAFB] text-[#888A8C] flex items-center justify-center text-xs hover:border-[#D0D3D6]"
+          ? "px-1 h-8 rounded-lg border-1 border-tx-neutral bg-white text-tx-neutral flex items-center justify-center text-xs"
+          : "px-1 h-8 rounded-lg border border-line-divider bg-fill-bg-strong text-icon-neutral flex items-center justify-center text-xs hover:border-line-neutral"
       }
     >
       {brand}
@@ -158,49 +158,49 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       shouldCloseOnOverlayClick
     >
       <div className="flex items-center justify-between px-6 pt-5 pb-3">
-        <h2 className="text-[20px] font-semibold text-[#3D3F41]">
+        <h2 className="text-[20px] font-semibold text-tx-neutral">
           브랜드 필터
         </h2>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
-          <Icon icon="fontisto:close-a" width={18} className="text-[#888A8C]" />
+          <Icon icon="fontisto:close-a" width={18} className="text-icon-neutral" />
         </button>
       </div>
 
       <div className="px-6 pb-3 my-2">
-        <div className="flex items-center gap-2 px-3 py-2 border border-[#E4E4E4] rounded-lg bg-white">
+        <div className="flex items-center gap-2 px-3 py-2 border border-line-alt rounded-lg bg-white">
           <Icon
             icon="mingcute:search-line"
-            className="w-4 h-4 text-[#888A8C]"
+            className="w-4 h-4 text-icon-neutral"
           />
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="브랜드를 입력하세요."
-            className="flex-1 text-sm outline-none placeholder:text-[#B0B0B0] bg-transparent"
+            className="flex-1 text-sm outline-none placeholder:text-icon-alt bg-transparent"
           />
         </div>
       </div>
 
       {keyword.trim() !== "" && visibleBrands.length === 0 && (
         <div className="px-6 mb-2">
-          <div className="w-full p-3 rounded-lg bg-[#F9FAFB] flex items-center justify-between gap-4">
+          <div className="w-full p-3 rounded-lg bg-fill-bg-strong flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-[#888A8C]">
+              <span className="text-xs font-semibold text-icon-neutral">
                 검색 결과
               </span>
-              <span className="text-sm font-medium text-[#3D3F41]">
+              <span className="text-sm font-medium text-tx-neutral">
                 해당 브랜드가 없어요.
               </span>
             </div>
             <button
               type="button"
-              className="self-end flex-shrink-0 flex items-center gap-1.5 px-2 py-1 bg-white border border-[#ECEEF0] rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+              className="self-end flex-shrink-0 flex items-center gap-1.5 px-2 py-1 bg-white border border-line-divider rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
             >
               <Icon
                 icon="solar:shop-2-linear"
-                className="w-4 h-4 text-[#3D3F41]"
+                className="w-4 h-4 text-tx-neutral"
               />
-              <span className="text-xs font-semibold text-[#3D3F41]">
+              <span className="text-xs font-semibold text-tx-neutral">
                 브랜드 입점 신청하기
               </span>
             </button>
@@ -223,7 +223,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
         >
           <div
             ref={scrollRef}
-            className="flex overflow-x-auto whitespace-nowrap items-center gap-6 text-base font-semibold border-b border-[#EDEEEF] scroll-smooth"
+            className="flex overflow-x-auto whitespace-nowrap items-center gap-6 text-base font-semibold border-b border-line-divider scroll-smooth"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             onScroll={updateScrollButtons}
           >
@@ -236,8 +236,8 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
                   className={[
                     "pb-1 -mb-px shrink-0",
                     active
-                      ? "text-[#242628] border-b-3 border-[#242628]"
-                      : "text-[#888A8C] border-b-1 border-transparent hover:text-[#4B4B4B]",
+                      ? "text-tx-default border-b-3 border-fill-primary"
+                      : "text-icon-neutral border-b-1 border-transparent hover:text-tx-neutral",
                   ].join(" ")}
                 >
                   {label}
@@ -251,11 +251,11 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
               onClick={scrollLeftFn}
               className="absolute left-0 top-[calc(50%-2px)] -translate-y-1/2 
           px-2 py-2 rounded-lg bg-white shadow-[0_4px_8px_rgba(0,0,0,0.10)]
-          border border-[#E4E4E4] z-10"
+          border border-line-alt z-10"
             >
               <Icon
                 icon="grommet-icons:form-previous"
-                className="w-5 h-5 text-[#3D3F41]"
+                className="w-5 h-5 text-tx-neutral"
               />
             </button>
           )}
@@ -265,11 +265,11 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
               onClick={scrollRightFn}
               className="absolute right-0 top-[calc(50%-2px)] -translate-y-1/2 
           px-2 py-2 rounded-lg bg-white shadow-[0_4px_8px_rgba(0,0,0,0.10)]
-          border border-[#E4E4E4] z-10"
+          border border-line-alt z-10"
             >
               <Icon
                 icon="grommet-icons:form-next"
-                className="w-5 h-5 text-[#3D3F41]"
+                className="w-5 h-5 text-tx-neutral"
               />
             </button>
           )}
@@ -277,22 +277,22 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       </div>
 
       <div className="flex items-center justify-between px-6 pt-3 pb-1 text-sm">
-        <div className="text-[#888A8C] font-semibold">{brandList.length}개</div>
+        <div className="text-icon-neutral font-semibold">{brandList.length}개</div>
         <label className="inline-flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
-            className="w-4 h-4 accent-[#3D3F41]"
+            className="w-4 h-4 accent-tx-neutral"
             checked={allVisibleChecked}
             onChange={toggleAllVisible}
             disabled={visibleBrands.length === 0}
           />
-          <span className="text-[#888A8C]">브랜드 전체 선택하기</span>
+          <span className="text-icon-neutral">브랜드 전체 선택하기</span>
         </label>
       </div>
 
       <div className="flex-1 px-6 py-3 overflow-y-auto">
         {loading ? (
-          <div className="text-sm text-[#888A8C] py-8 text-center">
+          <div className="text-sm text-icon-neutral py-8 text-center">
             불러오는 중…
           </div>
         ) : err ? (
@@ -316,7 +316,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
               );
             })}
             {visibleBrands.length === 0 && (
-              <div className="text-sm text-[#888A8C] py-8 text-center col-span-full">
+              <div className="text-sm text-icon-neutral py-8 text-center col-span-full">
                 {activeTab === "favorite"
                   ? "즐겨찾기한 브랜드가 없어요."
                   : activeTab === "selected"
@@ -331,7 +331,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       <div className="px-6">
         <button
           onClick={onSubmit}
-          className="w-full h-10 rounded-lg bg-[#242628] text-white text-sm font-semibold"
+          className="w-full h-10 rounded-lg bg-fill-primary text-white text-sm font-semibold"
         >
           해당 브랜드 데이터 보기
         </button>
@@ -339,7 +339,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
           onClick={() => {
             resetBrand();
           }}
-          className="mt-1 w-full h-10 rounded-lg text-[#888A8C] text-sm flex items-center justify-center gap-2 hover:bg-gray-50"
+          className="mt-1 w-full h-10 rounded-lg text-icon-neutral text-sm flex items-center justify-center gap-2 hover:bg-gray-50"
         >
           <Icon icon="ph:arrow-counter-clockwise" />
           선택 초기화하기

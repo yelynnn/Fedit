@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useChatStore } from "@/stores/ChatStore";
+import { useUIStore } from "@/stores/UIStore";
 import feditLogo from "@/assets/logo/feditLogo.svg";
 
 const TABS_CONFIG = [
@@ -66,12 +67,14 @@ function ConversationItem({
   return (
     <div
       className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-colors
-        ${isActive ? "bg-[#F2F9E9]" : "hover:bg-[#F6F8FA]"}`}
-      onClick={() => { if (!editing) onOpen(); }}
+        ${isActive ? "bg-brand-subtle" : "hover:bg-surface-base"}`}
+      onClick={() => {
+        if (!editing) onOpen();
+      }}
     >
       <Icon
         icon="ph:chat-teardrop-text"
-        className="w-3.5 h-3.5 text-[#BABCBE] flex-shrink-0"
+        className="w-3.5 h-3.5 text-icon-alt flex-shrink-0"
       />
       {editing ? (
         <input
@@ -81,14 +84,17 @@ function ConversationItem({
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === "Enter") commit();
-            if (e.key === "Escape") { setDraft(title); setEditing(false); }
+            if (e.key === "Escape") {
+              setDraft(title);
+              setEditing(false);
+            }
           }}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 text-xs text-[#3D3F41] bg-white rounded px-1 py-0.5 outline-none border border-[#BABCBE]"
+          className="flex-1 min-w-0 text-xs text-tx-neutral bg-white rounded px-1 py-0.5 outline-none border border-line-neutral"
         />
       ) : (
         <>
-          <span className="flex-1 min-w-0 text-xs text-[#3D3F41] truncate">
+          <span className="flex-1 min-w-0 text-xs truncate text-tx-neutral">
             {title}
           </span>
           <button
@@ -97,7 +103,7 @@ function ConversationItem({
               setDraft(title);
               setEditing(true);
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-[#BABCBE] hover:text-[#3D3F41]"
+            className="flex-shrink-0 transition-opacity opacity-0 group-hover:opacity-100 text-icon-alt hover:text-tx-neutral"
           >
             <Icon icon="lucide:pencil" className="w-3 h-3" />
           </button>
@@ -116,14 +122,19 @@ export default function Sidebar() {
     openNewConversation,
     updateTitle,
   } = useChatStore((s) => s);
+  const { openSettingsModal } = useUIStore();
 
   const [isCollapsed, setIsCollapsed] = useState(
     () => localStorage.getItem("sidebar-collapsed") === "true",
   );
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
-  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
   const [popupPos, setPopupPos] = useState({ bottom: 0, left: 0 });
+
+  const userName = localStorage.getItem("userName") || "사용자명";
+  const userEmail = localStorage.getItem("userEmail") || "";
+  const userInitial = userName.charAt(0).toUpperCase();
 
   const recentConversations = [...conversations]
     .sort((a, b) => b.updatedAt - a.updatedAt)
@@ -137,10 +148,10 @@ export default function Sidebar() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
-        settingsRef.current &&
-        !settingsRef.current.contains(e.target as Node)
+        profileRef.current &&
+        !profileRef.current.contains(e.target as Node)
       ) {
-        setSettingsOpen(false);
+        setProfileOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -150,13 +161,26 @@ export default function Sidebar() {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userEmail");
     window.location.href = "/login";
+  };
+
+  const handleProfileButtonClick = () => {
+    if (profileButtonRef.current) {
+      const rect = profileButtonRef.current.getBoundingClientRect();
+      setPopupPos({
+        bottom: window.innerHeight - rect.top + 8,
+        left: rect.left,
+      });
+    }
+    setProfileOpen((prev) => !prev);
   };
 
   return (
     <aside
-      className={`h-screen bg-white border-r border-[#ECEEF0] flex flex-col transition-all duration-300
-        flex-shrink-0 z-40 ${isCollapsed ? "w-[72px]" : "w-[220px]"}`}
+      className={`h-screen bg-white border-r border-line-divider flex flex-col transition-[width] duration-200 ease-out
+        flex-shrink-0 z-40 ${isCollapsed ? "w-[72px]" : "w-55"}`}
     >
       {/* 로고 영역 */}
       <div
@@ -171,13 +195,13 @@ export default function Sidebar() {
             >
               <Icon
                 icon="meteor-icons:angles-left"
-                className="w-5 h-5 text-[#888A8C]"
+                className="w-5 h-5 text-icon-neutral"
               />
             </button>
           </>
         ) : (
           <div
-            className="relative flex items-center justify-center flex-shrink-0 w-10 h-10 overflow-hidden bg-black rounded-md cursor-pointer group transition-all duration-200 hover:bg-[#F6F8FA]"
+            className="relative flex items-center justify-center flex-shrink-0 w-10 h-10 overflow-hidden transition-all duration-200 bg-black rounded-md cursor-pointer group hover:bg-surface-base"
             onClick={() => toggleCollapsed(false)}
           >
             <img
@@ -196,28 +220,30 @@ export default function Sidebar() {
       </div>
 
       {/* 탭 네비게이션 */}
-      <nav className={`px-2 space-y-2 flex-shrink-0 ${isCollapsed ? "mt-2" : "mt-4"}`}>
+      <nav
+        className={`px-2 space-y-2 flex-shrink-0 ${isCollapsed ? "mt-0" : "mt-4"}`}
+      >
         {TABS_CONFIG.map((tab) => {
           const active = selectedTab === tab.label;
           return (
             <button
               key={tab.label}
               onClick={() => setSelectedTab(tab.label)}
-              className={`w-full flex transition-all duration-200
+              className={`w-full flex transition-colors duration-150
           ${
             isCollapsed
               ? "flex-col items-center justify-center"
-              : "flex-row items-center p-3 gap-4 rounded-lg"
+              : "flex-row items-center h-9 p-2 gap-3 rounded-lg self-stretch"
           }
-          ${!isCollapsed && active ? "bg-[#F2F9E9] text-[#0B0E0F]" : "text-[#6F7173]"}
+          ${!isCollapsed && active ? "bg-brand-subtle" : ""}
         `}
             >
               <div
                 className={`flex items-center justify-center transition-colors
     ${
       isCollapsed
-        ? `w-12 h-12 rounded-xl ${active ? "bg-[#F2F9E9] text-[#0B0E0F] border border-[#F6F8FA]" : "text-[#BABCBE]"}`
-        : `${active ? "text-[#0B0E0F]" : "text-[#BABCBE]"}`
+        ? `w-10 h-10 rounded-xl ${active ? "bg-brand-subtle text-tx-strong border border-[#F6F8FA]" : "text-icon-alt"}`
+        : `${active ? "text-tx-strong" : "text-icon-alt"}`
     }
   `}
               >
@@ -228,9 +254,9 @@ export default function Sidebar() {
               </div>
 
               <span
-                className={`font-semibold tracking-tighter whitespace-nowrap
-          ${isCollapsed ? "text-[11px] leading-tight mt-1" : "text-base"}
-          ${active && isCollapsed ? "text-[#0B0E0F]" : ""}
+                className={`whitespace-nowrap transition-opacity duration-150
+          ${isCollapsed ? "type-body-xsmall text-tx-neutral mt-1" : "type-body-small text-tx-default"}
+          ${active ? "text-tx-strong" : ""}
         `}
               >
                 {tab.label}
@@ -242,22 +268,24 @@ export default function Sidebar() {
 
       {/* FEDI 최근 대화 — 사이드바 펼쳐진 경우에만 표시 */}
       {!isCollapsed && (
-        <div className="flex-1 flex flex-col min-h-0 mt-4 px-2">
+        <div className="flex flex-col flex-1 min-h-0 px-2 mt-4">
           <div className="flex items-center justify-between px-2 mb-2">
-            <span className="text-[10px] font-semibold text-[#91929D] uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-tx-assistive uppercase tracking-wider">
               FEDI 최근 대화
             </span>
             <button
               onClick={() => openNewConversation()}
               title="새 대화 시작"
-              className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#F6F8FA] transition-colors text-[#BABCBE] hover:text-[#3D3F41]"
+              className="flex items-center justify-center w-5 h-5 transition-colors rounded hover:bg-surface-base text-icon-alt hover:text-tx-neutral"
             >
               <Icon icon="lucide:plus" className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {recentConversations.length === 0 ? (
-            <p className="text-[11px] text-[#BABCBE] px-2">대화 내역이 없습니다</p>
+            <p className="text-[11px] text-icon-alt px-2">
+              대화 내역이 없습니다
+            </p>
           ) : (
             <div className="flex flex-col gap-0.5 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {recentConversations.map((conv) => (
@@ -278,60 +306,107 @@ export default function Sidebar() {
       {/* collapsed 상태면 flex-1 spacer */}
       {isCollapsed && <div className="flex-1" />}
 
-      {/* 설정 버튼 */}
-      <div ref={settingsRef} className="flex-shrink-0">
-        <div className="p-2 border-t border-[#ECEEF0]">
-          <button
-            ref={settingsButtonRef}
-            onClick={() => {
-              if (settingsButtonRef.current) {
-                const rect = settingsButtonRef.current.getBoundingClientRect();
-                setPopupPos({
-                  bottom: window.innerHeight - rect.top + 8,
-                  left: rect.left,
-                });
-              }
-              setSettingsOpen((prev) => !prev);
-            }}
-            className={`w-full flex items-center rounded-xl transition-colors
-              ${settingsOpen ? "bg-[#F2F9E9] text-[#0B0E0F]" : "text-[#6F7173] hover:bg-[#F6F8FA]"}
-              ${isCollapsed ? "flex-col justify-center py-4 gap-1" : "px-4 py-3 gap-3"}`}
-          >
-            <Icon
-              icon="material-symbols:settings-outline"
-              className="w-6 h-6"
-            />
-            <span
-              className={`font-semibold ${isCollapsed ? "text-[10px]" : "text-base"}`}
+      {/* 가이드 / 의견보내기 — 펼쳐진 상태에서만 표시 */}
+      {!isCollapsed && (
+        <div className="flex-shrink-0 px-2 pb-2">
+          <div className="flex items-center rounded-lg bg-[#F9FAFB] overflow-hidden">
+            <button
+              onClick={() => openSettingsModal("사용가이드")}
+              className="flex-1 py-2 text-center text-[12px] font-semibold leading-[133%] text-[#6F7173] hover:text-tx-default transition-colors"
             >
-              설정
-            </span>
+              가이드
+            </button>
+            <div className="flex-shrink-0 w-px h-4 bg-line-divider" />
+            <button className="flex-1 py-2 text-center text-[12px] font-semibold leading-[133%] text-[#6F7173] hover:text-tx-default transition-colors">
+              의견보내기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 프로필 버튼 */}
+      <div ref={profileRef} className="flex-shrink-0">
+        <div className="p-2 border-t border-line-divider">
+          <button
+            ref={profileButtonRef}
+            onClick={handleProfileButtonClick}
+            className={`w-full flex items-center gap-3 rounded-xl transition-colors
+              ${profileOpen ? "bg-surface-base" : "hover:bg-surface-base"}
+              ${isCollapsed ? "justify-center py-2" : "px-2 py-2"}`}
+          >
+            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#F47C2B] flex items-center justify-center text-white font-semibold text-sm">
+              {userInitial}
+            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-semibold truncate text-tx-default">
+                  {userName}
+                </p>
+                <p className="text-xs truncate text-tx-alt">{userEmail}</p>
+              </div>
+            )}
           </button>
         </div>
 
-        {settingsOpen && (
+        {profileOpen && (
           <div
-            className="fixed z-[100] w-45 bg-white border border-[#ECEEF0] rounded-xl shadow-xl overflow-hidden"
-            style={{ bottom: popupPos.bottom, left: popupPos.left }}
+            className="fixed z-[100] flex flex-col items-center gap-0 p-2 bg-white border border-line-divider rounded-xl shadow-xl"
+            style={{ width: 250, bottom: popupPos.bottom, left: popupPos.left }}
           >
+            {/* 유저 정보 */}
+            <div className="flex items-center w-full gap-2 px-2 py-2">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#F47C2B] flex items-center justify-center text-white font-semibold text-sm">
+                {userInitial}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate text-tx-default">
+                  {userName}
+                </p>
+                <p className="text-xs truncate text-tx-alt">{userEmail}</p>
+              </div>
+            </div>
+
+            <div className="w-full h-px my-2 bg-line-divider" />
+
+            {/* 메뉴 항목 */}
             <button
-              onClick={() => {
-                setSelectedTab("설정");
-                setSettingsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[#3D3F41] hover:bg-[#F6F8FA] transition-colors"
+              onClick={() => { openSettingsModal("구독"); setProfileOpen(false); }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
+            >
+              <Icon icon="ph:sparkle" className="flex-shrink-0 w-5 h-5" />
+              요금제 업그레이드
+            </button>
+            <button
+              onClick={() => { openSettingsModal("내정보"); setProfileOpen(false); }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
+            >
+              <Icon icon="ph:user-circle" className="flex-shrink-0 w-5 h-5" />
+              프로필
+            </button>
+            <button
+              onClick={() => { openSettingsModal("내정보"); setProfileOpen(false); }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
             >
               <Icon
                 icon="material-symbols:settings-outline"
-                className="w-4 h-4"
+                className="flex-shrink-0 w-5 h-5"
               />
               설정
             </button>
+
+            <div className="w-full h-px my-2 bg-line-divider" />
+            <button
+              onClick={() => { openSettingsModal("사용가이드"); setProfileOpen(false); }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
+            >
+              <Icon icon="ph:question" className="flex-shrink-0 w-5 h-5" />
+              도움말
+            </button>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[#F04438] hover:bg-[#FFF5F4] transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-rising-bg"
             >
-              <Icon icon="ph:sign-out" className="w-4 h-4" />
+              <Icon icon="ph:sign-out" className="flex-shrink-0 w-5 h-5" />
               로그아웃
             </button>
           </div>

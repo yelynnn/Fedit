@@ -43,7 +43,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
   if (!data) return null;
 
   return (
-    <div className="bg-white font-sans text-[#242628]">
+    <div className="bg-white font-sans text-tx-default">
       {/* 헤더 섹션 */}
       <header className="flex items-start justify-between mb-6">
         <div>
@@ -51,7 +51,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
             <h1 className="text-xl font-semibold">
               {data.brand === "all" ? "" : data.brand} 전반적 분석
             </h1>
-            <span className="bg-[#EBF2FF] text-[#3E7EFF] text-xs px-2 py-1 rounded-md font-bold">
+            <span className="bg-falling-bg text-[#3E7EFF] text-xs px-2 py-1 rounded-md font-bold">
               시즌 분석
             </span>
           </div>
@@ -72,7 +72,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
                 href={m.magazine_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden border border-[#BABCBE] hover:border-[#ADB5BD] transition-colors bg-white"
+                className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden border border-line-neutral hover:border-line-neutral transition-colors bg-white"
               >
                 {iconPath ? (
                   <img
@@ -81,7 +81,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
                     className="object-contain w-full h-full"
                   />
                 ) : (
-                  <span className="text-[10px] font-bold uppercase text-[#3D3F41]">
+                  <span className="text-[10px] font-bold uppercase text-tx-neutral">
                     {m.name.substring(0, 1)}
                   </span>
                 )}
@@ -94,7 +94,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
       {/* 시즌 인사이트 섹션 */}
       <section className="bg-[#FBFAFF] border border-[#F0ECFE] rounded-xl p-5 mb-5">
         <div className="flex items-center gap-1 mb-3">
-          <Icon icon="ph:lightbulb-fill" className="text-[#9E86FC] w-5 h-5" />
+          <Icon icon="ph:lightbulb-fill" className="text-data-violet w-5 h-5" />
           <span className="text-base font-semibold">시즌 인사이트</span>
         </div>
         <p className="text-base font-semibold leading-relaxed">
@@ -104,7 +104,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
 
       {/* 분석 그리드 섹션 */}
       <div className="grid grid-cols-2 gap-5 mb-10">
-        <div className="border border-[#ECEEF0] rounded-xl p-4">
+        <div className="border border-line-divider rounded-xl p-4">
           <h3 className="mb-5 text-base font-semibold">대표 포인트 컬러</h3>
           <div className="flex gap-4 mb-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {data.point_color.map((color, i) => (
@@ -116,13 +116,13 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
                   className="w-12 h-12 border rounded-full shadow-inner border-black/5"
                   style={{ backgroundColor: color.hex }}
                 />
-                <span className="text-sm font-medium text-[#242628] whitespace-nowrap">
+                <span className="text-sm font-medium text-tx-default whitespace-nowrap">
                   {color.name}
                 </span>
               </div>
             ))}
           </div>
-          <div className="w-full h-[1px] bg-[#E4E4E4] mb-5" />
+          <div className="w-full h-[1px] bg-line-alt mb-5" />
 
           <div className="flex items-center gap-2 rounded-lg">
             <Icon
@@ -136,13 +136,13 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
         </div>
 
         {/* 주요 소재 & 텍스쳐 */}
-        <div className="border border-[#ECEEF0] rounded-xl p-4">
+        <div className="border border-line-divider rounded-xl p-4">
           <h3 className="mb-3 text-base font-semibold">주요 소재 & 텍스쳐</h3>
           <div className="flex gap-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {data.texture.map((t, i) => (
               <div key={i} className="flex flex-col items-center gap-2 w-30 ">
                 <div className="flex items-center justify-center h-9">
-                  <span className="w-fit bg-[#EBF2FF] text-[#3E7EFF] text-sm px-1.5 py-0.5 rounded font-semibold text-center leading-tight">
+                  <span className="w-fit bg-falling-bg text-[#3E7EFF] text-sm px-1.5 py-0.5 rounded font-semibold text-center leading-tight">
                     {t.name}
                   </span>
                 </div>
@@ -151,7 +151,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
                   className="object-cover bg-gray-100 rounded-lg h-25 w-25 aspect-square"
                   alt={t.name}
                 />
-                <span className="text-sm font-medium text-[#242628] text-center break-keep">
+                <span className="text-sm font-medium text-tx-default text-center break-keep">
                   {t.detail}
                 </span>
               </div>
@@ -163,17 +163,17 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
       {/* 실무 적용 포인트 */}
       <section className="mb-5">
         <h3 className="mb-3 text-base font-semibold">실무 적용 포인트</h3>
-        <div className="flex flex-col border border-[#ECEEF0] rounded-xl px-3 bg-white">
+        <div className="flex flex-col border border-line-divider rounded-xl px-3 bg-white">
           {data.apply_point.map((point, i) => (
             <div
               key={i}
-              className="flex items-center gap-4 py-3 border-b border-[#F1F3F5] last:border-none"
+              className="flex items-center gap-4 py-3 border-b border-surface-base last:border-none"
             >
               <Icon
                 icon="ph:check-bold"
-                className="text-[#6F7173] w-4 h-4 flex-shrink-0"
+                className="text-tx-alt w-4 h-4 flex-shrink-0"
               />
-              <span className="text-base font-medium text-[#0B0E0F] leading-relaxed">
+              <span className="text-base font-medium text-tx-strong leading-relaxed">
                 {point}
               </span>
             </div>

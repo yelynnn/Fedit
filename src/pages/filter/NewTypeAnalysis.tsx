@@ -39,10 +39,10 @@ function NewTypeAnalysis() {
   return (
     <div className="px-14">
       <div className="flex flex-col gap-2">
-        <header className="text-2xl font-semibold leading-9 text-[#3D3F41]">
+        <header className="text-2xl font-semibold leading-9 text-tx-neutral">
           유형 분석
         </header>
-        <p className="text-[#888A8C] leading-6 text-base font-semibold">
+        <p className="text-icon-neutral leading-6 text-base font-semibold">
           최근 주목받는 상품 유형과 연관 키워드를 탐색해보세요.
         </p>
       </div>

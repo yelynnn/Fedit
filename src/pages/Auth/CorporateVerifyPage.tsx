@@ -43,7 +43,7 @@ const CorporateVerifyPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#222222]">
+    <div className="flex min-h-screen flex-col bg-white text-tx-default">
       <LoginHeader />
 
       <main className="flex flex-1 items-center justify-center px-5">
@@ -51,10 +51,10 @@ const CorporateVerifyPage = () => {
           {successMessage ? (
             <div className="flex flex-col items-center gap-[32px] text-center">
               <div className="flex flex-col gap-[12px]">
-                <h1 className="text-[24px] font-bold tracking-[-0.04em] text-[#222222]">
+                <h1 className="text-[24px] font-bold tracking-[-0.04em] text-tx-default">
                   임시 비밀번호 확인
                 </h1>
-                <p className="text-[15px] leading-[1.8] tracking-[-0.03em] text-[#666666]">
+                <p className="text-[15px] leading-[1.8] tracking-[-0.03em] text-tx-alt">
                   기업 회원가입이 완료되었습니다.
                   <br />
                   이메일로 발송된 임시 비밀번호를 확인해주세요.
@@ -63,7 +63,7 @@ const CorporateVerifyPage = () => {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="h-[48px] w-full rounded-[6px] bg-[#222426] text-[14px] font-bold tracking-[-0.03em] text-white transition hover:bg-[#111111]"
+                className="h-[48px] w-full rounded-[6px] bg-fill-primary text-[14px] font-bold tracking-[-0.03em] text-white transition hover:bg-[#111111]"
               >
                 로그인 화면으로 이동
               </button>
@@ -71,13 +71,13 @@ const CorporateVerifyPage = () => {
           ) : (
             <>
               <div className="mb-[28px]">
-                <h1 className="mb-[10px] text-[24px] font-bold tracking-[-0.04em] text-[#222222]">
+                <h1 className="mb-[10px] text-[24px] font-bold tracking-[-0.04em] text-tx-default">
                   인증코드 확인
                 </h1>
-                <p className="text-[15px] leading-[1.6] tracking-[-0.03em] text-[#666666]">
+                <p className="text-[15px] leading-[1.6] tracking-[-0.03em] text-tx-alt">
                   {email ? (
                     <>
-                      <span className="font-bold text-[#222222]">{email}</span>
+                      <span className="font-bold text-tx-default">{email}</span>
                       <br />
                     </>
                   ) : null}
@@ -89,9 +89,9 @@ const CorporateVerifyPage = () => {
                 <div className="mb-[30px]">
                   <label
                     htmlFor="verify-code"
-                    className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-[#222222]"
+                    className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default"
                   >
-                    <span className="mr-[2px] text-[#ff3b30]">*</span>
+                    <span className="mr-[2px] text-rising">*</span>
                     인증코드를 입력해주세요.
                   </label>
 
@@ -102,16 +102,16 @@ const CorporateVerifyPage = () => {
                     onChange={(e) => setCode(e.target.value)}
                     onBlur={() => setIsTouched(true)}
                     placeholder="인증코드 입력"
-                    className={`h-[42px] w-full rounded-[6px] border px-[12px] text-[14px] tracking-[-0.03em] outline-none transition placeholder:text-[#b5b5b5] ${
+                    className={`h-[42px] w-full rounded-[6px] border px-[12px] text-[14px] tracking-[-0.03em] outline-none transition placeholder:text-icon-alt ${
                       hasCodeError
-                        ? "border-[#ff3b30] focus:border-[#ff3b30]"
-                        : "border-[#dddddd] focus:border-[#222222]"
+                        ? "border-rising focus:border-rising"
+                        : "border-line-alt focus:border-fill-primary"
                     }`}
                   />
 
                   {hasCodeError && (
-                    <p className="mt-[7px] flex items-center gap-[5px] text-[12px] font-medium tracking-[-0.03em] text-[#ff3b30]">
-                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-[#ff3b30] text-[10px] font-bold text-white">
+                    <p className="mt-[7px] flex items-center gap-[5px] text-[12px] font-medium tracking-[-0.03em] text-rising">
+                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-rising text-[10px] font-bold text-white">
                         !
                       </span>
                       인증코드를 입력해주세요.
@@ -119,8 +119,8 @@ const CorporateVerifyPage = () => {
                   )}
 
                   {errorMessage && (
-                    <p className="mt-[7px] flex items-center gap-[5px] text-[12px] font-medium tracking-[-0.03em] text-[#ff3b30]">
-                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-[#ff3b30] text-[10px] font-bold text-white">
+                    <p className="mt-[7px] flex items-center gap-[5px] text-[12px] font-medium tracking-[-0.03em] text-rising">
+                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-rising text-[10px] font-bold text-white">
                         !
                       </span>
                       {errorMessage}
@@ -133,8 +133,8 @@ const CorporateVerifyPage = () => {
                   disabled={!isCodeValid || isLoading}
                   className={`h-[42px] w-full rounded-[6px] text-[14px] font-bold tracking-[-0.03em] transition ${
                     isCodeValid && !isLoading
-                      ? "bg-[#222426] text-white hover:bg-[#111111]"
-                      : "cursor-not-allowed bg-[#f1f3f5] text-[#a9afb8]"
+                      ? "bg-fill-primary text-white hover:bg-[#111111]"
+                      : "cursor-not-allowed bg-surface-base text-icon-alt"
                   }`}
                 >
                   {isLoading ? "확인 중..." : "인증 확인"}
@@ -144,7 +144,7 @@ const CorporateVerifyPage = () => {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="mt-[20px] w-full text-center text-[13px] font-medium tracking-[-0.03em] text-[#888888] hover:underline"
+                className="mt-[20px] w-full text-center text-[13px] font-medium tracking-[-0.03em] text-icon-neutral hover:underline"
               >
                 이메일 다시 입력하기
               </button>

@@ -12,7 +12,7 @@ function NewFilterOption({ filterName, filterList, onOpen }: Props) {
     <div
       className={`flex flex-col w-full h-fit py-4 px-2  ${isSelected ? "bg-white rounded-lg" : ""}`}
     >
-      <div className="flex items-center justify-between w-full text-sm font-semibold text-[#56585A]">
+      <div className="flex items-center justify-between w-full text-sm font-semibold text-tx-alt">
         <p>{filterName}</p>
         <Icon
           icon="iconoir:page-right"

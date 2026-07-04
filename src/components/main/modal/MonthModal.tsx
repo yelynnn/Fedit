@@ -35,10 +35,10 @@ const MonthModal: React.FC<MonthModalProps> = ({
 
       <div className="relative p-4 bg-white shadow-xl rounded-xl w-125 h-110">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-[#242628]">기간</h2>
+          <h2 className="text-xl font-semibold text-tx-default">기간</h2>
 
           <button onClick={onClose}>
-            <Icon icon="formkit:close" className="h-6 w-8 text-[#3D3F41]" />
+            <Icon icon="formkit:close" className="h-6 w-8 text-tx-neutral" />
           </button>
         </div>
 
@@ -49,8 +49,8 @@ const MonthModal: React.FC<MonthModalProps> = ({
               onClick={() => setSelectedYear(parseInt(year))}
               className={`pb-2 text-base font-semibold ${
                 selectedYear === parseInt(year)
-                  ? "text-[#242628] border-b-2 border-[#56585A]"
-                  : "text-[#6F7173]"
+                  ? "text-tx-default border-b-2 border-line-default"
+                  : "text-tx-alt"
               }`}
             >
               {year}
@@ -66,7 +66,7 @@ const MonthModal: React.FC<MonthModalProps> = ({
                 onSelect(`${selectedYear}-${month}`);
                 onClose();
               }}
-              className="text-sm text-[#3D3F41] font-semibold cursor-pointer "
+              className="text-sm text-tx-neutral font-semibold cursor-pointer "
             >
               {parseInt(month)}월
             </p>

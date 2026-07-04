@@ -81,19 +81,19 @@ function NewMainKeywordBox({
 
         {isMonthly && (
           <div className="flex items-center gap-3">
-            <p className="text-sm text-[#3D3F41] font-semibold">
+            <p className="text-sm text-tx-neutral font-semibold">
               {title} 월간 랭킹
             </p>
             <div
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-1 cursor-pointer select-none"
             >
-              <span className="text-base font-semibold text-[#3D3F41]">
+              <span className="text-base font-semibold text-tx-neutral">
                 {formatMonth(selectedMonth)}
               </span>
               <Icon
                 icon="mingcute:down-fill"
-                className="w-4 h-4 text-[#3D3F41]"
+                className="w-4 h-4 text-tx-neutral"
               />
             </div>
             <MonthModal
@@ -106,9 +106,9 @@ function NewMainKeywordBox({
         )}
       </header>
 
-      <div className="bg-[#F9FAFB] rounded-xl  pt-4 pb-2">
+      <div className="bg-fill-bg-strong rounded-xl  pt-4 pb-2">
         {isMonthly && (
-          <div className="flex pt-2 items-center gap-6 w-full border-b border-[#E5E7EB] mb-5 px-5">
+          <div className="flex pt-2 items-center gap-6 w-full border-b border-line-alt mb-5 px-5">
             {categories.map((cat) => (
               <button
                 key={cat.category}
@@ -116,8 +116,8 @@ function NewMainKeywordBox({
                 className={`relative pb-2 text-base font-semibold transition-colors duration-200 
                 ${
                   selectedCategory === cat.category
-                    ? "text-[#56585A] after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-[#56585A]"
-                    : "text-[#6F7173]"
+                    ? "text-tx-alt after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-[#56585A]"
+                    : "text-tx-alt"
                 }`}
               >
                 {cat.category}
@@ -127,7 +127,7 @@ function NewMainKeywordBox({
         )}
 
         {audienceType === "kids" && !isMonthly && (
-          <div className="flex text-[#3D3F41] text-sm font-semibold py-3 justify-center items-center gap-6 w-full border-b border-[#E5E7EB] mb-5">
+          <div className="flex text-tx-neutral text-sm font-semibold py-3 justify-center items-center gap-6 w-full border-b border-line-alt mb-5">
             출산육아 / 키즈 키워드
           </div>
         )}
@@ -147,27 +147,27 @@ function NewMainKeywordBox({
                     key={item.idx}
                     onMouseEnter={() => setHoveredIdx(item.idx)}
                     onMouseLeave={() => setHoveredIdx(null)}
-                    className={`relative flex items-center justify-center px-2 rounded-lg hover:bg-[#EAF2FE] transition-colors duration-150 ${isMonthly ? "h-14 mb-1" : "py-2"}`}
+                    className={`relative flex items-center justify-center px-2 rounded-lg hover:bg-falling-bg transition-colors duration-150 ${isMonthly ? "h-14 mb-1" : "py-2"}`}
                   >
                     {isMonthly && hoveredIdx === item.idx && (
-                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 bg-[#242628] text-white px-3 py-[6px] rounded-lg shadow-lg min-w-max max-w-50 whitespace-normal break-words z-50">
+                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 bg-fill-primary text-white px-3 py-[6px] rounded-lg shadow-lg min-w-max max-w-50 whitespace-normal break-words z-50">
                         <span className="text-sm leading-5">{keywordText}</span>
                         <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-6 border-b-6 border-r-6 border-t-transparent border-b-transparent border-r-[#2E2E2E]"></div>
                       </div>
                     )}
                     <div className="flex items-center w-full gap-4">
                       <span
-                        className={`font-semibold text-[18px] ${item.idx <= 3 ? "text-[#1A75FF]" : "text-[#56585A]"}`}
+                        className={`font-semibold text-[18px] ${item.idx <= 3 ? "text-data-blue" : "text-tx-alt"}`}
                       >
                         {item.idx}
                       </span>
                       <div className="flex flex-col w-full ">
                         {brand && (
-                          <span className="text-sm text-[#6F7173] font-semibold mb-[2px]">
+                          <span className="text-sm text-tx-alt font-semibold mb-[2px]">
                             {brand}
                           </span>
                         )}
-                        <span className="text-base text-[#3D3F41] font-semibold line-clamp-1">
+                        <span className="text-base text-tx-neutral font-semibold line-clamp-1">
                           {keywordText}
                         </span>
                       </div>

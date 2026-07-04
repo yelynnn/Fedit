@@ -35,9 +35,9 @@ export default function DetailItem({ title, content, itemcode }: DetailItemProps
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-sm text-[#6F7173] font-semibold">{title}</span>
-      <div className="flex items-start justify-between py-3 px-2 bg-[#F9FAFB] rounded-lg border border-[#F2F4F6]">
-        <span className="text-sm font-semibold text-[#242628] break-words flex-1 mr-1">
+      <span className="text-sm text-tx-alt font-semibold">{title}</span>
+      <div className="flex items-start justify-between py-3 px-2 bg-fill-bg-strong rounded-lg border border-surface-base">
+        <span className="text-sm font-semibold text-tx-default break-words flex-1 mr-1">
           {displayContent || "-"}
         </span>
         <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
@@ -46,10 +46,10 @@ export default function DetailItem({ title, content, itemcode }: DetailItemProps
               icon={
                 feedback === "like" ? "mdi:thumb-up" : "mdi:thumb-up-outline"
               }
-              className={`w-5 h-5 ${feedback === "like" ? "text-[#6F7173]" : "text-[#D1D3D9]"}`}
+              className={`w-5 h-5 ${feedback === "like" ? "text-tx-alt" : "text-[#D1D3D9]"}`}
             />
           </button>
-          <div className="w-[1px] h-4 bg-[#E4E4E4]" />
+          <div className="w-[1px] h-4 bg-line-alt" />
           <button onClick={handleDislike}>
             <Icon
               icon={
@@ -57,7 +57,7 @@ export default function DetailItem({ title, content, itemcode }: DetailItemProps
                   ? "mdi:thumb-down"
                   : "mdi:thumb-down-outline"
               }
-              className={`w-5 h-5 ${feedback === "dislike" ? "text-[#6F7173]" : "text-[#D1D3D9]"}`}
+              className={`w-5 h-5 ${feedback === "dislike" ? "text-tx-alt" : "text-[#D1D3D9]"}`}
             />
           </button>
         </div>

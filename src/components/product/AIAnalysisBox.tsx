@@ -82,7 +82,7 @@ export default function AIAnalysisBox({
   }, [content]);
 
   return (
-    <div className="bg-[#FBFAFF] rounded-xl p-3 mb-3 border border-[#F1F3F5]">
+    <div className="bg-[#FBFAFF] rounded-xl p-3 mb-3 border border-surface-base">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 font-bold text-gray-800 mb-3 text-sm">
           AI 개요 <Icon icon="ph:question" className="w-4 h-4 text-gray-400" />
@@ -132,7 +132,7 @@ export default function AIAnalysisBox({
           <button
             onClick={handleLike}
             className={`flex items-center transition-colors ${
-              feedback === "like" ? "text-[#6F7173]" : "hover:text-gray-600"
+              feedback === "like" ? "text-tx-alt" : "hover:text-gray-600"
             }`}
           >
             <Icon
@@ -144,7 +144,7 @@ export default function AIAnalysisBox({
           <button
             onClick={handleDislike}
             className={`flex items-center transition-colors ${
-              feedback === "dislike" ? "text-[#6F7173]" : "hover:text-gray-600"
+              feedback === "dislike" ? "text-tx-alt" : "hover:text-gray-600"
             }`}
           >
             <Icon

@@ -27,7 +27,7 @@ export default function FilterCheckList({ title }: Props) {
   };
 
   const gridCls =
-    "grid grid-cols-2 gap-x-14 gap-y-4 text-sm text-[#4B4B4B] ml-2";
+    "grid grid-cols-2 gap-x-14 gap-y-4 text-sm text-tx-neutral ml-2";
 
   if (title === "성별") {
     return (
@@ -39,7 +39,7 @@ export default function FilterCheckList({ title }: Props) {
               <input
                 id={`gender-${g}`}
                 type="checkbox"
-                className="h-3 w-3 accent-[#95A4FC]"
+                className="h-3 w-3 accent-data-violet"
                 checked={checked}
                 onChange={() => toggle(g)}
               />
@@ -54,7 +54,7 @@ export default function FilterCheckList({ title }: Props) {
   }
 
   if (title === "유형") {
-    const gridCls = "ml-2 grid grid-cols-2 gap-y-3 text-sm text-[#4B4B4B]";
+    const gridCls = "ml-2 grid grid-cols-2 gap-y-3 text-sm text-tx-neutral";
 
     const isAllSubChecked = (subs: string[]) =>
       subs.every((s) => filterList.includes(s));
@@ -74,18 +74,18 @@ export default function FilterCheckList({ title }: Props) {
           return (
             <div key={category}>
               <div className="flex items-center justify-between mb-2">
-                <div className="ml-2 text-sm font-semibold text-[#3D3F41]">
+                <div className="ml-2 text-sm font-semibold text-tx-neutral">
                   {category}
                 </div>
 
                 <label
                   htmlFor={`type-cat-${category}`}
-                  className="flex items-center gap-2 cursor-pointer text-xs text-[#56585A]"
+                  className="flex items-center gap-2 cursor-pointer text-xs text-tx-alt"
                 >
                   <input
                     id={`type-cat-${category}`}
                     type="checkbox"
-                    className="h-3 w-3 accent-[#95A4FC]"
+                    className="h-3 w-3 accent-data-violet"
                     checked={isCategoryChecked}
                     onChange={() => {
                       if (isCategoryChecked) {
@@ -109,7 +109,7 @@ export default function FilterCheckList({ title }: Props) {
                       <input
                         id={`type-${s}`}
                         type="checkbox"
-                        className="h-3 w-3 accent-[#95A4FC]"
+                        className="h-3 w-3 accent-data-violet"
                         checked={checked}
                         onChange={() => {
                           if (isCategoryInList) {
@@ -185,7 +185,7 @@ export default function FilterCheckList({ title }: Props) {
 
                 <span
                   className={
-                    checked ? "font-semibold text-[#3D3F41]" : "text-[#888A8C]"
+                    checked ? "font-semibold text-tx-neutral" : "text-icon-neutral"
                   }
                 >
                   {c.label}
@@ -226,15 +226,15 @@ export default function FilterCheckList({ title }: Props) {
               <span
                 className={`w-5 h-5 flex items-center justify-center border rounded transition-colors ${
                   checked
-                    ? "bg-[#4A4C4E] border-[#4A4C4E]"
-                    : "border-[#D1D3D9]"
+                    ? "bg-tx-neutral border-tx-neutral"
+                    : "border-line-neutral"
                 }`}
               >
                 {checked && (
                   <Icon icon="lucide:check" className="w-3.5 h-3.5 text-white" />
                 )}
               </span>
-              <span className="text-sm text-[#242628]">{v}</span>
+              <span className="text-sm text-tx-default">{v}</span>
             </button>
           </li>
         );

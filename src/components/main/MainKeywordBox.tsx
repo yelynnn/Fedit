@@ -17,7 +17,7 @@ function MainKeywordBox({ title, keywords }: KeywordBox) {
               <Icon
                 icon={item.status === 1 ? "fe:drop-up" : "fe:drop-down"}
                 className={`w-[15px] h-[15px] ${
-                  item.status === 1 ? "text-[#FF2424]" : "text-[#5B84FF]"
+                  item.status === 1 ? "text-rising" : "text-[#5B84FF]"
                 }`}
               />
             )}

@@ -53,7 +53,7 @@ function FilterBar({ setIsBrandOpen }: FilterBarProps) {
                 setInputValue("");
               }
             }}
-            className="h-7 w-full pl-9 pr-3 rounded-lg bg-[#F9F9FA] border border-[#F1F1F3] text-xs placeholder:text-gray-400 focus:outline-none"
+            className="h-7 w-full pl-9 pr-3 rounded-lg bg-surface-base border border-[#F1F1F3] text-xs placeholder:text-gray-400 focus:outline-none"
           />
         </div>
         <div className="flex flex-col gap-[6px]">

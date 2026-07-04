@@ -10,7 +10,7 @@ function BrandMenu({ onClose }: BrandMenuProps) {
   const [inputValue, setInputValue] = useState("");
 
   return (
-    <div className="h-full w-50 bg-white shadow-md border border-[#E0E0E0] p-4 overflow-y-auto relative">
+    <div className="h-full w-50 bg-white shadow-md border border-line-alt p-4 overflow-y-auto relative">
       <Icon
         icon="majesticons:close-line"
         className="absolute text-gray-400 top-3 right-3 hover:text-black"

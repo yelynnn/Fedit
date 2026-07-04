@@ -3,10 +3,10 @@
 // function TitleHeader({ title, sub_title }: TitleBox) {
 //   return (
 //     <div className="flex flex-col gap-2">
-//       <header className="text-2xl font-semibold leading-9 text-[#3D3F41]">
+//       <header className="text-2xl font-semibold leading-9 text-tx-neutral">
 //         {title}
 //       </header>
-//       <p className="text-[#888A8C] leading-6 text-base font-semibold">
+//       <p className="text-icon-neutral leading-6 text-base font-semibold">
 //         {sub_title}
 //       </p>
 //     </div>

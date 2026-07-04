@@ -50,16 +50,16 @@ const CompanySignupPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#222222]">
+    <div className="flex min-h-screen flex-col bg-white text-tx-default">
       <LoginHeader />
 
       <main className="flex flex-1 justify-center px-5 pt-[92px]">
         <section className="w-full max-w-[426px]">
           <div className="mb-[28px]">
-            <h1 className="mb-[10px] text-[24px] font-bold tracking-[-0.04em] text-[#222222]">
+            <h1 className="mb-[10px] text-[24px] font-bold tracking-[-0.04em] text-tx-default">
               FEDIT 기업회원 인증
             </h1>
-            <p className="text-[15px] leading-[1.6] tracking-[-0.03em] text-[#666666]">
+            <p className="text-[15px] leading-[1.6] tracking-[-0.03em] text-tx-alt">
               회원 인증이 필요해요.
               <br />
               인증번호를 받을 이메일 주소를 입력해주세요.
@@ -70,9 +70,9 @@ const CompanySignupPage = () => {
             <div className="mb-[30px]">
               <label
                 htmlFor="company-email"
-                className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-[#222222]"
+                className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default"
               >
-                <span className="mr-[2px] text-[#ff3b30]">*</span>
+                <span className="mr-[2px] text-rising">*</span>
                 기업 이메일을 입력해주세요.
               </label>
 
@@ -83,16 +83,16 @@ const CompanySignupPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setIsTouched(true)}
                 placeholder="이메일 입력"
-                className={`h-[42px] w-full rounded-[6px] border px-[12px] text-[14px] tracking-[-0.03em] outline-none transition placeholder:text-[#b5b5b5] ${
+                className={`h-[42px] w-full rounded-[6px] border px-[12px] text-[14px] tracking-[-0.03em] outline-none transition placeholder:text-icon-alt ${
                   hasEmailError
-                    ? "border-[#ff3b30] focus:border-[#ff3b30]"
-                    : "border-[#dddddd] focus:border-[#222222]"
+                    ? "border-rising focus:border-rising"
+                    : "border-line-alt focus:border-fill-primary"
                 }`}
               />
 
               {hasEmailError && (
-                <p className="mt-[7px] flex items-center gap-[5px] text-[12px] font-medium tracking-[-0.03em] text-[#ff3b30]">
-                  <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-[#ff3b30] text-[10px] font-bold text-white">
+                <p className="mt-[7px] flex items-center gap-[5px] text-[12px] font-medium tracking-[-0.03em] text-rising">
+                  <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-rising text-[10px] font-bold text-white">
                     !
                   </span>
                   올바른 이메일 주소를 입력해주세요.
@@ -100,7 +100,7 @@ const CompanySignupPage = () => {
               )}
 
               {isTouched && hasEmail && isEmailValid && (
-                <p className="mt-[7px] text-[12px] font-medium tracking-[-0.03em] text-[#222222]">
+                <p className="mt-[7px] text-[12px] font-medium tracking-[-0.03em] text-tx-default">
                   사용 가능합니다.
                 </p>
               )}
@@ -116,7 +116,7 @@ const CompanySignupPage = () => {
                   },
                 })
               }
-              className="mb-[30px] flex h-[42px] w-full items-center justify-between rounded-[6px] border border-[#dddddd] bg-[#fbfbfc] px-[14px] text-[13px] font-bold tracking-[-0.03em] text-[#222222] transition hover:bg-[#f7f7f8]"
+              className="mb-[30px] flex h-[42px] w-full items-center justify-between rounded-[6px] border border-line-alt bg-fill-bg-strong px-[14px] text-[13px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-surface-base"
             >
               <span className="flex items-center gap-[10px]">
                 <CheckCircle
@@ -124,8 +124,8 @@ const CompanySignupPage = () => {
                   strokeWidth={2}
                   className={
                     isTermsAgreed
-                      ? "fill-[#222222] text-white"
-                      : "text-[#8d949e]"
+                      ? "fill-fill-primary text-white"
+                      : "text-tx-assistive"
                   }
                 />
                 약관 동의
@@ -134,12 +134,12 @@ const CompanySignupPage = () => {
               <ChevronRight
                 size={18}
                 strokeWidth={2}
-                className="text-[#777777]"
+                className="text-tx-alt"
               />
             </button>
 
             {errorMessage && (
-              <p className="mb-[12px] text-[13px] font-medium tracking-[-0.03em] text-[#ff3b30]">
+              <p className="mb-[12px] text-[13px] font-medium tracking-[-0.03em] text-rising">
                 {errorMessage}
               </p>
             )}
@@ -149,15 +149,15 @@ const CompanySignupPage = () => {
               disabled={!canSubmit || isLoading}
               className={`h-[42px] w-full rounded-[6px] text-[14px] font-bold tracking-[-0.03em] transition ${
                 canSubmit && !isLoading
-                  ? "bg-[#222426] text-white hover:bg-[#111111]"
-                  : "cursor-not-allowed bg-[#f1f3f5] text-[#a9afb8]"
+                  ? "bg-fill-primary text-white hover:bg-[#111111]"
+                  : "cursor-not-allowed bg-surface-base text-icon-alt"
               }`}
             >
               {isLoading ? "처리 중..." : "회원가입하기"}
             </button>
           </form>
 
-          <nav className="mt-[30px] flex items-center justify-center text-[13px] font-medium tracking-[-0.03em] text-[#222222]">
+          <nav className="mt-[30px] flex items-center justify-center text-[13px] font-medium tracking-[-0.03em] text-tx-default">
             <button
               type="button"
               onClick={() => navigate("/signup/personal")}
@@ -166,7 +166,7 @@ const CompanySignupPage = () => {
               개인회원 가입
             </button>
 
-            <span className="h-[20px] w-px bg-[#e5e5e5]" />
+            <span className="h-[20px] w-px bg-line-alt" />
 
             <button
               type="button"
@@ -176,7 +176,7 @@ const CompanySignupPage = () => {
               ID&PW 찾기
             </button>
 
-            <span className="h-[20px] w-px bg-[#e5e5e5]" />
+            <span className="h-[20px] w-px bg-line-alt" />
 
             <button
               type="button"

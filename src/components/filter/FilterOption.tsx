@@ -94,7 +94,7 @@ function FilterOption({
               })}
             </ul>
           ) : isTypeCategory ? (
-            <ul className="px-4 py-2 flex flex-col gap-4 text-sm text-[#4B4B4B]">
+            <ul className="px-4 py-2 flex flex-col gap-4 text-sm text-tx-neutral">
               {typeList?.map(({ category, subcategories }) => {
                 const isCategoryInList = filterList.includes(category);
                 const allSubsChecked = isAllSubChecked(subcategories);
@@ -115,7 +115,7 @@ function FilterOption({
                             addFilter(category);
                           }
                         }}
-                        className="w-3 h-3 accent-[#95A4FC]"
+                        className="w-3 h-3 accent-data-violet"
                       />
                       <label htmlFor={category} className="cursor-pointer">
                         {category}
@@ -146,7 +146,7 @@ function FilterOption({
                                 }
                                 handleToggle(subcategory);
                               }}
-                              className="w-3 h-3 accent-[#95A4FC]"
+                              className="w-3 h-3 accent-data-violet"
                             />
                             <label
                               htmlFor={`${category}-${subcategory}`}
@@ -163,7 +163,7 @@ function FilterOption({
               })}
             </ul>
           ) : (
-            <ul className="ml-6 mb-4 mt-2 flex flex-col gap-2 text-sm text-[#4B4B4B]">
+            <ul className="ml-6 mb-4 mt-2 flex flex-col gap-2 text-sm text-tx-neutral">
               {(title === "패턴" || title === "디테일" ? fetchedList : categoryList ?? []).map((category) => {
                 const isChecked = filterList.includes(category);
                 const isLocked = title === "무드";
@@ -182,7 +182,7 @@ function FilterOption({
                           id={category}
                           checked={isChecked}
                           onChange={() => handleToggle(category)}
-                          className="w-3 h-3 accent-[#95A4FC]"
+                          className="w-3 h-3 accent-data-violet"
                         />
                         <label htmlFor={category} className="cursor-pointer">
                           {category}

@@ -25,16 +25,16 @@ const TermsOfServicePage = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#222222]">
+    <div className="flex min-h-screen flex-col bg-white text-tx-default">
       <LoginHeader />
 
       <main className="flex flex-1 justify-center px-5 py-[56px]">
         <section className="w-full max-w-[720px]">
           <div className="mb-[28px]">
-            <h1 className="mb-[10px] text-[24px] font-bold tracking-[-0.04em] text-[#222222]">
+            <h1 className="mb-[10px] text-[24px] font-bold tracking-[-0.04em] text-tx-default">
               fedit 서비스 이용약관
             </h1>
-            <p className="text-[14px] leading-[1.7] tracking-[-0.03em] text-[#666666]">
+            <p className="text-[14px] leading-[1.7] tracking-[-0.03em] text-tx-alt">
               본 약관은 fedit 서비스 이용에 관한 회원과 회사 간의 권리·의무를
               규정합니다.
             </p>
@@ -749,11 +749,11 @@ const TermsOfServicePage = () => {
             </Article>
           </Chapter>
 
-          <div className="sticky bottom-0 mt-[48px] flex gap-[12px] border-t border-[#eeeeee] bg-white py-[16px]">
+          <div className="sticky bottom-0 mt-[48px] flex gap-[12px] border-t border-line-divider bg-white py-[16px]">
             <button
               type="button"
               onClick={handleBack}
-              className="h-[46px] flex-1 rounded-[7px] border border-[#dddddd] bg-white text-[14px] font-bold tracking-[-0.03em] text-[#222222] transition hover:bg-[#fafafa]"
+              className="h-[46px] flex-1 rounded-[7px] border border-line-alt bg-white text-[14px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
             >
               이전으로
             </button>
@@ -761,7 +761,7 @@ const TermsOfServicePage = () => {
             <button
               type="button"
               onClick={handleAgree}
-              className="h-[46px] flex-1 rounded-[7px] bg-[#222426] text-[14px] font-bold tracking-[-0.03em] text-white transition hover:bg-[#111111]"
+              className="h-[46px] flex-1 rounded-[7px] bg-fill-primary text-[14px] font-bold tracking-[-0.03em] text-white transition hover:bg-[#111111]"
             >
               동의하고 돌아가기
             </button>
@@ -782,7 +782,7 @@ const Chapter = ({
   children: React.ReactNode;
 }) => (
   <section className="mt-[44px]">
-    <h2 className="mb-[20px] border-b border-[#eeeeee] pb-[10px] text-[18px] font-bold tracking-[-0.03em] text-[#222222]">
+    <h2 className="mb-[20px] border-b border-line-divider pb-[10px] text-[18px] font-bold tracking-[-0.03em] text-tx-default">
       {title}
     </h2>
     <div className="flex flex-col gap-[28px]">{children}</div>
@@ -798,11 +798,11 @@ const Article = ({
 }) => (
   <article>
     {title && (
-      <h3 className="mb-[10px] text-[15px] font-bold tracking-[-0.03em] text-[#222222]">
+      <h3 className="mb-[10px] text-[15px] font-bold tracking-[-0.03em] text-tx-default">
         {title}
       </h3>
     )}
-    <div className="flex flex-col gap-[8px] text-[13px] leading-[1.7] tracking-[-0.02em] text-[#555555]">
+    <div className="flex flex-col gap-[8px] text-[13px] leading-[1.7] tracking-[-0.02em] text-tx-alt">
       {children}
     </div>
   </article>
@@ -833,8 +833,8 @@ const Quote = ({
   title?: string;
   children: React.ReactNode;
 }) => (
-  <div className="rounded-[8px] bg-[#f7f8f9] px-[16px] py-[12px] text-[12px] leading-[1.7] text-[#888888]">
-    {title && <p className="mb-[4px] font-bold text-[#666666]">{title}</p>}
+  <div className="rounded-[8px] bg-surface-base px-[16px] py-[12px] text-[12px] leading-[1.7] text-icon-neutral">
+    {title && <p className="mb-[4px] font-bold text-tx-alt">{title}</p>}
     {children}
   </div>
 );
@@ -846,14 +846,14 @@ const Table = ({
   headers: string[];
   rows: string[][];
 }) => (
-  <div className="overflow-hidden rounded-[8px] border border-[#eeeeee]">
+  <div className="overflow-hidden rounded-[8px] border border-line-divider">
     <table className="w-full border-collapse text-[12px]">
       <thead>
-        <tr className="bg-[#f7f8f9]">
+        <tr className="bg-surface-base">
           {headers.map((header) => (
             <th
               key={header}
-              className="border-b border-[#eeeeee] px-[12px] py-[10px] text-left font-bold text-[#222222]"
+              className="border-b border-line-divider px-[12px] py-[10px] text-left font-bold text-tx-default"
             >
               {header}
             </th>
@@ -862,9 +862,9 @@ const Table = ({
       </thead>
       <tbody>
         {rows.map((row, i) => (
-          <tr key={i} className={i !== rows.length - 1 ? "border-b border-[#f2f2f2]" : ""}>
+          <tr key={i} className={i !== rows.length - 1 ? "border-b border-surface-base" : ""}>
             {row.map((cell, j) => (
-              <td key={j} className="px-[12px] py-[10px] leading-[1.6] text-[#666666]">
+              <td key={j} className="px-[12px] py-[10px] leading-[1.6] text-tx-alt">
                 {cell}
               </td>
             ))}
@@ -876,15 +876,15 @@ const Table = ({
 );
 
 const InfoTable = ({ rows }: { rows: string[][] }) => (
-  <div className="mb-[28px] overflow-hidden rounded-[8px] border border-[#eeeeee]">
+  <div className="mb-[28px] overflow-hidden rounded-[8px] border border-line-divider">
     <table className="w-full border-collapse text-[13px]">
       <tbody>
         {rows.map((row, i) => (
-          <tr key={i} className={i !== rows.length - 1 ? "border-b border-[#f2f2f2]" : ""}>
-            <th className="w-[120px] bg-[#f7f8f9] px-[14px] py-[10px] text-left font-bold text-[#222222]">
+          <tr key={i} className={i !== rows.length - 1 ? "border-b border-surface-base" : ""}>
+            <th className="w-[120px] bg-surface-base px-[14px] py-[10px] text-left font-bold text-tx-default">
               {row[0]}
             </th>
-            <td className="px-[14px] py-[10px] text-[#555555]">{row[1]}</td>
+            <td className="px-[14px] py-[10px] text-tx-alt">{row[1]}</td>
           </tr>
         ))}
       </tbody>

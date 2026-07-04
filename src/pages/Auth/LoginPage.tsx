@@ -52,8 +52,8 @@ const LoginPage = () => {
               onClick={() => setLoginType("personal")}
               className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] border text-[14px] font-semibold transition ${
                 isActivePersonal
-                  ? "border-[#222222] bg-white text-[#222222]"
-                  : "border-[#dddddd] bg-[#f8f9fa] text-[#9a9a9a]"
+                  ? "border-fill-primary bg-white text-tx-default"
+                  : "border-line-alt bg-surface-base text-tx-assistive"
               }`}
             >
               <User size={16} strokeWidth={2.2} />
@@ -65,8 +65,8 @@ const LoginPage = () => {
               onClick={() => setLoginType("company")}
               className={`flex h-[44px] items-center justify-center gap-2 rounded-[6px] border text-[14px] font-semibold transition ${
                 isActiveCompany
-                  ? "border-[#222222] bg-white text-[#222222]"
-                  : "border-[#dddddd] bg-[#f8f9fa] text-[#9a9a9a]"
+                  ? "border-fill-primary bg-white text-tx-default"
+                  : "border-line-alt bg-surface-base text-tx-assistive"
               }`}
             >
               <Building2 size={16} strokeWidth={2.2} />
@@ -79,7 +79,7 @@ const LoginPage = () => {
               FEDIT {isActivePersonal ? "개인 회원" : "기업 회원"} 로그인
             </h1>
 
-            <p className="text-[14px] font-normal text-[#666666]">
+            <p className="text-[14px] font-normal text-tx-alt">
               환영합니다! 로그인을 진행해주세요.
             </p>
           </div>
@@ -88,9 +88,9 @@ const LoginPage = () => {
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="login-id"
-                className="text-[13px] font-bold text-[#222222]"
+                className="text-[13px] font-bold text-tx-default"
               >
-                <span className="mr-[2px] text-[#ff3b30]">*</span>
+                <span className="mr-[2px] text-rising">*</span>
                 이메일
               </label>
 
@@ -100,16 +100,16 @@ const LoginPage = () => {
                 value={id}
                 onChange={(e) => setId(e.target.value)}
                 placeholder="이메일"
-                className="h-[42px] rounded-[6px] border border-[#dddddd] px-3 text-[14px] outline-none transition placeholder:text-[#b5b5b5] focus:border-[#222222]"
+                className="h-[42px] rounded-[6px] border border-line-alt px-3 text-[14px] outline-none transition placeholder:text-icon-alt focus:border-fill-primary"
               />
             </div>
 
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="login-password"
-                className="text-[13px] font-bold text-[#222222]"
+                className="text-[13px] font-bold text-tx-default"
               >
-                <span className="mr-[2px] text-[#ff3b30]">*</span>
+                <span className="mr-[2px] text-rising">*</span>
                 비밀번호
               </label>
 
@@ -119,12 +119,12 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="비밀번호"
-                className="h-[42px] rounded-[6px] border border-[#dddddd] px-3 text-[14px] outline-none transition placeholder:text-[#b5b5b5] focus:border-[#222222]"
+                className="h-[42px] rounded-[6px] border border-line-alt px-3 text-[14px] outline-none transition placeholder:text-icon-alt focus:border-fill-primary"
               />
             </div>
 
             {errorMessage && (
-              <p className="-mt-[6px] text-[13px] font-medium tracking-[-0.03em] text-[#ff3b30]">
+              <p className="-mt-[6px] text-[13px] font-medium tracking-[-0.03em] text-rising">
                 {errorMessage}
               </p>
             )}
@@ -135,7 +135,7 @@ const LoginPage = () => {
               className={`mt-[2px] h-[42px] rounded-[6px] text-[14px] font-semibold transition ${
                 isFormFilled && !isLoading
                   ? "bg-[#111111] text-white hover:bg-black"
-                  : "cursor-not-allowed bg-[#f1f3f5] text-[#9a9a9a]"
+                  : "cursor-not-allowed bg-surface-base text-tx-assistive"
               }`}
             >
               {isLoading ? "로그인 중..." : "로그인"}
@@ -145,19 +145,19 @@ const LoginPage = () => {
           <button
             type="button"
             onClick={() => navigate("/signup")}
-            className="mx-auto mt-4 block bg-transparent text-[13px] text-[#222222] hover:underline"
+            className="mx-auto mt-4 block bg-transparent text-[13px] text-tx-default hover:underline"
           >
             회원가입하기
           </button>
 
-          <div className="mt-[34px] text-[12px] leading-[1.8] text-[#555555]">
+          <div className="mt-[34px] text-[12px] leading-[1.8] text-tx-alt">
             <p className="flex items-center">
               <span className="mr-1">☆</span>
               기업 회원 전용 서비스가 궁금하다면?
               <button
                 type="button"
                 onClick={() => navigate("/ask")}
-                className="ml-2 border-b border-[#222222] text-[#222222]"
+                className="ml-2 border-b border-fill-primary text-tx-default"
               >
                 기업제휴 문의
               </button>

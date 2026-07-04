@@ -72,37 +72,37 @@ export default function BrandCompareModal({
       {/* 헤더 */}
       <div className="flex items-center justify-between px-6 pt-5 pb-3">
         <div>
-          <h2 className="text-[20px] font-semibold text-[#3D3F41]">
+          <h2 className="text-[20px] font-semibold text-tx-neutral">
             브랜드 비교 선택
           </h2>
-          <p className="text-xs text-[#888A8C] mt-1">
+          <p className="text-xs text-icon-neutral mt-1">
             최대 2개 브랜드를 비교분석할 수 있습니다.
           </p>
         </div>
         <button onClick={handleClose} className="p-1 rounded hover:bg-gray-100">
-          <Icon icon="fontisto:close-a" width={18} className="text-[#888A8C]" />
+          <Icon icon="fontisto:close-a" width={18} className="text-icon-neutral" />
         </button>
       </div>
 
       {/* 검색 */}
       <div className="px-6 pb-3 my-2">
-        <div className="flex items-center gap-2 px-3 py-2 border border-[#E4E4E4] rounded-lg bg-white">
+        <div className="flex items-center gap-2 px-3 py-2 border border-line-alt rounded-lg bg-white">
           <Icon
             icon="mingcute:search-line"
-            className="w-4 h-4 text-[#888A8C]"
+            className="w-4 h-4 text-icon-neutral"
           />
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="브랜드를 입력하세요."
-            className="flex-1 text-sm outline-none placeholder:text-[#B0B0B0] bg-transparent"
+            className="flex-1 text-sm outline-none placeholder:text-icon-alt bg-transparent"
           />
         </div>
       </div>
 
       {/* 선택 카운터 */}
       <div className="flex items-center justify-between px-6 pb-2">
-        <span className="text-sm text-[#888A8C] font-semibold">
+        <span className="text-sm text-icon-neutral font-semibold">
           {availableBrands.length}개 브랜드
         </span>
         <div className="flex items-center gap-1.5">
@@ -111,8 +111,8 @@ export default function BrandCompareModal({
               key={i}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors ${
                 selected[i]
-                  ? "bg-[#242628] text-white border-[#242628]"
-                  : "bg-[#F9FAFB] text-[#B0B0B0] border-[#ECEEF0]"
+                  ? "bg-fill-primary text-white border-fill-primary"
+                  : "bg-fill-bg-strong text-icon-alt border-line-divider"
               }`}
             >
               {selected[i] ? (
@@ -136,13 +136,13 @@ export default function BrandCompareModal({
       {/* 브랜드 목록 */}
       <div className="flex-1 px-6 py-3 overflow-y-auto">
         {brandList.length === 0 ? (
-          <div className="text-sm text-[#888A8C] py-8 text-center">
+          <div className="text-sm text-icon-neutral py-8 text-center">
             선택된 브랜드가 없어요.
             <br />
             브랜드 필터에서 브랜드를 먼저 추가해주세요.
           </div>
         ) : visibleBrands.length === 0 ? (
-          <div className="text-sm text-[#888A8C] py-8 text-center">
+          <div className="text-sm text-icon-neutral py-8 text-center">
             {keyword ? "검색 결과가 없어요." : "추가 가능한 브랜드가 없어요."}
           </div>
         ) : (
@@ -163,10 +163,10 @@ export default function BrandCompareModal({
                   onClick={() => toggleBrand(brand)}
                   className={`px-1 h-8 rounded-lg border text-xs transition-colors ${
                     isChecked
-                      ? "border-[#3D3F41] bg-white text-[#3D3F41] font-semibold"
+                      ? "border-tx-neutral bg-white text-tx-neutral font-semibold"
                       : isDisabled
-                        ? "border-[#ECEEF0] bg-[#F9FAFB] text-[#C8CACB] cursor-not-allowed"
-                        : "border-[#ECEEF0] bg-[#F9FAFB] text-[#888A8C] hover:border-[#D0D3D6]"
+                        ? "border-line-divider bg-fill-bg-strong text-[#C8CACB] cursor-not-allowed"
+                        : "border-line-divider bg-fill-bg-strong text-icon-neutral hover:border-line-neutral"
                   }`}
                 >
                   {brand}
@@ -184,8 +184,8 @@ export default function BrandCompareModal({
           disabled={selected.length === 0}
           className={`w-full h-10 rounded-lg text-sm font-semibold transition-colors ${
             selected.length > 0
-              ? "bg-[#242628] text-white"
-              : "bg-[#F1F3F5] text-[#B0B0B0] cursor-not-allowed"
+              ? "bg-fill-primary text-white"
+              : "bg-surface-base text-icon-alt cursor-not-allowed"
           }`}
         >
           {selected.length > 0
@@ -194,7 +194,7 @@ export default function BrandCompareModal({
         </button>
         <button
           onClick={() => setSelected([])}
-          className="mt-1 w-full h-10 rounded-lg text-[#888A8C] text-sm flex items-center justify-center gap-2 hover:bg-gray-50"
+          className="mt-1 w-full h-10 rounded-lg text-icon-neutral text-sm flex items-center justify-center gap-2 hover:bg-gray-50"
         >
           <Icon icon="ph:arrow-counter-clockwise" />
           선택 초기화하기

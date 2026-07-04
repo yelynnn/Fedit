@@ -9,7 +9,6 @@ import { useProductStore } from "@/stores/ProductStore";
 import { useEffect } from "react";
 import RunwayPage from "@/pages/RunwayPage";
 import BoardsPage from "@/pages/BoardsPage";
-import SettingsPage from "@/pages/SettingsPage";
 
 type TabOption = { label: string; icon: string };
 
@@ -44,8 +43,8 @@ export function NewFilterTabBar() {
                 "h-11 w-fit mx-0.5 rounded-t flex items-center justify-center gap-1",
                 "text-base font-semibold px-1",
                 active
-                  ? "text-[#0B0E0F] border-b-[3px] border-[var(--Line-Primary-Normal,#56585A)]"
-                  : "text-[#6F7173] border-b-[3px] border-transparent",
+                  ? "text-tx-strong border-b-[3px] border-[var(--Line-Primary-Normal,#56585A)]"
+                  : "text-tx-alt border-b-[3px] border-transparent",
               ].join(" ")}
             >
               <Icon
@@ -77,7 +76,6 @@ export function NewFilterTabPanels() {
       {selectedTab === "색상 분석" && <NewColorAnalysis />}
       {selectedTab === "유형 분석" && <NewTypeAnalysis />}
       {selectedTab === "내 보드" && <BoardsPage />}
-      {selectedTab === "설정" && <SettingsPage />}
     </div>
   );
 }
