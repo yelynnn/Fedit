@@ -39,10 +39,10 @@ export default function RunwayBox({ brands, season }: RunwayBoxProps) {
   return (
     <div
       ref={scrollRef}
-      className="w-full bg-white rounded-[24px] border border-[#ECEEF0] shadow-sm scroll-mt-10"
+      className="w-full bg-white rounded-[24px] border border-line-divider shadow-sm scroll-mt-10"
     >
       {/* 상단 탭 내비게이션 */}
-      <div className="flex gap-6 mt-4 px-8 border-b border-[#F1F3F5] bg-white sticky top-0 z-10">
+      <div className="flex gap-6 mt-4 px-8 border-b border-surface-base bg-white sticky top-0 z-10">
         {brands.map((brand) => (
           <button
             key={brand.id}
@@ -50,7 +50,7 @@ export default function RunwayBox({ brands, season }: RunwayBoxProps) {
             className={`py-2 text-base font-semibold capitalize border-b-2 transition-all ${
               activeTab === brand.id
                 ? "border-black text-black"
-                : "border-transparent text-[#91929D]"
+                : "border-transparent text-tx-assistive"
             }`}
           >
             {brand.name}
@@ -68,7 +68,7 @@ export default function RunwayBox({ brands, season }: RunwayBoxProps) {
             <div className="flex mb-6">
               <button
                 onClick={() => setIsDetailOpen(false)}
-                className="mt-6 w-full text-[#3D3F41] flex items-center justify-center gap-2 py-2 border border-[#ECEEF0] bg-[#F6F8FA] rounded-full text-base font-medium hover:bg-gray-50 transition-colors"
+                className="mt-6 w-full text-tx-neutral flex items-center justify-center gap-2 py-2 border border-line-divider bg-surface-base rounded-full text-base font-medium hover:bg-gray-50 transition-colors"
               >
                 간단히 보기
               </button>
@@ -83,25 +83,25 @@ export default function RunwayBox({ brands, season }: RunwayBoxProps) {
                 <h2 className="text-[28px] font-semibold">
                   {currentBrandData.name}
                 </h2>
-                <span className="text-xs font-semibold bg-[#F2F4F6] px-2 py-1 rounded text-[#888A8C]">
+                <span className="text-xs font-semibold bg-surface-base px-2 py-1 rounded text-icon-neutral">
                   {formatSeason(season)}
                 </span>
               </div>
 
-              <p className="text-sm text-[#3D3F41] leading-relaxed mb-3 line-clamp-4">
+              <p className="text-sm text-tx-neutral leading-relaxed mb-3 line-clamp-4">
                 {currentBrandData.description}
               </p>
 
               <button
                 onClick={() => setIsDetailOpen(true)}
-                className="w-full py-2 border border-[#ECEEF0] rounded-full text-base font-medium hover:bg-gray-50 transition-colors mb-3"
+                className="w-full py-2 border border-line-divider rounded-full text-base font-medium hover:bg-gray-50 transition-colors mb-3"
               >
                 자세히 보기
               </button>
 
               {/* 컬러 팔레트 요약 */}
               <div>
-                <h4 className="text-sm font-semibold text-[#242628] mb-4 tracking-wider">
+                <h4 className="text-sm font-semibold text-tx-default mb-4 tracking-wider">
                   Color Palette
                 </h4>
                 <div className="flex gap-6 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -114,7 +114,7 @@ export default function RunwayBox({ brands, season }: RunwayBoxProps) {
                         className="border rounded-full shadow-inner w-11 h-11 border-black/5"
                         style={{ backgroundColor: color.hex }}
                       />
-                      <span className="text-sm text-[#242628] font-medium">
+                      <span className="text-sm text-tx-default font-medium">
                         {color.name.split(" ")[0]}
                       </span>
                     </div>
@@ -153,7 +153,7 @@ export default function RunwayBox({ brands, season }: RunwayBoxProps) {
                   </div>
                 ))}
               </div>
-              <h4 className="text-sm font-semibold text-[#242628] mb-4 tracking-wider">
+              <h4 className="text-sm font-semibold text-tx-default mb-4 tracking-wider">
                 핵심 포인트
               </h4>
               <div className="flex flex-wrap gap-5">

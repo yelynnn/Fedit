@@ -19,23 +19,23 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void 
   const [selectedSeason, setSelectedSeason] = useState<string>("");
 
   return (
-    <aside className="flex flex-col gap-3 w-53 h-fit p-2 bg-[#F8F9FA] rounded-xl ">
+    <aside className="flex flex-col gap-3 w-53 h-fit p-2 bg-surface-base rounded-xl ">
       <div className="flex w-full gap-2">
         <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="flex-1 h-10 bg-white rounded-tl-lg border-none text-sm font-semibold text-[#3D3F41] shadow-none focus:ring-0 [&>span]:font-medium">
+          <SelectTrigger className="flex-1 h-10 bg-white rounded-tl-lg border-none text-sm font-semibold text-tx-neutral shadow-none focus:ring-0 [&>span]:font-medium">
             <SelectValue placeholder="2025년" />
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#ECEEF0]">
+          <SelectContent className="rounded-xl border-line-divider">
             <SelectItem value="2025">2025년</SelectItem>
             <SelectItem value="2026">2026년</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={selectedSeason} onValueChange={setSelectedSeason}>
-          <SelectTrigger className="flex-1 h-10 bg-white rounded-tr-lg border-none text-sm font-medium text-[#3D3F41] shadow-none focus:ring-0 [&>span]:font-medium">
+          <SelectTrigger className="flex-1 h-10 bg-white rounded-tr-lg border-none text-sm font-medium text-tx-neutral shadow-none focus:ring-0 [&>span]:font-medium">
             <SelectValue placeholder="시즌" />
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#ECEEF0]">
+          <SelectContent className="rounded-xl border-line-divider">
             <SelectItem value="SS">SS</SelectItem>
             <SelectItem value="FW">FW</SelectItem>
           </SelectContent>
@@ -81,9 +81,9 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void 
           setSelectedYear("");
           setSelectedSeason("");
         }}
-        className="flex items-center justify-center gap-2 w-full h-8 bg-white rounded-lg border border-[#ECEEF0] text-[#3D3F41] text-sm font-medium shadow-sm hover:bg-gray-50 active:scale-95 transition-all"
+        className="flex items-center justify-center gap-2 w-full h-8 bg-white rounded-lg border border-line-divider text-tx-neutral text-sm font-medium shadow-sm hover:bg-gray-50 active:scale-95 transition-all"
       >
-        <Icon icon="nrk:rotate" className="w-4 h-4 text-[#3D3F41]" />
+        <Icon icon="nrk:rotate" className="w-4 h-4 text-tx-neutral" />
         <span>초기화</span>
       </button>
     </aside>

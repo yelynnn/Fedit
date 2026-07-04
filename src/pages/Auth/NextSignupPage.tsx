@@ -81,19 +81,19 @@ const NextSignupPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#222222]">
+    <div className="flex min-h-screen flex-col bg-white text-tx-default">
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="flex flex-col items-center gap-[14px] rounded-[16px] bg-white px-[40px] py-[36px] shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
-            <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#222426]">
+            <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-fill-primary">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
                 <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <p className="text-[17px] font-bold tracking-[-0.04em] text-[#222222]">
+            <p className="text-[17px] font-bold tracking-[-0.04em] text-tx-default">
               회원가입이 완료되었어요!
             </p>
-            <p className="text-[13px] font-medium tracking-[-0.03em] text-[#888888]">
+            <p className="text-[13px] font-medium tracking-[-0.03em] text-icon-neutral">
               잠시 후 로그인 페이지로 이동합니다.
             </p>
           </div>
@@ -105,13 +105,13 @@ const NextSignupPage = () => {
       <main className="flex flex-1 justify-center px-5 pt-[74px]">
         <section className="w-full max-w-[392px]">
           <div className="mb-[34px]">
-            <h1 className="text-[24px] font-bold leading-[1.35] tracking-[-0.04em] text-[#222222]">
+            <h1 className="text-[24px] font-bold leading-[1.35] tracking-[-0.04em] text-tx-default">
               회원님의 정보에 맞춰
               <br />
               트렌드와 리포트를 최적화해드려요.
             </h1>
 
-            <p className="mt-[8px] text-[14px] font-medium tracking-[-0.03em] text-[#666666]">
+            <p className="mt-[8px] text-[14px] font-medium tracking-[-0.03em] text-tx-alt">
               수집된 데이터를 기반으로 정확한 분석 결과를 제공해요.
             </p>
           </div>
@@ -167,7 +167,7 @@ const NextSignupPage = () => {
           </div>
 
           {errorMessage && (
-            <p className="mt-[16px] whitespace-pre-line text-[13px] font-medium tracking-[-0.03em] text-[#ff3b30]">
+            <p className="mt-[16px] whitespace-pre-line text-[13px] font-medium tracking-[-0.03em] text-rising">
               {errorMessage}
             </p>
           )}
@@ -188,27 +188,27 @@ const NextSignupPage = () => {
                 },
               })
             }
-            className="mt-[28px] flex h-[42px] w-full items-center justify-between rounded-[6px] border border-[#dddddd] bg-[#fbfbfc] px-[14px] text-[13px] font-bold tracking-[-0.03em] text-[#222222] transition hover:bg-[#f7f7f8]"
+            className="mt-[28px] flex h-[42px] w-full items-center justify-between rounded-[6px] border border-line-alt bg-fill-bg-strong px-[14px] text-[13px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-surface-base"
           >
             <span className="flex items-center gap-[10px]">
               <CheckCircle
                 size={18}
                 strokeWidth={2}
                 className={
-                  isTermsAgreed ? "fill-[#222222] text-white" : "text-[#8d949e]"
+                  isTermsAgreed ? "fill-fill-primary text-white" : "text-tx-assistive"
                 }
               />
               약관 동의
             </span>
 
-            <ChevronRight size={18} strokeWidth={2} className="text-[#777777]" />
+            <ChevronRight size={18} strokeWidth={2} className="text-tx-alt" />
           </button>
 
           <div className="mt-[16px] grid grid-cols-[76px_1fr] gap-[16px]">
             <button
               type="button"
               onClick={handlePrev}
-              className="h-[42px] rounded-[7px] border border-[#dddddd] bg-white text-[14px] font-bold tracking-[-0.03em] text-[#222222] transition hover:bg-[#fafafa]"
+              className="h-[42px] rounded-[7px] border border-line-alt bg-white text-[14px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
             >
               이전
             </button>
@@ -219,8 +219,8 @@ const NextSignupPage = () => {
               onClick={handleNext}
               className={`h-[42px] rounded-[7px] text-[14px] font-bold tracking-[-0.03em] transition ${
                 isFormValid && !isLoading
-                  ? "bg-[#222426] text-white hover:bg-[#111111]"
-                  : "cursor-not-allowed bg-[#f1f3f5] text-[#a9afb8]"
+                  ? "bg-fill-primary text-white hover:bg-[#111111]"
+                  : "cursor-not-allowed bg-surface-base text-icon-alt"
               }`}
             >
               {isLoading ? "처리 중..." : "다음"}
@@ -249,8 +249,8 @@ const InputField = ({
 }: InputFieldProps) => {
   return (
     <div>
-      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-[#222222]">
-        <span className="mr-[2px] text-[#ff3b30]">*</span>
+      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default">
+        <span className="mr-[2px] text-rising">*</span>
         {label}
       </label>
 
@@ -259,7 +259,7 @@ const InputField = ({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="h-[44px] w-full rounded-[7px] border border-[#dddddd] px-[12px] text-[14px] font-medium tracking-[-0.03em] text-[#222222] outline-none transition placeholder:text-[#a9a9a9] focus:border-[#222222]"
+        className="h-[44px] w-full rounded-[7px] border border-line-alt px-[12px] text-[14px] font-medium tracking-[-0.03em] text-tx-default outline-none transition placeholder:text-tx-assistive focus:border-fill-primary"
       />
     </div>
   );
@@ -286,35 +286,35 @@ const SelectField = ({
 }: SelectFieldProps) => {
   return (
     <div className="relative">
-      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-[#222222]">
-        <span className="mr-[2px] text-[#ff3b30]">*</span>
+      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default">
+        <span className="mr-[2px] text-rising">*</span>
         {label}
       </label>
 
       <button
         type="button"
         onClick={onToggle}
-        className={`flex h-[44px] w-full items-center justify-between rounded-[7px] border border-[#dddddd] bg-white px-[12px] text-left text-[14px] font-medium tracking-[-0.03em] outline-none transition ${
-          value ? "text-[#222222]" : "text-[#a9a9a9]"
-        } ${isOpen ? "border-[#dddddd] shadow-[0_6px_18px_rgba(0,0,0,0.08)]" : ""}`}
+        className={`flex h-[44px] w-full items-center justify-between rounded-[7px] border border-line-alt bg-white px-[12px] text-left text-[14px] font-medium tracking-[-0.03em] outline-none transition ${
+          value ? "text-tx-default" : "text-tx-assistive"
+        } ${isOpen ? "border-line-alt shadow-[0_6px_18px_rgba(0,0,0,0.08)]" : ""}`}
       >
         <span>{value || placeholder}</span>
         <ChevronDown
           size={16}
           strokeWidth={2}
-          className={`text-[#777777] transition ${isOpen ? "rotate-180" : ""}`}
+          className={`text-tx-alt transition ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-[74px] z-20 w-full rounded-[10px] border border-[#eeeeee] bg-white p-[6px] shadow-[0_12px_30px_rgba(0,0,0,0.13)]">
+        <div className="absolute left-0 top-[74px] z-20 w-full rounded-[10px] border border-line-divider bg-white p-[6px] shadow-[0_12px_30px_rgba(0,0,0,0.13)]">
           {options.map((option) => (
             <button
               key={option}
               type="button"
               onClick={() => onSelect(option)}
-              className={`block h-[40px] w-full rounded-[7px] px-[12px] text-left text-[14px] font-bold tracking-[-0.03em] transition hover:bg-[#f4f6f8] ${
-                value === option ? "bg-[#f4f6f8] text-[#222222]" : "text-[#222222]"
+              className={`block h-[40px] w-full rounded-[7px] px-[12px] text-left text-[14px] font-bold tracking-[-0.03em] transition hover:bg-surface-base ${
+                value === option ? "bg-surface-base text-tx-default" : "text-tx-default"
               }`}
             >
               {option}

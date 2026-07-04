@@ -1,19 +1,19 @@
 import { useEffect } from "react";
 import { Icon } from "@iconify/react";
 import Sidebar from "@/components/common/Sidebar";
-import { useFilterStore } from "@/stores/FilterStore";
 import { useChatStore } from "@/stores/ChatStore";
+import { useUIStore } from "@/stores/UIStore";
 import NewHeader from "@/components/common/NewHeader";
 import { NewFilterTabPanels } from "@/components/filter/NewFilterTabBar";
 import SessionExpiredModal from "@/components/common/SessionExpiredModal";
 import AgentChat from "@/components/agent/AgentChat";
+import SettingsPage from "@/pages/SettingsPage";
 import { CaptureGuard } from "@/capture-guard";
 
 function RootNewLayout() {
-  const { selectedTab } = useFilterStore((s) => s);
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
     useChatStore((s) => s);
-  const isSettings = selectedTab === "설정";
+  const { settingsModalTab } = useUIStore();
 
   useEffect(() => {
     const guard = new CaptureGuard({
@@ -53,7 +53,7 @@ function RootNewLayout() {
 
   return (
     <div className="flex w-full h-screen overflow-hidden bg-white">
-      {!isSettings && <Sidebar />}
+      <Sidebar />
 
       <div className="flex flex-col flex-1 h-full min-w-0">
         <NewHeader />
@@ -64,6 +64,8 @@ function RootNewLayout() {
           </div>
         </main>
       </div>
+
+      {settingsModalTab !== null && <SettingsPage />}
 
       {/* FEDI Agent 플로팅 버튼 & 채팅창 */}
       <div className="fixed z-50 flex flex-col items-end gap-3 bottom-6 right-6">

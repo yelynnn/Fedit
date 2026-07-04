@@ -87,18 +87,18 @@ export default function RankBox() {
       <div className="flex items-center mb-4">
         {/* <button
           onClick={() => setIsMonthModalOpen(true)}
-          className="flex items-center gap-1.5 text-base font-semibold text-[#6F7173] hover:text-[#212121] transition-colors"
+          className="flex items-center gap-1.5 text-base font-semibold text-tx-alt hover:text-tx-default transition-colors"
         >
           {isCurrentMonth
             ? `이번 달(${currentDate.format("YYYY.MM")})`
             : currentDate.format("YYYY년 M월")}
           <Icon icon="ph:caret-down" className="w-4 h-4 text-gray-500" />
         </button> */}
-        <div className="text-base font-semibold text-[#6F7173]">
+        <div className="text-base font-semibold text-tx-alt">
           {" "}
           이번 달({currentDate.format("YYYY.MM")})
         </div>
-        <div className="ml-auto flex items-center gap-4 text-sm font-medium text-[#3D3F41]">
+        <div className="ml-auto flex items-center gap-4 text-sm font-medium text-tx-neutral">
           {" "}
           <button
             onClick={handlePrevMonth}
@@ -113,7 +113,7 @@ export default function RankBox() {
             disabled={isCurrentMonth}
             className={`flex items-center gap-1 transition-colors ${
               isCurrentMonth
-                ? "text-[#ADB5BD] cursor-not-allowed"
+                ? "text-icon-alt cursor-not-allowed"
                 : "hover:text-[#151515]"
             }`}
           >
@@ -131,7 +131,7 @@ export default function RankBox() {
               onClick={() => setSelectedPlatform(platform)}
               className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
                 selectedPlatform === platform
-                  ? "bg-[#212121] text-white"
+                  ? "bg-fill-primary text-white"
                   : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
               }`}
             >
@@ -140,7 +140,7 @@ export default function RankBox() {
           ))}
         </div>
 
-        <div className="flex gap-1 p-1 bg-[#F9FAFB] border border-gray-200 rounded-full">
+        <div className="flex gap-1 p-1 bg-fill-bg-strong border border-gray-200 rounded-full">
           {CATEGORIES.map((category) => (
             <button
               key={category}
@@ -170,7 +170,7 @@ export default function RankBox() {
                   key={item.itemcode}
                   onClick={() => setActiveRank(item.rank)}
                   className={`flex items-start gap-3 p-2 border-b border-gray-100 cursor-pointer transition-colors ${
-                    isActive ? "bg-[#F8F9FA]" : "hover:bg-gray-50"
+                    isActive ? "bg-surface-base" : "hover:bg-gray-50"
                   }`}
                 >
                   <div className="relative flex-shrink-0 w-18 h-18">
@@ -269,7 +269,7 @@ export default function RankBox() {
                         {item.details.map((detail, tIdx) => (
                           <span
                             key={tIdx}
-                            className="px-2 py-1 bg-[#E7F0FF] text-[#1A75FF] text-[11px] font-semibold rounded"
+                            className="px-2 py-1 bg-falling-bg text-data-blue text-[11px] font-semibold rounded"
                           >
                             {detail}
                           </span>

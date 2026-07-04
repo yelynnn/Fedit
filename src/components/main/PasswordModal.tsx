@@ -19,10 +19,10 @@ export default function PasswordModal({ isOpen, onClose }: Props) {
   const inputClass = useMemo(
     () =>
       [
-        "w-full h-12 px-4 rounded-xl bg-white text-[#1C1C1C] placeholder:text-[#B8BBBE] outline-none",
+        "w-full h-12 px-4 rounded-xl bg-white text-tx-strong placeholder:text-icon-alt outline-none",
         isError
           ? "border border-[#FF6B6B] focus:border-[#FF6B6B]"
-          : "border border-[#ECEEF0] focus:border-[#C8CDD2]",
+          : "border border-line-divider focus:border-line-neutral",
       ].join(" "),
     [isError]
   );
@@ -35,7 +35,7 @@ export default function PasswordModal({ isOpen, onClose }: Props) {
 
   const helperClass = useMemo(
     () =>
-      ["mt-1 text-sm", isError ? "text-[#FF6B6B]" : "text-[#888A8C]"].join(" "),
+      ["mt-1 text-sm", isError ? "text-rising" : "text-icon-neutral"].join(" "),
     [isError]
   );
 
@@ -76,10 +76,10 @@ export default function PasswordModal({ isOpen, onClose }: Props) {
 
       <div className="relative flex flex-col p-6 bg-white shadow-xl outline-none h-96 w-125 rounded-xl">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
-          <h2 className="text-xl font-bold text-[#3D3F41] mb-6">로그인</h2>
+          <h2 className="text-xl font-bold text-tx-neutral mb-6">로그인</h2>
 
-          <label className="flex items-center gap-1 text-base font-semibold text-[#3D3F41] mb-1">
-            <span className={isError ? "text-[#FF4D4F]" : "text-[#FF4D4F]"}>
+          <label className="flex items-center gap-1 text-base font-semibold text-tx-neutral mb-1">
+            <span className={isError ? "text-status-error" : "text-status-error"}>
               •
             </span>
             비밀번호
@@ -102,14 +102,14 @@ export default function PasswordModal({ isOpen, onClose }: Props) {
 
           <div className="mt-auto">
             {expired ? (
-              <div className="w-full h-12 rounded-xl bg-[#F3F5F7] text-[#98A2B3] text-base font-semibold flex items-center justify-center">
+              <div className="w-full h-12 rounded-xl bg-surface-base text-tx-assistive text-base font-semibold flex items-center justify-center">
                 데모 이용 기간이 만료되었습니다.
               </div>
             ) : (
               <button
                 type="submit"
                 disabled={isSubmitting || !password.trim()}
-                className="w-full h-12 rounded-xl bg-[#242628] text-white text-base font-semibold disabled:cursor-not-allowed"
+                className="w-full h-12 rounded-xl bg-fill-primary text-white text-base font-semibold disabled:cursor-not-allowed"
               >
                 {isSubmitting ? "로그인 중..." : "로그인"}
               </button>

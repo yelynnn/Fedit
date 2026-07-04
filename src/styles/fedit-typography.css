@@ -1,0 +1,107 @@
+/* FEDIT Typography — auto-generated from Figma text styles. DO NOT EDIT BY HAND. */
+
+:root {
+  --font-family-base: "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+}
+
+.type-display {
+  font-family: var(--font-family-base);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.36;
+  letter-spacing: -0.022em;
+}
+.type-headline {
+  font-family: var(--font-family-base);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.33;
+  letter-spacing: -0.02em;
+}
+.type-title-xlarge {
+  font-family: var(--font-family-base);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.4;
+  letter-spacing: -0.012em;
+}
+.type-title-large {
+  font-family: var(--font-family-base);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.44;
+  letter-spacing: -0.005em;
+}
+.type-title-medium {
+  font-family: var(--font-family-base);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+.type-title-small {
+  font-family: var(--font-family-base);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.43;
+  letter-spacing: -0.005em;
+}
+.type-title-xsmall {
+  font-family: var(--font-family-base);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.33;
+  letter-spacing: 0;
+}
+.type-body-large {
+  font-family: var(--font-family-base);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1.44;
+  letter-spacing: -0.005em;
+}
+.type-body-medium {
+  font-family: var(--font-family-base);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+.type-body-small {
+  font-family: var(--font-family-base);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.43;
+  letter-spacing: -0.005em;
+}
+.type-body-xsmall {
+  font-family: var(--font-family-base);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.33;
+  letter-spacing: 0;
+}
+.type-label-medium {
+  font-family: var(--font-family-base);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+.type-label-small {
+  font-family: var(--font-family-base);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.43;
+  letter-spacing: -0.005em;
+}
+.type-label-xsmall {
+  font-family: var(--font-family-base);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.33;
+  letter-spacing: 0;
+}

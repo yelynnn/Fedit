@@ -24,16 +24,16 @@ function SessionExpiredModal() {
       <div className="absolute inset-0 bg-black/50" />
 
       <div className="relative flex flex-col items-center p-6 bg-white shadow-xl outline-none w-100 rounded-xl">
-        <h2 className="text-lg font-bold text-[#242628] mb-2">
+        <h2 className="text-lg font-bold text-tx-default mb-2">
           로그인이 만료되었습니다
         </h2>
-        <p className="text-sm text-[#6F7173] mb-6">
+        <p className="text-sm text-tx-alt mb-6">
           다시 로그인해주세요.
         </p>
 
         <button
           onClick={handleConfirm}
-          className="w-full h-12 rounded-xl bg-[#242628] text-white text-base font-semibold"
+          className="w-full h-12 rounded-xl bg-fill-primary text-white text-base font-semibold"
         >
           로그인하기
         </button>

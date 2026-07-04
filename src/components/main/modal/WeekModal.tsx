@@ -47,22 +47,22 @@ const WeekModal: React.FC<WeekModalProps> = ({
       <div className="relative p-6 bg-white shadow-xl rounded-2xl w-[500px] h-[460px] flex flex-col">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-[#242628]">기간</h2>
+          <h2 className="text-xl font-bold text-tx-default">기간</h2>
           <button onClick={onClose} className="p-1 hover:opacity-60">
-            <Icon icon="formkit:close" className="h-6 w-8 text-[#3D3F41]" />
+            <Icon icon="formkit:close" className="h-6 w-8 text-tx-neutral" />
           </button>
         </div>
 
         {/* 연도 탭 */}
-        <div className="flex gap-6 mb-4 border-b border-[#F1F3F5]">
+        <div className="flex gap-6 mb-4 border-b border-surface-base">
           {years.map((year) => (
             <button
               key={year}
               onClick={() => setSelectedYear(year)}
               className={`pb-2 text-base font-semibold transition-all ${
                 selectedYear === year
-                  ? "text-[#242628] border-b-2 border-[#56585A]"
-                  : "text-[#6F7173]"
+                  ? "text-tx-default border-b-2 border-line-default"
+                  : "text-tx-alt"
               }`}
             >
               {year}
@@ -75,14 +75,14 @@ const WeekModal: React.FC<WeekModalProps> = ({
           <div className="flex flex-col gap-6 pt-2">
             {monthsInYear.map((month) => (
               <div key={month} className="flex flex-col gap-2">
-                <h3 className="text-base font-bold text-[#242628]">
+                <h3 className="text-base font-bold text-tx-default">
                   {month}월
                 </h3>
 
                 <div className="flex items-start gap-3 pl-1">
                   <Icon
                     icon="fluent:arrow-turn-down-right-48-filled"
-                    className="w-5 h-5 text-[#A1A3A5]"
+                    className="w-5 h-5 text-tx-assistive"
                   />
 
                   <div className="flex flex-wrap gap-x-5 gap-y-2">
@@ -101,8 +101,8 @@ const WeekModal: React.FC<WeekModalProps> = ({
                           }}
                           className={`text-sm font-semibold transition-colors ${
                             isFuture
-                              ? "text-[#ECEEF0] cursor-not-allowed"
-                              : "text-[#6F7173] hover:text-[#242628]"
+                              ? "text-line-divider cursor-not-allowed"
+                              : "text-tx-alt hover:text-tx-default"
                           }`}
                         >
                           {week}주차

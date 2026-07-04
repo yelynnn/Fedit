@@ -3,13 +3,13 @@ import logo from "@/assets/logo/feditLogo.svg";
 
 function Footer() {
   return (
-    <footer className="w-full border-t border-[#E4E4E4]">
+    <footer className="w-full border-t border-line-alt">
       <div className="max-w-screen-xl pb-10 mx-auto pt-7 px-13">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-6 lg:grid-cols-6">
           <div className="col-span-1 lg:col-span-2">
             <img src={logo} alt="fedit icon" className="h-7" />
 
-            <p className="mt-3 text-sm text-[#666A6E]">
+            <p className="mt-3 text-sm text-tx-alt">
               데이터를 분석하는 패션 트렌드의 새로운 기준
             </p>
 
@@ -17,42 +17,42 @@ function Footer() {
               <a
                 href="#"
                 aria-label="Instagram"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#F2F3F4] hover:bg-[#E7E8EA] transition"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-base hover:bg-line-divider transition"
               >
-                <Icon icon="mdi:instagram" className="h-4 w-4 text-[#6F7579]" />
+                <Icon icon="mdi:instagram" className="h-4 w-4 text-tx-alt" />
               </a>
               <a
                 href="#"
                 aria-label="Naver"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#F2F3F4] hover:bg-[#E7E8EA] transition"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-base hover:bg-line-divider transition"
               >
                 <Icon
                   icon="simple-icons:naver"
-                  className="h-4 w-4 text-[#6F7579]"
+                  className="h-4 w-4 text-tx-alt"
                 />
               </a>
               <a
                 href="#"
                 aria-label="Facebook"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#F2F3F4] hover:bg-[#E7E8EA] transition"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-base hover:bg-line-divider transition"
               >
-                <Icon icon="mdi:facebook" className="h-4 w-4 text-[#6F7579]" />
+                <Icon icon="mdi:facebook" className="h-4 w-4 text-tx-alt" />
               </a>
             </div>
           </div>
 
           <div>
-            <h4 className="text-base font-semibold text-[#3D3F41]">
+            <h4 className="text-base font-semibold text-tx-neutral">
               Information
             </h4>
-            <ul className="mt-4 space-y-2 text-sm text-[#6B6E71]">
+            <ul className="mt-4 space-y-2 text-sm text-tx-alt">
               <li>
-                <a href="#" className="hover:text-[#1C1C1C]">
+                <a href="#" className="hover:text-tx-strong">
                   서비스 소개
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-[#1C1C1C]">
+                <a href="#" className="hover:text-tx-strong">
                   FAQ
                 </a>
               </li>
@@ -60,12 +60,12 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="text-base font-semibold text-[#3D3F41]">
+            <h4 className="text-base font-semibold text-tx-neutral">
               Our Services
             </h4>
-            <ul className="mt-4 space-y-2 text-sm text-[#6B6E71]">
+            <ul className="mt-4 space-y-2 text-sm text-tx-alt">
               <li>
-                <a href="#" className="hover:text-[#56585A]">
+                <a href="#" className="hover:text-tx-alt">
                   브랜드 리스트
                 </a>
               </li>
@@ -74,34 +74,34 @@ function Footer() {
 
           <div className="col-span-1 md:col-span-2 md:grid md:grid-cols-2 md:gap-8">
             <div className="mt-8 md:mt-0">
-              <h4 className="text-base font-semibold text-[#3D3F41]">
+              <h4 className="text-base font-semibold text-tx-neutral">
                 Business
               </h4>
-              <ul className="mt-4 space-y-2 text-sm text-[#6B6E71]">
+              <ul className="mt-4 space-y-2 text-sm text-tx-alt">
                 <li>
-                  <a href="#" className="hover:text-[#56585A]">
+                  <a href="#" className="hover:text-tx-alt">
                     광고 문의
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-[#56585A]">
+                  <a href="#" className="hover:text-tx-alt">
                     제휴 문의
                   </a>
                 </li>
               </ul>
             </div>
             <div className="mt-8 md:mt-0">
-              <h4 className="text-base font-semibold text-[#3D3F41]">
+              <h4 className="text-base font-semibold text-tx-neutral">
                 Contact us
               </h4>
-              <ul className="mt-4 space-y-2 text-sm text-[#6B6E71]">
+              <ul className="mt-4 space-y-2 text-sm text-tx-alt">
                 <li>
-                  <a href="#" className="hover:text-[#56585A]">
+                  <a href="#" className="hover:text-tx-alt">
                     고객센터
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-[#56585A]">
+                  <a href="#" className="hover:text-tx-alt">
                     오류 신고
                   </a>
                 </li>

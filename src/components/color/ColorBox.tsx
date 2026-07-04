@@ -31,9 +31,9 @@ function ColorBox({ brand }: ColorBoxProps) {
   }, [selectedColor, brand]);
 
   return (
-    <div className="w-90 h-190 rounded-2xl bg-[#F7F9FB]">
+    <div className="w-90 h-190 rounded-2xl bg-surface-base">
       <div className="p-6">
-        <header className="text-[#1C1C1C] text-base font-bold mb-4">
+        <header className="text-tx-strong text-base font-bold mb-4">
           {brand}
         </header>
         {brandData ? (

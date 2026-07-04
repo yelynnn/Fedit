@@ -19,9 +19,9 @@ export default function SideFilterModal({ onClose, initialTab }: Props) {
   return (
     <section className="flex flex-col w-full h-full">
       <div className="flex items-center justify-between px-4 mb-4">
-        <h2 className="text-xl font-semibold text-[#3D3F41]">필터</h2>
+        <h2 className="text-xl font-semibold text-tx-neutral">필터</h2>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
-          <Icon icon="fontisto:close-a" width={18} className="text-[#888A8C]" />
+          <Icon icon="fontisto:close-a" width={18} className="text-icon-neutral" />
         </button>
       </div>
 
@@ -39,7 +39,7 @@ export default function SideFilterModal({ onClose, initialTab }: Props) {
       <div className="flex flex-col gap-3 p-4">
         <button
           onClick={onClose}
-          className="h-10 rounded-lg bg-[#242628] text-white font-semibold"
+          className="h-10 rounded-lg bg-fill-primary text-white font-semibold"
         >
           상품보기
         </button>

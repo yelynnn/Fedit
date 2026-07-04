@@ -57,7 +57,7 @@ function AskPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-13 gap-y-9">
               <div className="flex flex-col gap-2">
                 <label className="font-semibold text-white">
-                  <span className="text-[#FF4242]">•</span> 성함(Name)
+                  <span className="text-rising">•</span> 성함(Name)
                 </label>
                 <input
                   name="name"
@@ -70,7 +70,7 @@ function AskPage() {
 
               <div className="flex flex-col gap-2">
                 <label className="font-semibold text-white">
-                  <span className="text-[#FF4242]">•</span> 연락 받으실
+                  <span className="text-rising">•</span> 연락 받으실
                   메일(E-mail)
                 </label>
                 <input
@@ -85,7 +85,7 @@ function AskPage() {
 
               <div className="flex flex-col gap-2">
                 <label className="font-semibold text-white">
-                  <span className="text-[#FF4242]">•</span> 직무(Role)
+                  <span className="text-rising">•</span> 직무(Role)
                 </label>
                 <Select value={role} onValueChange={setRole}>
                   <SelectTrigger className="w-full h-12 px-3 py-4 font-semibold text-black bg-white rounded-lg">
@@ -104,7 +104,7 @@ function AskPage() {
 
               <div className="flex flex-col gap-2">
                 <label className="font-semibold text-white">
-                  <span className="text-[#FF4242]">•</span> 재직 중인 회사
+                  <span className="text-rising">•</span> 재직 중인 회사
                   규모(Company-size)
                 </label>
                 <Select value={companySize} onValueChange={setCompanySize}>
@@ -130,7 +130,7 @@ function AskPage() {
 
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="font-semibold text-white">
-                  <span className="text-[#FF4242]">•</span> 재직 중인 회사의
+                  <span className="text-rising">•</span> 재직 중인 회사의
                   브랜드 유형(Brand Sector)
                 </label>
                 <Select value={brandSector} onValueChange={setBrandSector}>
@@ -165,7 +165,7 @@ function AskPage() {
 
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="font-semibold text-white">
-                  <span className="text-[#FF4242]">•</span> 문의 내용(Inquiry
+                  <span className="text-rising">•</span> 문의 내용(Inquiry
                   Details)
                 </label>
                 <textarea
@@ -179,7 +179,7 @@ function AskPage() {
 
             <button
               type="submit"
-              className="my-22 w-full flex items-center justify-center h-10 text-base text-[#242628] bg-white rounded-lg font-semibold"
+              className="my-22 w-full flex items-center justify-center h-10 text-base text-tx-default bg-white rounded-lg font-semibold"
             >
               문의 보내기
             </button>

@@ -24,7 +24,7 @@ function FilterTabMenu() {
             className={`h-8 w-25 text-base font-semibold flex items-center justify-center mx-0.5 rounded-t
               ${
                 selectedTab === label
-                  ? "bg-[#E5E2EA] text-[#1C1C1C]"
+                  ? "bg-[#E5E2EA] text-tx-strong"
                   : "bg-[#555560] text-white"
               }`}
           >

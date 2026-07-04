@@ -153,7 +153,7 @@ function BrandTab({ isProductTab }: Props) {
   }
 
   return (
-    <section className="flex justify-between h-14 bg-[#F6F8FA] px-12 py-2 gap-2 relative pl-32">
+    <section className="flex justify-between h-14 bg-surface-base px-12 py-2 gap-2 relative pl-32">
       <div className="flex items-center flex-1 min-w-0 gap-2">
         <div
           className="flex-1 min-w-0 overflow-x-auto x-scroll-hide whitespace-nowrap"
@@ -168,7 +168,7 @@ function BrandTab({ isProductTab }: Props) {
               <button
                 key={brand}
                 type="button"
-                className="font-semibold inline-flex px-3 h-10 rounded-lg  bg-[#242628] text-white items-center justify-center text-sm shrink-0"
+                className="font-semibold inline-flex px-3 h-10 rounded-lg  bg-fill-primary text-white items-center justify-center text-sm shrink-0"
               >
                 {brand}
               </button>
@@ -180,7 +180,7 @@ function BrandTab({ isProductTab }: Props) {
       {isProductTab && (
         <button
           onClick={() => downloadXlsxWithImages(resultLists as ApiDetail[])}
-          className="text-[#3D3F41] flex justify-center items-center h-10 gap-1 py-2 text-base font-semibold bg-white rounded-lg px-3 cursor-pointer select-none shrink-0 border border-[#E4E4E4]"
+          className="text-tx-neutral flex justify-center items-center h-10 gap-1 py-2 text-base font-semibold bg-white rounded-lg px-3 cursor-pointer select-none shrink-0 border border-line-alt"
         >
           <Icon icon="ci:download" className="w-5" />
           <p>엑셀 다운로드</p>

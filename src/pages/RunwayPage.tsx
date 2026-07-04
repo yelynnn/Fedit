@@ -108,19 +108,19 @@ function RunwayPage() {
           Fashion Week Runway Analysis
         </h1>
         <div className="flex items-center gap-3 mt-2">
-          <p className="text-[#6F7173] text-base font-semibold">
+          <p className="text-tx-alt text-base font-semibold">
             주요 브랜드 런웨이 비교 분석 & 시즌 트렌드 인사이트
           </p>
           <div className="flex gap-2">
             <button
               onClick={handleLike}
-              className={`flex items-center transition-colors ${feedback === "like" ? "text-[#6F7173]" : "text-gray-300 hover:text-gray-500"}`}
+              className={`flex items-center transition-colors ${feedback === "like" ? "text-tx-alt" : "text-gray-300 hover:text-gray-500"}`}
             >
               <Icon icon={feedback === "like" ? "ph:thumbs-up-fill" : "ph:thumbs-up"} className="w-5 h-5" />
             </button>
             <button
               onClick={handleDislike}
-              className={`flex items-center transition-colors ${feedback === "dislike" ? "text-[#6F7173]" : "text-gray-300 hover:text-gray-500"}`}
+              className={`flex items-center transition-colors ${feedback === "dislike" ? "text-tx-alt" : "text-gray-300 hover:text-gray-500"}`}
             >
               <Icon icon={feedback === "dislike" ? "ph:thumbs-down-fill" : "ph:thumbs-down"} className="w-5 h-5" />
             </button>
@@ -137,7 +137,7 @@ function RunwayPage() {
 
       <div className="relative mt-5" ref={dropdownRef}>
         <div
-          className="w-full bg-[#242628] rounded-lg px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-[#1a1a1a] transition-colors"
+          className="w-full bg-fill-primary rounded-lg px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-[#1a1a1a] transition-colors"
           onClick={() => setDropdownOpen((prev) => !prev)}
         >
           <div className="flex items-center gap-9">
@@ -153,14 +153,14 @@ function RunwayPage() {
         </div>
 
         {dropdownOpen && (
-          <div className="absolute z-20 top-full mt-1 w-full bg-white border border-[#E4E4E4] rounded-lg shadow-lg overflow-hidden">
+          <div className="absolute z-20 top-full mt-1 w-full bg-white border border-line-alt rounded-lg shadow-lg overflow-hidden">
             {SEASONS.map((season) => (
               <button
                 key={season.value}
-                className={`w-full text-left px-6 py-3 text-sm hover:bg-[#F6F8FA] transition-colors ${
+                className={`w-full text-left px-6 py-3 text-sm hover:bg-surface-base transition-colors ${
                   selectedSeason.value === season.value
                     ? "font-semibold text-black"
-                    : "font-medium text-[#6F7173]"
+                    : "font-medium text-tx-alt"
                 }`}
                 onClick={() => {
                   setSearchParams({ season: season.value });
@@ -174,11 +174,11 @@ function RunwayPage() {
         )}
       </div>
 
-      <div className="w-full h-[1px] bg-[#E4E4E4] my-6" />
+      <div className="w-full h-[1px] bg-line-alt my-6" />
 
       {loading && (
         <div className="flex items-center justify-center py-20">
-          <span className="text-[#6F7173] text-sm">불러오는 중...</span>
+          <span className="text-tx-alt text-sm">불러오는 중...</span>
         </div>
       )}
 

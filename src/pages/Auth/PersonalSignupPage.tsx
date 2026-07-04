@@ -102,19 +102,19 @@ const PersonalSignupPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-[#222222]">
+    <div className="flex min-h-screen flex-col bg-white text-tx-default">
       <LoginHeader />
 
       <main className="flex flex-1 justify-center px-5 pt-[74px] pb-[60px]">
         <section className="w-full max-w-[458px]">
           <div className="mb-[38px]">
-            <h1 className="text-[24px] font-bold leading-[1.35] tracking-[-0.04em] text-[#222222]">
+            <h1 className="text-[24px] font-bold leading-[1.35] tracking-[-0.04em] text-tx-default">
               회원님의 정보에 맞춰
               <br />
               트렌드와 리포트를 최적화해드려요.
             </h1>
 
-            <p className="mt-[8px] text-[15px] font-medium tracking-[-0.03em] text-[#666666]">
+            <p className="mt-[8px] text-[15px] font-medium tracking-[-0.03em] text-tx-alt">
               수집된 데이터를 기반으로 정확한 분석 결과를 제공해요.
             </p>
           </div>
@@ -161,7 +161,7 @@ const PersonalSignupPage = () => {
             <button
               type="button"
               onClick={handlePrev}
-              className="h-[42px] rounded-[7px] border border-[#dddddd] bg-white text-[14px] font-bold tracking-[-0.03em] text-[#222222] transition hover:bg-[#fafafa]"
+              className="h-[42px] rounded-[7px] border border-line-alt bg-white text-[14px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
             >
               이전
             </button>
@@ -172,8 +172,8 @@ const PersonalSignupPage = () => {
               onClick={handleNext}
               className={`h-[42px] rounded-[7px] text-[14px] font-bold tracking-[-0.03em] transition ${
                 isFormValid
-                  ? "bg-[#222426] text-white hover:bg-[#111111]"
-                  : "cursor-not-allowed bg-[#f1f3f5] text-[#a9afb8]"
+                  ? "bg-fill-primary text-white hover:bg-[#111111]"
+                  : "cursor-not-allowed bg-surface-base text-icon-alt"
               }`}
             >
               다음
@@ -208,8 +208,8 @@ const InputField = ({
 }: InputFieldProps) => {
   return (
     <div>
-      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-[#222222]">
-        <span className="mr-[2px] text-[#ff3b30]">*</span>
+      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default">
+        <span className="mr-[2px] text-rising">*</span>
         {label}
       </label>
 
@@ -219,15 +219,15 @@ const InputField = ({
         onChange={onChange}
         onBlur={onBlur}
         placeholder={placeholder}
-        className={`h-[44px] w-full rounded-[7px] border px-[12px] text-[15px] font-medium tracking-[-0.03em] text-[#222222] outline-none transition placeholder:text-[#a9a9a9] ${
+        className={`h-[44px] w-full rounded-[7px] border px-[12px] text-[15px] font-medium tracking-[-0.03em] text-tx-default outline-none transition placeholder:text-tx-assistive ${
           error
-            ? "border-[#ff3b30] focus:border-[#ff3b30]"
-            : "border-[#dddddd] focus:border-[#222222]"
+            ? "border-rising focus:border-rising"
+            : "border-line-alt focus:border-fill-primary"
         }`}
       />
 
       {error && (
-        <p className="mt-[6px] text-[13px] font-medium tracking-[-0.03em] text-[#ff3b30]">
+        <p className="mt-[6px] text-[13px] font-medium tracking-[-0.03em] text-rising">
           {error}
         </p>
       )}

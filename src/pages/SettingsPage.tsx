@@ -1,62 +1,47 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import { useFilterStore } from "@/stores/FilterStore";
 import { useChatStore } from "@/stores/ChatStore";
+import { useUIStore } from "@/stores/UIStore";
 
-type Section = "계정" | "구독" | "사용가이드" | "FAQ" | "알림" | "앱정보" | "FEDI대화";
+type Section = "내정보" | "알림" | "FEDI대화" | "사용가이드" | "FAQ" | "구독";
 
-const NAV_GROUPS = [
+const NAV_GROUPS: {
+  title: string;
+  items: { id: Section; label: string; icon: string }[];
+}[] = [
   {
-    title: "계정 및 구독",
+    title: "설정",
     items: [
-      { id: "계정" as Section, label: "내 계정" },
-      { id: "구독" as Section, label: "구독 관리" },
+      { id: "내정보", label: "내 정보", icon: "ph:user-circle" },
+      { id: "알림", label: "알림", icon: "ph:bell" },
     ],
   },
   {
-    title: "AI 에이전트",
+    title: "에이전트",
     items: [
-      { id: "FEDI대화" as Section, label: "FEDI 대화 목록" },
-      { id: "사용가이드" as Section, label: "AI 사용 가이드" },
+      {
+        id: "FEDI대화",
+        label: "FEDI 채팅 목록",
+        icon: "mynaui:chat-messages",
+      },
+      { id: "사용가이드", label: "AI 사용 가이드", icon: "ph:device-tablet" },
     ],
   },
   {
-    title: "고객지원 및 정보",
-    items: [
-      { id: "FAQ" as Section, label: "FAQ / 1:1 문의" },
-      { id: "알림" as Section, label: "알림 설정" },
-      { id: "앱정보" as Section, label: "앱 정보" },
-    ],
+    title: "고객 지원",
+    items: [{ id: "FAQ", label: "FAQ / 1:1 문의", icon: "ph:question" }],
+  },
+  {
+    title: "사용 권한 및 청구",
+    items: [{ id: "구독", label: "구독 관리", icon: "ph:credit-card" }],
   },
 ];
-
-type Plan = "Free" | "Basic" | "Pro";
-const CURRENT_PLAN: Plan = "Basic";
-
-function SectionBox({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mb-8">
-      <h3 className="text-xs font-semibold text-[#91929D] uppercase tracking-wider mb-2">
-        {title}
-      </h3>
-      <div className="border border-[#ECEEF0] rounded-xl px-5 divide-y divide-[#ECEEF0]">
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
   return (
     <button
       onClick={onChange}
-      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 overflow-hidden ${value ? "bg-[#242628]" : "bg-[#ECEEF0]"}`}
+      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 overflow-hidden ${value ? "bg-[#111827]" : "bg-line-divider"}`}
     >
       <span
         className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${value ? "translate-x-5" : "translate-x-0"}`}
@@ -66,7 +51,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
 }
 
 export default function SettingsPage() {
-  const { setSelectedTab } = useFilterStore((s) => s);
+  const { settingsModalTab, closeSettingsModal } = useUIStore();
   const {
     conversations,
     activeConversationId,
@@ -75,10 +60,14 @@ export default function SettingsPage() {
     deleteConversation,
   } = useChatStore((s) => s);
 
-  const [active, setActive] = useState<Section>("계정");
+  const [active, setActive] = useState<Section>(
+    () => (settingsModalTab as Section) || "내정보",
+  );
   const [aiNotif, setAiNotif] = useState(true);
   const [marketingNotif, setMarketingNotif] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [inquiryType, setInquiryType] = useState("요금제·결제 문의");
+  const [inquiryContent, setInquiryContent] = useState("");
   const [withdrawStep, setWithdrawStep] = useState<null | "reason" | "confirm">(
     null,
   );
@@ -87,9 +76,13 @@ export default function SettingsPage() {
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
+  const userEmail = localStorage.getItem("userEmail") || "example@fedit.com";
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userEmail");
     window.location.href = "/login";
   };
 
@@ -98,537 +91,690 @@ export default function SettingsPage() {
       prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
     );
 
-  return (
-    <div className="flex h-full">
-      {/* Left nav */}
-      <aside className="w-[220px] shrink-0 border-r border-[#ECEEF0] py-8 px-4 overflow-y-auto">
-        <button
-          onClick={() => setSelectedTab("대시보드")}
-          className="flex items-center gap-2 text-sm font-semibold text-[#6F7173] hover:text-[#242628] mb-6 transition-colors"
-        >
-          <Icon icon="lucide:arrow-left" className="w-4 h-4" />
-          돌아가기
-        </button>
-        <h2 className="text-lg font-bold text-[#0B0E0F] mb-5 px-2">설정</h2>
+  const now = Date.now();
+  const DAY = 86400000;
 
-        {NAV_GROUPS.map((group) => (
-          <div key={group.title} className="mb-5">
-            <p className="text-[11px] font-semibold text-[#91929D] uppercase tracking-wider px-2 mb-1.5">
-              {group.title}
-            </p>
-            {group.items.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActive(item.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors mb-0.5 ${
-                  active === item.id
-                    ? "bg-[#F2F9E9] text-[#0B0E0F]"
-                    : "text-[#6F7173] hover:bg-[#F6F8FA]"
-                }`}
-              >
-                {item.label}
-              </button>
+  const filteredConversations = [...conversations]
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .filter((c) => c.title.toLowerCase().includes(chatSearch.toLowerCase()));
+
+  const recentGroup = filteredConversations.filter(
+    (c) => now - c.updatedAt <= 7 * DAY,
+  );
+  const olderGroup = filteredConversations.filter(
+    (c) => now - c.updatedAt > 7 * DAY && now - c.updatedAt <= 30 * DAY,
+  );
+
+  const handleOpenConv = (id: string) => {
+    openConversation(id);
+    closeSettingsModal();
+  };
+
+  const handleRename = (id: string) => {
+    const trimmed = editingTitle.trim();
+    if (trimmed) updateTitle(id, trimmed);
+    setEditingConvId(null);
+    setEditingTitle("");
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
+      <div
+        className="relative flex overflow-hidden bg-white shadow-2xl rounded-2xl"
+        style={{ height: 740 }}
+      >
+        {/* Left nav */}
+        <aside
+          className="shrink-0 border-r border-line-divider flex flex-col items-start self-stretch overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-[#F9FAFB]"
+          style={{ width: 240, padding: "20px 16px", gap: 24 }}
+        >
+          {/* Nav groups */}
+          <div className="flex-1 flex flex-col w-full gap-6 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.title} className="flex flex-col gap-0.5">
+                <p className="text-[11px] font-semibold text-tx-assistive uppercase tracking-wider px-2 mb-1">
+                  {group.title}
+                </p>
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActive(item.id)}
+                    className={`w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      active === item.id
+                        ? "bg-[rgba(11,14,15,0.08)] text-tx-strong"
+                        : "text-tx-alt hover:bg-[rgba(11,14,15,0.08)]"
+                    }`}
+                  >
+                    <Icon icon={item.icon} className="flex-shrink-0 w-4 h-4" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
-        ))}
-      </aside>
 
-      {/* Right content */}
-      <main className="flex-1 overflow-y-auto px-12 py-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {/* ── 내 계정 ── */}
-        {active === "계정" && (
-          <div className="max-w-[580px]">
-            <h1 className="text-2xl font-bold text-[#0B0E0F] mb-8">내 계정</h1>
-
-            <SectionBox title="이메일">
-              <div className="flex items-center justify-between py-3.5">
-                <span className="text-sm text-[#3D3F41]">
-                  example@fedit.com
-                </span>
-                <button className="text-sm font-semibold text-[#3E7EFF] hover:underline">
-                  변경
-                </button>
-              </div>
-            </SectionBox>
-
-            <SectionBox title="비밀번호">
-              <div className="flex items-center justify-between py-3.5">
-                <span className="text-sm text-[#3D3F41] tracking-widest">
-                  ••••••••
-                </span>
-                <button className="text-sm font-semibold text-[#3E7EFF] hover:underline">
-                  변경
-                </button>
-              </div>
-            </SectionBox>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2.5 border border-[#ECEEF0] rounded-xl text-sm font-semibold text-[#3D3F41] hover:bg-[#F6F8FA] transition-colors"
-            >
-              <Icon icon="ph:sign-out" className="w-4 h-4" />
-              로그아웃
-            </button>
-
-            <div className="mt-16 pt-5 border-t border-[#ECEEF0]">
+          {/* FEDIT Pro upgrade card */}
+          <div className="w-full shrink-0">
+            <div className="flex flex-col items-start self-stretch gap-3 p-3 rounded-xl border border-[#E4E4E4] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.06)]">
+              <p className="text-sm font-bold text-tx-strong">FEDIT Pro</p>
+              <p className="text-xs leading-relaxed text-tx-alt">
+                무제한 분석과 트렌드 리포트를 확인
+              </p>
               <button
-                onClick={() => {
-                  setWithdrawReasons([]);
-                  setWithdrawStep("reason");
-                }}
-                className="text-xs text-[#91929D] hover:text-[#F04438] underline transition-colors"
+                onClick={() => setActive("구독")}
+                className="w-full flex items-center justify-center gap-1.5 py-2 bg-[#111827] text-white text-xs font-semibold rounded-lg hover:bg-black transition-colors"
               >
-                회원 탈퇴
+                <Icon icon="ph:plus-circle" className="w-3.5 h-3.5" />
+                요금제 업그레이드
               </button>
             </div>
           </div>
-        )}
+        </aside>
 
-        {/* ── 구독 관리 ── */}
-        {active === "구독" && (
-          <div className="max-w-[760px]">
-            <h1 className="text-2xl font-bold text-[#0B0E0F] mb-2">
-              구독 관리
-            </h1>
-            <p className="text-sm text-[#91929D] mb-8">
-              현재 이용 중인 요금제:{" "}
-              <span className="font-semibold text-[#3E7EFF]">
-                {CURRENT_PLAN}
-              </span>
-            </p>
+        {/* Right content */}
+        <main
+          className="flex flex-col items-start self-stretch overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden relative"
+          style={{ width: 820, padding: "12px 12px 36px 12px", gap: 2 }}
+        >
+          {/* Close button */}
+          <button
+            onClick={closeSettingsModal}
+            className="absolute z-10 flex items-center justify-center w-8 h-8 transition-colors rounded-full top-5 right-5 hover:bg-surface-base text-tx-alt hover:text-tx-strong"
+          >
+            <Icon icon="material-symbols:close" className="w-5 h-5" />
+          </button>
 
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              {[
-                {
-                  plan: "Free" as const,
-                  label: "무료 체험",
-                  price: "0원",
-                  sub: "14일 · Basic 기능 일부 사용",
-                  features: [
-                    "14일 무료 체험",
-                    "모니터링 (필터 항목별 2개·무신사 한정)",
-                    "키워드 분석 제공",
-                    "화면 캡처 미지원",
-                    "Basic 기능 일부 체험",
-                  ],
-                  btnLabel: "무료로 체험하기",
-                  btnStyle: "bg-[#0B0E0F] text-white hover:bg-black",
-                },
-                {
-                  plan: "Basic" as const,
-                  label: "Basic",
-                  price: "₩9,900/mo",
-                  sub: "대형 패션 브랜드와 리테일을 위한 플랜",
-                  features: [
-                    "20인 사용 가능",
-                    "브랜드별 커스텀 분석",
-                    "API 연동 재고 분석",
-                    "전담 데이터 매니저 상주",
-                    "CSV/PDF 내보내기 가능",
-                    "브랜드 패션 기획 에이전트 제공",
-                  ],
-                  btnLabel: "Basic 플랜 문의",
-                  btnStyle: "bg-[#0B0E0F] text-white hover:bg-black",
-                },
-                {
-                  plan: "Pro" as const,
-                  label: "Pro",
-                  price: "₩29,000/mo",
-                  sub: "대형 패션 브랜드와 리테일을 위한 플랜",
-                  features: [
-                    "20인 사용 가능",
-                    "모든 Basic 기능 사용 가능",
-                    "엑셀 다운로드 무제한",
-                    "트렌드 리포트, 데이터 일괄 내보내기",
-                    "CSV/PDF 내보내기 가능",
-                    "브랜드 패션 기획 에이전트 제공",
-                  ],
-                  btnLabel: "Pro 플랜 문의",
-                  btnStyle: "bg-[#0B0E0F] text-white hover:bg-black",
-                },
-              ].map(
-                ({ plan, label, price, sub, features, btnLabel, btnStyle }) => {
-                  const isCurrent = plan === CURRENT_PLAN;
-                  return (
-                    <div
-                      key={plan}
-                      className={`flex flex-col rounded-2xl p-5 border-2 ${isCurrent ? "border-[#3E7EFF] bg-white" : "border-[#ECEEF0] bg-[#F8F9FA]"}`}
-                    >
-                      <p className="text-sm text-[#6F7173] mb-1">{label}</p>
-                      <p className="text-2xl font-bold text-[#0B0E0F] mb-1">
-                        {price}
+          <div className="w-full px-8 py-6">
+            {/* ── 내 정보 ── */}
+            {active === "내정보" && (
+              <div className="max-w-[560px]">
+                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                  내 정보
+                </h1>
+                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                  계정 정보와 로그인 방식을 관리해요
+                </p>
+
+                <h3 className="mt-6 mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
+                  기본 정보
+                </h3>
+                <div className="border-t border-line-divider" />
+
+                <div className="flex items-center py-4 ">
+                  <div>
+                    <p className="text-sm font-semibold text-tx-strong">
+                      이메일
+                    </p>
+                    <p className="text-sm text-tx-alt mt-0.5">{userEmail}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between py-4 ">
+                  <div>
+                    <p className="text-sm font-semibold text-tx-strong">
+                      비밀번호
+                    </p>
+                    <p className="text-sm text-tx-alt mt-0.5 tracking-widest">
+                      ••••••••••
+                    </p>
+                  </div>
+                  <button className="flex h-[34px] px-2 py-1 justify-center items-center gap-1.5 rounded-lg border border-[#E4E4E4] bg-white text-sm font-semibold text-tx-neutral hover:bg-surface-base transition-colors whitespace-nowrap">
+                    변경하기
+                  </button>
+                </div>
+
+                <h3 className="mt-8 mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
+                  계정 관리
+                </h3>
+                <div className="border-t border-line-divider" />
+
+                <div className="flex items-center justify-between py-4 ">
+                  <div>
+                    <p className="text-sm font-semibold text-tx-strong">
+                      로그아웃하기
+                    </p>
+                    <p className="text-sm text-tx-alt mt-0.5">
+                      현재 계정에서 로그아웃 됩니다.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex h-[34px] px-2 py-1 justify-center items-center gap-1.5 rounded-lg border border-[#E4E4E4] bg-white text-sm font-semibold text-tx-neutral hover:bg-surface-base transition-colors whitespace-nowrap"
+                  >
+                    로그아웃
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-tx-strong">
+                      회원탈퇴
+                    </p>
+                    <p className="text-sm text-tx-alt mt-0.5">
+                      계정을 영구적으로 삭제합니다. 더 이상 접근할 수 없게
+                      됩니다.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setWithdrawReasons([]);
+                      setWithdrawStep("reason");
+                    }}
+                    className="flex h-[34px] px-2 py-1 justify-center items-center gap-1.5 rounded-lg bg-[#FEE4E2] text-status-error text-sm font-semibold hover:bg-red-100 transition-colors whitespace-nowrap"
+                  >
+                    회원 탈퇴
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── 알림 ── */}
+            {active === "알림" && (
+              <div className="max-w-[560px]">
+                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                  알림
+                </h1>
+                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                  알림을 받을 시점과 방법을 설정하세요
+                </p>
+
+                <h3 className="mt-6 mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
+                  푸시 알림
+                </h3>
+                <div className="border-t border-line-divider" />
+
+                {[
+                  {
+                    label: "AI 생성 완료 알림",
+                    desc: "AI 분석이 완료되면 알림을 받습니다.",
+                    value: aiNotif,
+                    toggle: () => setAiNotif((v) => !v),
+                  },
+                  {
+                    label: "마케팅 알림",
+                    desc: "새로운 기능 및 이벤트 소식을 받습니다.",
+                    value: marketingNotif,
+                    toggle: () => setMarketingNotif((v) => !v),
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between py-4 "
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-tx-strong">
+                        {item.label}
                       </p>
-                      <p className="text-xs text-[#91929D] mb-4 leading-relaxed">
-                        {sub}
+                      <p className="text-xs text-tx-assistive mt-0.5">
+                        {item.desc}
                       </p>
-                      <ul className="flex flex-col flex-1 gap-2 mb-5">
-                        {features.map((f) => (
-                          <li
-                            key={f}
-                            className="flex items-start gap-2 text-xs text-[#3D3F41]"
-                          >
-                            <Icon
-                              icon="ph:check"
-                              className="w-3.5 h-3.5 text-[#3D3F41] flex-shrink-0 mt-0.5"
+                    </div>
+                    <Toggle value={item.value} onChange={item.toggle} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── FEDI 채팅 목록 ── */}
+            {active === "FEDI대화" && (
+              <div className="max-w-[620px]">
+                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                  FEDI 채팅 목록
+                </h1>
+                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                  총 {conversations.length}개의 대화
+                </p>
+
+                {/* Filters + Search */}
+                <div className="flex items-center gap-2 mb-5">
+                  <button className="flex items-center gap-1 px-3 py-1.5 border border-line-divider rounded-lg text-sm text-tx-neutral hover:bg-surface-base transition-colors">
+                    최신순
+                    <Icon icon="ph:caret-down" className="w-3.5 h-3.5" />
+                  </button>
+                  <button className="flex items-center gap-1 px-3 py-1.5 border border-line-divider rounded-lg text-sm text-tx-neutral hover:bg-surface-base transition-colors">
+                    전체
+                    <Icon icon="ph:caret-down" className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-2 border border-line-divider rounded-lg px-3 py-1.5 bg-white">
+                    <input
+                      type="text"
+                      placeholder="검색어를 입력하세요."
+                      value={chatSearch}
+                      onChange={(e) => setChatSearch(e.target.value)}
+                      className="text-sm outline-none text-tx-neutral placeholder-icon-alt w-44"
+                    />
+                    <Icon
+                      icon="ph:magnifying-glass"
+                      className="flex-shrink-0 w-4 h-4 text-tx-assistive"
+                    />
+                  </div>
+                </div>
+
+                {filteredConversations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-tx-assistive">
+                    <Icon
+                      icon="ph:chat-teardrop-text"
+                      className="w-10 h-10 mb-3"
+                    />
+                    <p className="text-sm font-medium">
+                      {chatSearch
+                        ? "검색 결과가 없습니다"
+                        : "대화 내역이 없습니다"}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    {recentGroup.length > 0 && (
+                      <div className="mb-4">
+                        <p className="mb-2 text-xs font-semibold text-tx-assistive">
+                          지난 7일
+                        </p>
+                        <div className="flex flex-col gap-1">
+                          {recentGroup.map((conv) => (
+                            <ChatRow
+                              key={conv.id}
+                              conv={conv}
+                              isActive={conv.id === activeConversationId}
+                              isEditing={editingConvId === conv.id}
+                              editingTitle={editingTitle}
+                              setEditingTitle={setEditingTitle}
+                              onOpen={() => handleOpenConv(conv.id)}
+                              onStartEdit={() => {
+                                setEditingConvId(conv.id);
+                                setEditingTitle(conv.title);
+                              }}
+                              onRename={() => handleRename(conv.id)}
+                              onCancelEdit={() => {
+                                setEditingConvId(null);
+                                setEditingTitle("");
+                              }}
+                              onDelete={() => deleteConversation(conv.id)}
                             />
-                            {f}
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {olderGroup.length > 0 && (
+                      <div className="mb-4">
+                        <p className="mb-2 text-xs font-semibold text-tx-assistive">
+                          지난 30일
+                        </p>
+                        <div className="flex flex-col gap-1">
+                          {olderGroup.map((conv) => (
+                            <ChatRow
+                              key={conv.id}
+                              conv={conv}
+                              isActive={conv.id === activeConversationId}
+                              isEditing={editingConvId === conv.id}
+                              editingTitle={editingTitle}
+                              setEditingTitle={setEditingTitle}
+                              onOpen={() => handleOpenConv(conv.id)}
+                              onStartEdit={() => {
+                                setEditingConvId(conv.id);
+                                setEditingTitle(conv.title);
+                              }}
+                              onRename={() => handleRename(conv.id)}
+                              onCancelEdit={() => {
+                                setEditingConvId(null);
+                                setEditingTitle("");
+                              }}
+                              onDelete={() => deleteConversation(conv.id)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── AI 사용 가이드 ── */}
+            {active === "사용가이드" && (
+              <div className="max-w-[600px]">
+                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                  AI 사용 가이드
+                </h1>
+                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                  주제를 골라 FEDI 활용법을 자세히 알아보세요
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    {
+                      title: "FEDI 시작하기",
+                      desc: "FEDI가 무엇을 도와주는지 3분 만에 알아봐요",
+                    },
+                    {
+                      title: "트렌드 지수 분석",
+                      desc: "실시간 판매·조회 데이터를 기반으로 트렌드 지수를 확인해요",
+                    },
+                    {
+                      title: "상품 AI 개요",
+                      desc: "색상, 소재, 핏 등 스타일 정보를 AI가 자동으로 요약해요",
+                    },
+                    {
+                      title: "패션쇼 분석",
+                      desc: "글로벌 런웨이 컬렉션을 브랜드·시즌별로 비교 분석해요",
+                    },
+                    {
+                      title: "색상 트렌드",
+                      desc: "시즌별 주요 컬러 팔레트와 트렌드 변화를 한눈에 파악해요",
+                    },
+                    {
+                      title: "상품 유형 분석",
+                      desc: "카테고리·성별별 상품 비중과 유형 트렌드를 분석해요",
+                    },
+                  ].map((item) => (
+                    <button
+                      key={item.title}
+                      className="flex flex-col items-start p-5 gap-4 border border-[#E4E4E4] rounded-[12px] bg-white hover:border-[#3E7EFF] transition-colors text-left"
+                    >
+                      <div className="flex w-10 h-10 flex-col justify-center items-center rounded-[10px] bg-[#F4FFEE]">
+                        <div className="w-5 h-5 bg-[#4CAF50] rounded" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <p className="text-[16px] font-semibold leading-[150%] tracking-[-0.08px] text-[#3D3F41]">
+                          {item.title}
+                        </p>
+                        <p className="text-[14px] font-medium leading-[143%] tracking-[-0.07px] text-[#A1A3A5]">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── FAQ ── */}
+            {active === "FAQ" && (
+              <div className="max-w-[560px]">
+                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                  자주 찾는 질문
+                </h1>
+                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                  궁금한 점을 빠르게 해결하세요
+                </p>
+
+                <h3 className="mt-6 mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
+                  자주 찾는 질문
+                </h3>
+                <div className="border-t border-line-divider" />
+
+                {[
+                  {
+                    q: "AI가 분석한 상품 정보는 어떻게 수집되나요?",
+                    a: "Fedit AI는 주요 패션 플랫폼의 공개 데이터를 기반으로 상품 정보를 분석합니다. 저작권에 민감한 이미지는 직접 수집하지 않습니다.",
+                  },
+                  {
+                    q: "결제가 잘못 청구된 것 같아요.",
+                    a: "결제 관련 문의는 1:1 문의하기를 통해 접수해 주세요. 영업일 기준 1~2일 내 처리해 드립니다.",
+                  },
+                  {
+                    q: "요금제는 어떻게 변경하나요?",
+                    a: "구독 관리 섹션에서 원하는 요금제를 선택해 변경할 수 있습니다. 업그레이드는 즉시 적용, 다운그레이드는 다음 결제일부터 적용됩니다.",
+                  },
+                  {
+                    q: "저장한 보드 데이터는 어디에 보관되나요?",
+                    a: "현재 내 보드 데이터는 사용 중인 브라우저의 로컬 스토리지에 저장됩니다.",
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="py-4 ">
+                    <button
+                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                      className="flex items-center justify-between w-full gap-4 text-left"
+                    >
+                      <span className="text-sm font-semibold text-tx-strong">
+                        {item.q}
+                      </span>
+                      <Icon
+                        icon={openFaq === i ? "ph:caret-up" : "ph:caret-down"}
+                        className="flex-shrink-0 w-4 h-4 text-tx-assistive"
+                      />
+                    </button>
+                    {openFaq === i && (
+                      <p className="mt-2 text-sm leading-relaxed text-tx-alt">
+                        {item.a}
+                      </p>
+                    )}
+                  </div>
+                ))}
+
+                <h3 className="mt-8 mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
+                  1:1 문의
+                </h3>
+                <div className="border-t border-line-divider" />
+
+                <div className="flex flex-col gap-4 mt-5">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-tx-strong">
+                      문의 유형
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={inquiryType}
+                        onChange={(e) => setInquiryType(e.target.value)}
+                        className="w-full appearance-none border border-line-divider rounded-xl px-4 py-3 text-sm text-tx-neutral bg-white focus:outline-none focus:border-[#111827] cursor-pointer"
+                      >
+                        <option>요금제·결제 문의</option>
+                        <option>서비스 이용 문의</option>
+                        <option>기술 문제 신고</option>
+                        <option>계정 문의</option>
+                        <option>기타</option>
+                      </select>
+                      <Icon
+                        icon="ph:caret-down"
+                        className="absolute w-4 h-4 -translate-y-1/2 pointer-events-none right-4 top-1/2 text-tx-assistive"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-tx-strong">
+                      문의 내용
+                    </label>
+                    <textarea
+                      value={inquiryContent}
+                      onChange={(e) => setInquiryContent(e.target.value)}
+                      placeholder="궁금한 점이나 겪고 계신 문제를 자세히 적어주세요."
+                      rows={5}
+                      className="w-full border border-line-divider rounded-xl px-4 py-3 text-sm text-tx-neutral placeholder-tx-assistive bg-white focus:outline-none focus:border-[#111827] resize-none"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-semibold text-tx-strong">
+                      답변 받을 이메일
+                    </label>
+                    <input
+                      type="email"
+                      defaultValue={userEmail}
+                      className="w-full border border-line-divider rounded-xl px-4 py-3 text-sm text-tx-neutral bg-white focus:outline-none focus:border-[#111827]"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-xs text-tx-assistive">
+                      보통 1영업일 이내에 답변드려요 · 평일 10:00–18:00
+                    </p>
+                    <button className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-semibold hover:bg-black transition-colors whitespace-nowrap">
+                      문의 보내기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── 구독 관리 ── */}
+            {active === "구독" && (
+              <div className="max-w-[680px]">
+                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                  구독 관리
+                </h1>
+                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                  모든 Fedit 요금제를 살펴보세요
+                </p>
+
+                <h3 className="mt-6 mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
+                  현재 요금제
+                </h3>
+                <div className="flex items-center justify-between p-5 bg-[#F9FAFB] border border-line-divider rounded-xl mb-8">
+                  <div>
+                    <p className="text-base font-bold text-tx-strong">
+                      무료 체험
+                    </p>
+                    <p className="text-sm text-tx-alt mt-0.5">
+                      14일 동안 Basic 기능 일부 사용 가능한 요금제
+                    </p>
+                  </div>
+                  <button className="px-5 py-2 bg-[#111827] text-white text-sm font-semibold rounded-xl hover:bg-black transition-colors">
+                    업그레이드
+                  </button>
+                </div>
+
+                <h3 className="mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
+                  모든 요금제 비교하기
+                </h3>
+                <div className="flex overflow-hidden border-t border-line-divider">
+                  {[
+                    {
+                      label: "무료 체험",
+                      badge: null,
+                      originalPrice: null,
+                      discount: null,
+                      price: "0원",
+                      sub: "7일 · Basic 기능 일부 (브랜드 제한)",
+                      features: [
+                        { ok: true, text: "모니터링 (필터 항목별 2개·무신사)" },
+                        { ok: true, text: "키워드 분석 제공" },
+                        { ok: false, text: "유형·색상 분석 미지원" },
+                      ],
+                      btnLabel: "현재 플랜",
+                      isCurrent: true,
+                    },
+                    {
+                      label: "Basic",
+                      badge: "추천",
+                      originalPrice: "29,000원",
+                      discount: "34% 할인",
+                      price: "19,000원",
+                      sub: "/월",
+                      features: [
+                        {
+                          ok: true,
+                          text: "크롤링 기반 기본 분석 (브랜드 유형별 1개·무신사 포함)",
+                        },
+                        { ok: true, text: "엑셀 다운로드 월 3회" },
+                        { ok: true, text: "플랫폼·키워드 대시보드 제공" },
+                        { ok: true, text: "유형·색상 분석 제공" },
+                        { ok: true, text: "추가 브랜드 제안 문의 가능" },
+                      ],
+                      btnLabel: "Basic으로 업그레이드",
+                      isCurrent: false,
+                    },
+                    {
+                      label: "Pro",
+                      badge: null,
+                      originalPrice: "79,000원",
+                      discount: "25% 할인",
+                      price: "59,000원",
+                      sub: "/월",
+                      features: [
+                        { ok: true, text: "모든 Basic 기능 포함" },
+                        { ok: true, text: "엑셀 다운로드 무제한" },
+                        { ok: true, text: "패션쇼 분석 제공" },
+                        { ok: true, text: "기업별 트렌드 리포트 제공" },
+                        { ok: true, text: "AI Agent 기능" },
+                      ],
+                      btnLabel: "Pro로 업그레이드",
+                      isCurrent: false,
+                    },
+                  ].map((plan, index, arr) => (
+                    <div
+                      key={plan.label}
+                      className={`flex flex-col flex-1 ${index === 1 ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
+                      style={{ padding: "20px 16px", gap: 20 }}
+                    >
+                      {/* 플랜명 + 배지 */}
+                      <div className="flex items-center gap-2">
+                        <p className="text-[16px] font-semibold leading-[150%] tracking-[-0.08px] text-[#242628]">
+                          {plan.label}
+                        </p>
+                        {plan.badge && (
+                          <span
+                            className="px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#1A75FF]"
+                            style={{ borderRadius: 4, background: "#EAF2FE" }}
+                          >
+                            {plan.badge}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* 가격 영역 */}
+                      <div className="flex flex-col gap-0.5">
+                        {plan.originalPrice && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs line-through text-[#A1A3A5]">
+                              정가 {plan.originalPrice}
+                            </span>
+                            <span className="text-xs text-[#3E7EFF] font-semibold">
+                              {plan.discount}
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-[24px] font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                          {plan.price}
+                          {!plan.isCurrent && (
+                            <span className="text-sm font-medium text-[#6F7173] ml-0.5">
+                              {plan.sub}
+                            </span>
+                          )}
+                        </p>
+                        {plan.isCurrent && (
+                          <p className="text-[12px] font-medium leading-[133%] text-[#6F7173]">
+                            {plan.sub}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* 버튼 */}
+                      <button
+                        disabled={plan.isCurrent}
+                        className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
+                          plan.isCurrent
+                            ? "border border-[#E4E4E4] bg-[#E4E4E4] text-[#A1A3A5] cursor-default"
+                            : "border border-line-divider bg-white text-[#3D3F41] hover:bg-surface-base cursor-pointer"
+                        }`}
+                      >
+                        {plan.btnLabel}
+                      </button>
+
+                      {/* 기능 목록 */}
+                      <ul className="flex flex-col gap-3">
+                        {plan.features.map((f) => (
+                          <li key={f.text} className="flex items-start gap-2">
+                            <Icon
+                              icon={f.ok ? "ph:check" : "ph:x"}
+                              className={`w-4 h-4 flex-shrink-0 mt-0.5 ${f.ok ? "text-[#3D3F41]" : "text-[#A1A3A5]"}`}
+                            />
+                            <span
+                              className={`text-[14px] font-medium leading-[143%] tracking-[-0.07px] ${f.ok ? "text-[#3D3F41]" : "text-[#A1A3A5]"}`}
+                            >
+                              {f.text}
+                            </span>
                           </li>
                         ))}
                       </ul>
-                      <button
-                        disabled={isCurrent}
-                        className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                          isCurrent
-                            ? "bg-[#E4E4E4] text-[#91929D] cursor-default"
-                            : `${btnStyle} cursor-pointer`
-                        }`}
-                      >
-                        {isCurrent ? "현재 요금제" : btnLabel}
-                      </button>
                     </div>
-                  );
-                },
-              )}
-            </div>
-
-            <div className="flex items-center gap-3 pt-5 border-t border-[#ECEEF0]">
-              <button className="flex items-center gap-2 px-4 py-2.5 border border-[#ECEEF0] rounded-xl text-sm font-semibold text-[#3D3F41] hover:bg-[#F6F8FA] transition-colors">
-                <Icon icon="ph:credit-card" className="w-4 h-4" />
-                결제 수단 변경
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2.5 border border-[#FEE4E2] rounded-xl text-sm font-semibold text-[#F04438] hover:bg-[#FFF5F4] transition-colors">
-                <Icon icon="ph:x-circle" className="w-4 h-4" />
-                구독 해지
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── AI 사용 가이드 ── */}
-        {active === "사용가이드" && (
-          <div className="max-w-[680px]">
-            <h1 className="text-2xl font-bold text-[#0B0E0F] mb-8">
-              AI 사용 가이드
-            </h1>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                {
-                  icon: "ph:chart-line-up-bold",
-                  title: "트렌드 지수 분석",
-                  desc: "실시간 판매·조회 데이터를 기반으로 상품의 트렌드 지수를 자동 산출합니다.",
-                },
-                {
-                  icon: "ph:magnifying-glass-bold",
-                  title: "상품 AI 개요",
-                  desc: "색상, 소재, 핏 등 스타일 정보를 AI가 자동으로 요약합니다.",
-                },
-                {
-                  icon: "ph:dress-bold",
-                  title: "패션쇼 분석",
-                  desc: "글로벌 런웨이 컬렉션을 브랜드·시즌별로 비교 분석합니다.",
-                },
-                {
-                  icon: "ph:palette-bold",
-                  title: "색상 트렌드",
-                  desc: "시즌별 주요 컬러 팔레트와 트렌드 변화를 한눈에 파악합니다.",
-                },
-                {
-                  icon: "ph:tag-bold",
-                  title: "상품 유형 분석",
-                  desc: "카테고리·성별별 상품 비중과 유형 트렌드를 분석합니다.",
-                },
-                {
-                  icon: "ph:bookmark-simple-bold",
-                  title: "내 보드",
-                  desc: "관심 상품을 보드별로 저장하고 관리합니다.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="p-5 border border-[#ECEEF0] rounded-xl hover:border-[#3E7EFF] transition-colors group"
-                >
-                  <div className="w-10 h-10 bg-[#EBF2FF] rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#D6E8FF] transition-colors">
-                    <Icon icon={item.icon} className="w-5 h-5 text-[#3E7EFF]" />
-                  </div>
-                  <p className="font-bold text-[#0B0E0F] mb-1.5">
-                    {item.title}
-                  </p>
-                  <p className="text-sm text-[#6F7173] leading-relaxed">
-                    {item.desc}
-                  </p>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── FAQ ── */}
-        {active === "FAQ" && (
-          <div className="max-w-[580px]">
-            <h1 className="text-2xl font-bold text-[#0B0E0F] mb-8">
-              FAQ / 1:1 문의
-            </h1>
-
-            <SectionBox title="자주 묻는 질문">
-              {[
-                {
-                  q: "AI가 분석한 상품 정보는 어떻게 수집되나요?",
-                  a: "Fedit AI는 주요 패션 플랫폼의 공개 데이터를 기반으로 상품 정보를 분석합니다. 저작권에 민감한 이미지는 직접 수집하지 않습니다.",
-                },
-                {
-                  q: "결제가 잘못 청구된 것 같아요.",
-                  a: "결제 관련 문의는 1:1 문의하기를 통해 접수해 주세요. 영업일 기준 1~2일 내 처리해 드립니다.",
-                },
-                {
-                  q: "요금제는 어떻게 변경하나요?",
-                  a: "구독 관리 섹션에서 원하는 요금제를 선택해 변경할 수 있습니다. 업그레이드는 즉시 적용, 다운그레이드는 다음 결제일부터 적용됩니다.",
-                },
-                {
-                  q: "저장한 보드 데이터는 어디에 보관되나요?",
-                  a: "현재 내 보드 데이터는 사용 중인 브라우저의 로컬 스토리지에 저장됩니다.",
-                },
-              ].map((item, i) => (
-                <div key={i} className="py-4">
-                  <button
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="flex items-center justify-between w-full gap-4 text-left"
-                  >
-                    <span className="text-sm font-semibold text-[#0B0E0F]">
-                      {item.q}
-                    </span>
-                    <Icon
-                      icon={openFaq === i ? "ph:caret-up" : "ph:caret-down"}
-                      className="w-4 h-4 text-[#91929D] flex-shrink-0"
-                    />
-                  </button>
-                  {openFaq === i && (
-                    <p className="text-sm text-[#6F7173] mt-2 leading-relaxed">
-                      {item.a}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </SectionBox>
-
-            <p className="text-sm text-[#6F7173] mb-3">
-              해결되지 않는 문제가 있으신가요?
-            </p>
-            <a
-              href="mailto:support@fedit.com"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#242628] text-white rounded-xl text-sm font-semibold hover:bg-black transition-colors"
-            >
-              <Icon icon="ph:envelope" className="w-4 h-4" />
-              1:1 문의하기
-            </a>
-          </div>
-        )}
-
-        {/* ── 알림 설정 ── */}
-        {active === "알림" && (
-          <div className="max-w-[580px]">
-            <h1 className="text-2xl font-bold text-[#0B0E0F] mb-8">
-              알림 설정
-            </h1>
-
-            <SectionBox title="알림">
-              {[
-                {
-                  label: "AI 생성 완료 알림",
-                  desc: "AI 분석이 완료되면 알림을 받습니다.",
-                  value: aiNotif,
-                  toggle: () => setAiNotif((v) => !v),
-                },
-                {
-                  label: "마케팅 알림",
-                  desc: "새로운 기능 및 이벤트 소식을 받습니다.",
-                  value: marketingNotif,
-                  toggle: () => setMarketingNotif((v) => !v),
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between py-4"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-[#0B0E0F]">
-                      {item.label}
-                    </p>
-                    <p className="text-xs text-[#91929D] mt-0.5">{item.desc}</p>
-                  </div>
-                  <Toggle value={item.value} onChange={item.toggle} />
-                </div>
-              ))}
-            </SectionBox>
-          </div>
-        )}
-
-        {/* ── FEDI 대화 목록 ── */}
-        {active === "FEDI대화" && (() => {
-          const filtered = [...conversations]
-            .sort((a, b) => b.updatedAt - a.updatedAt)
-            .filter((c) =>
-              c.title.toLowerCase().includes(chatSearch.toLowerCase()),
-            );
-
-          const handleOpen = (id: string) => {
-            openConversation(id);
-            setSelectedTab("대시보드");
-          };
-
-          const handleRename = (id: string) => {
-            const trimmed = editingTitle.trim();
-            if (trimmed) updateTitle(id, trimmed);
-            setEditingConvId(null);
-            setEditingTitle("");
-          };
-
-          return (
-            <div className="max-w-[680px]">
-              <h1 className="text-2xl font-bold text-[#0B0E0F] mb-2">
-                FEDI 대화 목록
-              </h1>
-              <p className="text-sm text-[#91929D] mb-6">
-                총 {conversations.length}개의 대화
-              </p>
-
-              {/* 검색 */}
-              <div className="flex items-center gap-3 border border-[#ECEEF0] rounded-xl px-4 py-2.5 mb-5 bg-white">
-                <Icon icon="ph:magnifying-glass" className="w-4 h-4 text-[#91929D] flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="대화 검색..."
-                  value={chatSearch}
-                  onChange={(e) => setChatSearch(e.target.value)}
-                  className="flex-1 text-sm outline-none text-[#3D3F41] placeholder-[#BABCBE]"
-                />
-                {chatSearch && (
-                  <button onClick={() => setChatSearch("")} className="text-[#BABCBE] hover:text-[#3D3F41]">
-                    <Icon icon="material-symbols:close" className="w-4 h-4" />
-                  </button>
-                )}
               </div>
-
-              {filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-[#91929D]">
-                  <Icon icon="ph:chat-teardrop-text" className="w-10 h-10 mb-3" />
-                  <p className="text-sm font-medium">
-                    {chatSearch ? "검색 결과가 없습니다" : "대화 내역이 없습니다"}
-                  </p>
-                </div>
-              ) : (
-                <div className="border border-[#ECEEF0] rounded-xl divide-y divide-[#ECEEF0] overflow-hidden">
-                  {filtered.map((conv) => {
-                    const isEditing = editingConvId === conv.id;
-                    const lastMsg = conv.messages[conv.messages.length - 1];
-                    const date = new Date(conv.updatedAt);
-                    const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
-
-                    return (
-                      <div
-                        key={conv.id}
-                        className={`flex items-center gap-3 px-5 py-4 group hover:bg-[#F6F8FA] transition-colors ${activeConversationId === conv.id ? "bg-[#F2F9E9]" : ""}`}
-                      >
-                        <Icon icon="ph:chat-teardrop-text" className="w-4 h-4 text-[#BABCBE] flex-shrink-0" />
-
-                        <div className="flex-1 min-w-0">
-                          {isEditing ? (
-                            <input
-                              autoFocus
-                              value={editingTitle}
-                              onChange={(e) => setEditingTitle(e.target.value)}
-                              onBlur={() => handleRename(conv.id)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleRename(conv.id);
-                                if (e.key === "Escape") {
-                                  setEditingConvId(null);
-                                  setEditingTitle("");
-                                }
-                              }}
-                              className="w-full text-sm font-semibold text-[#0B0E0F] outline-none border-b border-[#3E7EFF] bg-transparent pb-0.5"
-                            />
-                          ) : (
-                            <p className="text-sm font-semibold text-[#0B0E0F] truncate">
-                              {conv.title}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-[#91929D]">{dateStr}</span>
-                            {lastMsg && (
-                              <>
-                                <span className="text-xs text-[#BABCBE]">·</span>
-                                <span className="text-xs text-[#91929D] truncate">
-                                  {lastMsg.content.slice(0, 40)}{lastMsg.content.length > 40 ? "..." : ""}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                          <button
-                            onClick={() => handleOpen(conv.id)}
-                            title="열기"
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white text-[#6F7173] hover:text-[#0B0E0F] transition-colors"
-                          >
-                            <Icon icon="lucide:external-link" className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingConvId(conv.id);
-                              setEditingTitle(conv.title);
-                            }}
-                            title="제목 수정"
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white text-[#6F7173] hover:text-[#0B0E0F] transition-colors"
-                          >
-                            <Icon icon="lucide:pencil" className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => deleteConversation(conv.id)}
-                            title="삭제"
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white text-[#BABCBE] hover:text-[#F04438] transition-colors"
-                          >
-                            <Icon icon="ph:trash" className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* ── 앱 정보 ── */}
-        {active === "앱정보" && (
-          <div className="max-w-[580px]">
-            <h1 className="text-2xl font-bold text-[#0B0E0F] mb-8">앱 정보</h1>
-
-            <SectionBox title="법적 고지">
-              {[
-                { label: "이용약관", href: "/terms" },
-                { label: "개인정보 처리방침", href: "/privacy" },
-              ].map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="flex items-center justify-between py-4 text-sm font-semibold text-[#3D3F41] hover:text-[#0B0E0F] transition-colors"
-                >
-                  {item.label}
-                  <Icon
-                    icon="ph:caret-right"
-                    className="w-4 h-4 text-[#91929D]"
-                  />
-                </a>
-              ))}
-            </SectionBox>
-
-            <SectionBox title="버전 정보">
-              <div className="py-3.5 text-sm text-[#6F7173]">Fedit v1.0.0</div>
-            </SectionBox>
+            )}
           </div>
-        )}
-      </main>
+        </main>
+      </div>
 
       {/* ── 회원 탈퇴 모달 ── */}
       {withdrawStep && (
@@ -641,13 +787,13 @@ export default function SettingsPage() {
           {withdrawStep === "reason" && (
             <div className="relative bg-white rounded-2xl p-8 w-full max-w-[440px] shadow-xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-[#242628]">
+                <h2 className="text-xl font-bold text-tx-default">
                   탈퇴 사유 선택
                 </h2>
                 <button onClick={() => setWithdrawStep(null)}>
                   <Icon
                     icon="material-symbols:close"
-                    className="w-6 h-6 text-[#91929D] hover:text-black transition-colors"
+                    className="w-6 h-6 transition-colors text-tx-assistive hover:text-black"
                   />
                 </button>
               </div>
@@ -666,7 +812,7 @@ export default function SettingsPage() {
                     onClick={() => toggleReason(r)}
                   >
                     <div
-                      className={`w-5 h-5 flex items-center justify-center border rounded transition-colors ${withdrawReasons.includes(r) ? "bg-[#4A4C4E] border-[#4A4C4E]" : "border-[#D1D3D9]"}`}
+                      className={`w-5 h-5 flex items-center justify-center border rounded transition-colors ${withdrawReasons.includes(r) ? "bg-tx-neutral border-tx-neutral" : "border-line-neutral"}`}
                     >
                       {withdrawReasons.includes(r) && (
                         <Icon
@@ -675,14 +821,14 @@ export default function SettingsPage() {
                         />
                       )}
                     </div>
-                    <span className="text-sm font-medium text-[#242628]">
+                    <span className="text-sm font-medium text-tx-default">
                       {r}
                     </span>
                   </label>
                 ))}
               </div>
 
-              <p className="text-xs text-[#91929D] leading-relaxed mb-5">
+              <p className="mb-5 text-xs leading-relaxed text-tx-assistive">
                 인터뷰 참여 시 지난 구독 요금을 환불해 드립니다.
                 <a
                   href="https://calendly.com/team-mify/30min"
@@ -701,8 +847,8 @@ export default function SettingsPage() {
                 disabled={withdrawReasons.length === 0}
                 className={`w-full py-3 rounded-xl font-bold transition-colors ${
                   withdrawReasons.length > 0
-                    ? "bg-[#F04438] text-white hover:bg-red-600 cursor-pointer"
-                    : "bg-[#F6F8FA] text-[#A1A3A5] cursor-not-allowed"
+                    ? "bg-status-error text-white hover:bg-red-600 cursor-pointer"
+                    : "bg-surface-base text-tx-assistive cursor-not-allowed"
                 }`}
               >
                 최종 탈퇴
@@ -712,19 +858,19 @@ export default function SettingsPage() {
 
           {withdrawStep === "confirm" && (
             <div className="relative bg-white rounded-2xl p-8 w-full max-w-[380px] shadow-xl text-center">
-              <div className="w-14 h-14 bg-[#FEE4E2] rounded-full flex items-center justify-center mx-auto mb-4">
-                <Icon icon="ph:warning" className="w-7 h-7 text-[#F04438]" />
+              <div className="flex items-center justify-center mx-auto mb-4 rounded-full w-14 h-14 bg-rising-bg">
+                <Icon icon="ph:warning" className="w-7 h-7 text-status-error" />
               </div>
-              <h2 className="text-xl font-bold text-[#0B0E0F] mb-2">
+              <h2 className="mb-2 text-xl font-bold text-tx-strong">
                 정말 탈퇴하시겠어요?
               </h2>
-              <p className="text-sm text-[#6F7173] mb-8 leading-relaxed">
+              <p className="mb-8 text-sm leading-relaxed text-tx-alt">
                 탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setWithdrawStep(null)}
-                  className="flex-1 py-3 border border-[#ECEEF0] rounded-xl text-sm font-semibold text-[#3D3F41] hover:bg-[#F6F8FA] transition-colors"
+                  className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
                 >
                   취소
                 </button>
@@ -733,7 +879,7 @@ export default function SettingsPage() {
                     localStorage.clear();
                     window.location.href = "/login";
                   }}
-                  className="flex-1 py-3 bg-[#F04438] text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors"
+                  className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-status-error rounded-xl hover:bg-red-600"
                 >
                   탈퇴하기
                 </button>
@@ -742,6 +888,86 @@ export default function SettingsPage() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ChatRow({
+  conv,
+  isActive,
+  isEditing,
+  editingTitle,
+  setEditingTitle,
+  onOpen,
+  onStartEdit,
+  onRename,
+  onCancelEdit,
+  onDelete,
+}: {
+  conv: {
+    id: string;
+    title: string;
+    updatedAt: number;
+    messages: { content: string }[];
+  };
+  isActive: boolean;
+  isEditing: boolean;
+  editingTitle: string;
+  setEditingTitle: (v: string) => void;
+  onOpen: () => void;
+  onStartEdit: () => void;
+  onRename: () => void;
+  onCancelEdit: () => void;
+  onDelete: () => void;
+}) {
+  const now = Date.now();
+  const diffDays = Math.floor((now - conv.updatedAt) / 86400000);
+  const dateStr = diffDays === 0 ? "오늘" : `${diffDays}일전`;
+
+  return (
+    <div
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg group hover:bg-surface-base transition-colors cursor-pointer ${isActive ? "bg-brand-subtle" : ""}`}
+      onClick={() => {
+        if (!isEditing) onOpen();
+      }}
+    >
+      <div className="flex-shrink-0 w-5 h-5 border rounded-full border-line-divider" />
+      <div className="flex-1 min-w-0">
+        {isEditing ? (
+          <input
+            autoFocus
+            value={editingTitle}
+            onChange={(e) => setEditingTitle(e.target.value)}
+            onBlur={onRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onRename();
+              if (e.key === "Escape") onCancelEdit();
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full text-sm font-semibold text-tx-strong outline-none border-b border-[#3E7EFF] bg-transparent pb-0.5"
+          />
+        ) : (
+          <p className="text-sm truncate text-tx-neutral">{conv.title}</p>
+        )}
+      </div>
+      <span className="flex-shrink-0 text-xs text-tx-assistive">{dateStr}</span>
+      <div
+        className="flex items-center flex-shrink-0 gap-1 transition-opacity opacity-0 group-hover:opacity-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onStartEdit}
+          className="flex items-center justify-center w-6 h-6 transition-colors rounded hover:bg-white text-tx-alt hover:text-tx-strong"
+        >
+          <Icon icon="lucide:pencil" className="w-3 h-3" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="flex items-center justify-center w-6 h-6 transition-colors rounded hover:bg-white text-icon-alt hover:text-status-error"
+        >
+          <Icon icon="ph:trash" className="w-3 h-3" />
+        </button>
+      </div>
     </div>
   );
 }

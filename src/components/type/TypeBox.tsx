@@ -15,12 +15,12 @@ function TypeBox({ title, chartData, rows }: TypeBoxProps) {
   };
 
   return (
-    <div className="w-90 p-6 rounded-2xl bg-[#F7F9FB]">
-      <header className="text-[#1C1C1C] text-base font-bold">{title}</header>
+    <div className="w-90 p-6 rounded-2xl bg-surface-base">
+      <header className="text-tx-strong text-base font-bold">{title}</header>
       <TypeChart chartData={chartData} />
       <div className="w-full max-w-xs text-s1">
         <table className="w-full text-left">
-          <tr className="border-b border-[#00000040] text-[#1C1C1C] text-[13px] font-semibold text-center">
+          <tr className="border-b border-[#00000040] text-tx-strong text-[13px] font-semibold text-center">
             <th className="py-2 pr-6">카테고리</th>
             <th className="text-center">합계(SKU)</th>
             <th className="text-center">비중</th>

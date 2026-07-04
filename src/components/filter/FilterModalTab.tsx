@@ -21,18 +21,18 @@ export default function FilterTabs({ tabs, active, onChange }: Props) {
               onClick={() => onChange(label)}
               className={[
                 "relative pb-2 text-sm transition-colors",
-                isActive ? "font-semibold text-[#3D3F41]" : "text-gray-400",
+                isActive ? "font-semibold text-tx-neutral" : "text-gray-400",
               ].join(" ")}
             >
               {label}
               {isActive && (
-                <span className="absolute left-1/2 -translate-x-1/2 -bottom-[1px] block w-6 h-[3px] rounded bg-[#3D3F41]" />
+                <span className="absolute left-1/2 -translate-x-1/2 -bottom-[1px] block w-6 h-[3px] rounded bg-tx-neutral" />
               )}
             </button>
           );
         })}
       </div>
-      <section className="flex justify-between items-center h-12 bg-[#F9FAFB] px-4 py-2 gap-3 border-[1px] border-y border-[#ECEEF0]">
+      <section className="flex justify-between items-center h-12 bg-fill-bg-strong px-4 py-2 gap-3 border-[1px] border-y border-line-divider">
         <div
           className="flex gap-1 flex-nowrap overflow-x-auto 
              [scrollbar-width:none] [-ms-overflow-style:none] 
@@ -43,7 +43,7 @@ export default function FilterTabs({ tabs, active, onChange }: Props) {
           ))}
         </div>
         <div className="flex gap-1 ml-12 w-13">
-          <p className="w-8 text-xs font-normal text-[#56585A]">초기화</p>
+          <p className="w-8 text-xs font-normal text-tx-alt">초기화</p>
           <Icon
             icon="ri:reset-left-line"
             className="w-3 text-gray-500 cursor-pointer"

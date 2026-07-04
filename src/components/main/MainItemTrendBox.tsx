@@ -39,7 +39,7 @@ function MainItemTrendBox() {
 
   return (
     <section className="border border-gray-200 w-335 rounded-xl">
-      <div className="flex text-sm font-semibold items-center justify-center gap-5 p-4 bg-[#ECEEF0] text-[#6F7173] h-[38px] rounded-t-xl">
+      <div className="flex text-sm font-semibold items-center justify-center gap-5 p-4 bg-line-divider text-tx-alt h-[38px] rounded-t-xl">
         <span className="flex-shrink-0 w-20 text-center">순위</span>
         <span className="flex-shrink-0 text-center w-41">트렌드 항목</span>
         <span className="flex-1 text-center">검색량 & 검색 추이</span>
@@ -62,8 +62,8 @@ function MainItemTrendBox() {
                 className={`flex items-center justify-center px-2 py-1 rounded-xl w-fit text-sm font-semibold ml-5
     ${
       rank >= 1 && rank <= 3
-        ? "bg-[#EAF2FE] text-[#1A75FF]"
-        : "bg-[#ECEEF0] text-[#3D3F41]"
+        ? "bg-falling-bg text-data-blue"
+        : "bg-line-divider text-tx-neutral"
     }`}
               >
                 {rank}위
@@ -86,7 +86,7 @@ function MainItemTrendBox() {
                 <span className="font-normal text-[#6B7280] text-sm">
                   월간 검색
                 </span>
-                <span className="font-semibold text-[#3D3F41] text-base">
+                <span className="font-semibold text-tx-neutral text-base">
                   {formatK(item.search_volume)}
                 </span>
               </div>
@@ -146,7 +146,7 @@ function MainItemTrendBox() {
               <div className="flex items-center justify-center flex-1">
                 <Icon
                   icon="ph:dots-three-bold"
-                  className="text-[#6F7173] h-9 w-9"
+                  className="text-tx-alt h-9 w-9"
                 />
               </div>
             )}

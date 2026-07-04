@@ -109,44 +109,44 @@ function NewColorAnalysis() {
 
   return (
     <div className="min-h-screen px-14">
-      {/* <div className="w-full px-3 py-2 bg-[#F8F9FA] rounded-lg border border-[#F1F3F5] flex items-center justify-between cursor-pointer">
+      {/* <div className="w-full px-3 py-2 bg-surface-base rounded-lg border border-surface-base flex items-center justify-between cursor-pointer">
         <div className="flex items-center gap-9">
-          <span className="text-sm font-medium text-[#6F7173]">시즌선택</span>
-          <span className="text-base font-semibold text-[#3D3F41]">
+          <span className="text-sm font-medium text-tx-alt">시즌선택</span>
+          <span className="text-base font-semibold text-tx-neutral">
             2025 Spring/Summer
           </span>
         </div>
-        <Icon icon="ph:caret-down-bold" className="w-4 h-4 text-[#868E96]" />
+        <Icon icon="ph:caret-down-bold" className="w-4 h-4 text-icon-neutral" />
       </div> */}
       <div className="flex items-start justify-between mt-8 mb-5">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-7 h-7 bg-[#F1F3F5] rounded-lg">
+            <div className="flex items-center justify-center w-7 h-7 bg-surface-base rounded-lg">
               <Icon
                 icon="mdi:shopping-outline"
-                className="w-4 h-4 text-[#3D3F41]"
+                className="w-4 h-4 text-tx-neutral"
               />
             </div>
-            <header className="text-xl font-bold tracking-tight text-[#3D3F41]">
+            <header className="text-xl font-bold tracking-tight text-tx-neutral">
               색상 비중 비교
             </header>
           </div>
-          <p className="text-[#888A8C] leading-6 text-base font-medium pl-1">
+          <p className="text-icon-neutral leading-6 text-base font-medium pl-1">
             세부 톤까지 확장된 색상 흐름을 브랜드 단위로 확인해보세요.
           </p>
         </div>
 
         {/* 뷰 전환 버튼 그룹 */}
-        <div className="flex items-center p-1 bg-[#F8F9FA] rounded-xl border border-[#F1F3F5] shrink-0">
+        <div className="flex items-center p-1 bg-surface-base rounded-xl border border-surface-base shrink-0">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-white text-[#3D3F41] border border-[#E4E4E4] shadow-sm" : "text-[#ADB5BD]"}`}
+            className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-white text-tx-neutral border border-line-alt shadow-sm" : "text-icon-alt"}`}
           >
             <Icon icon="ph:grid-nine" className="w-5 h-5" />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-white text-[#3D3F41] border border-[#E4E4E4] shadow-sm" : "text-[#ADB5BD]"}`}
+            className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-white text-tx-neutral border border-line-alt shadow-sm" : "text-icon-alt"}`}
           >
             <Icon icon="fa7-solid:list-ul" className="w-5 h-5" />
           </button>
@@ -154,8 +154,8 @@ function NewColorAnalysis() {
       </div>
       {/* 그래프 영역: viewMode에 따라 TreeMap 또는 ColorBar를 보여줌 */}
       {brandList.length === 0 ? (
-        <div className="flex items-center justify-center w-full h-91 bg-[#F8F9FA] border border-[#F1F3F5] rounded-xl">
-          <p className="text-[#888A8C] text-base font-medium">
+        <div className="flex items-center justify-center w-full h-91 bg-surface-base border border-surface-base rounded-xl">
+          <p className="text-icon-neutral text-base font-medium">
             브랜드를 선택해주세요
           </p>
         </div>
@@ -194,17 +194,17 @@ function NewColorAnalysis() {
             onClick={() => setCompareModalOpen(true)}
             className={`
               flex flex-col items-center justify-center h-91
-              bg-[#F8F9FA] border-2 border-dashed border-[#E9ECEF] rounded-xl
-              hover:bg-[#F1F3F5] transition-all group shrink-0
+              bg-surface-base border-2 border-dashed border-line-divider rounded-xl
+              hover:bg-surface-base transition-all group shrink-0
               ${displayTreeMapBrands.length === 1 ? "w-70" : "w-30"}
             `}
           >
             <div className="flex flex-col items-center justify-center gap-3">
-              <span className="text-[#3D3F41] text-sm font-semibold group-hover:text-[#495057] whitespace-nowrap">
+              <span className="text-tx-neutral text-sm font-semibold group-hover:text-tx-alt whitespace-nowrap">
                 브랜드 추가하기
               </span>
 
-              <div className="w-6 h-6 flex items-center justify-center rounded-full border-1 border-[#6F7173] text-[#6F7173] group-hover:border-[#495057] group-hover:text-[#495057]">
+              <div className="w-6 h-6 flex items-center justify-center rounded-full border-1 border-[#6F7173] text-tx-alt group-hover:border-[#495057] group-hover:text-tx-alt">
                 <Icon
                   icon="lucide:plus"
                   width="16"
@@ -222,7 +222,7 @@ function NewColorAnalysis() {
         label="트렌드 컬러"
         infoText="매일 오전 10시, 무신사·W컨셉·네이버 등 주요 패션 플랫폼의 검색어 데이터를 자동 수집하며, 매거진·SNS 언급량 분석을 결합해 월별 종합 랭킹과 최근 주목도가 급상승한 패션 트렌드를 함께 제공합니다."
       />
-      <p className="text-[#888A8C] leading-6 text-base font-medium mt-1 mb-4">
+      <p className="text-icon-neutral leading-6 text-base font-medium mt-1 mb-4">
         모든 경쟁사가 소량으로 동시 출시 중인 유행 색상입니다.
       </p>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">

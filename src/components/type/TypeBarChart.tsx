@@ -57,7 +57,7 @@ function CustomTooltip({
 }) {
   return (
     <div
-      className="absolute flex justify-between items-center rounded-md bg-[#242628] text-white shadow-md px-5 py-2 text-sm w-39"
+      className="absolute flex justify-between items-center rounded-md bg-fill-primary text-white shadow-md px-5 py-2 text-sm w-39"
       style={{ left: x, top: y, transform: "translate(-50%, -120%)" }}
     >
       <div className="flex items-center gap-2">

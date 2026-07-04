@@ -57,7 +57,7 @@
 //             <div></div>
 //           )}
 //           <span
-//             className={`text-[#91929D] ${selectedProductId ? "mr-0" : "mr-19"}`}
+//             className={`text-tx-assistive ${selectedProductId ? "mr-0" : "mr-19"}`}
 //           >
 //             최신순 정렬
 //           </span>

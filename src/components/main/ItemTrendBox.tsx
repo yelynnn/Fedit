@@ -31,7 +31,7 @@ function ItemTrendBox() {
         아이템 트렌드
       </header>
       <section className="border border-gray-200 rounded-xl w-270">
-        <div className="flex text-sm font-medium items-center justify-center gap-5 p-4 bg-[#F9FAFB] text-[#374151] h-13 rounded-t-xl">
+        <div className="flex text-sm font-medium items-center justify-center gap-5 p-4 bg-fill-bg-strong text-[#374151] h-13 rounded-t-xl">
           <span className="flex-shrink-0 text-center w-60">트렌드 이미지</span>
           <span className="flex-1 text-center">검색 추이</span>
           <span className="flex-1 text-center">검색량</span>

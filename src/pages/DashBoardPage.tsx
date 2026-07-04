@@ -92,7 +92,7 @@ function DashBoardPage() {
   return (
     <div className="w-full h-full px-14">
       <section>
-        <div className="flex items-center justify-between p-1 bg-white border border-[#56585A] rounded-full w-64 mt-3">
+        <div className="flex items-center justify-between p-1 bg-white border border-line-default rounded-full w-64 mt-3">
           {["adult", "kids"].map((type) => (
             <button
               key={type}
@@ -129,12 +129,12 @@ function DashBoardPage() {
             {/* <div className="relative">
               <button
                 onClick={() => setMonthModalOpen(true)}
-                className="flex items-center gap-1.5 text-base font-semibold text-[#6F7173] hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1.5 text-base font-semibold text-tx-alt hover:opacity-80 transition-opacity"
               >
                 {isToday
                   ? `오늘(${currentDate.format("YYYY.MM.DD")})`
                   : currentDate.format("YYYY년 M월")}
-                <Icon icon="ph:caret-down" className="w-5 h-5 text-[#6F7173]" />
+                <Icon icon="ph:caret-down" className="w-5 h-5 text-tx-alt" />
               </button>
 
               <MonthModal
@@ -148,12 +148,12 @@ function DashBoardPage() {
                 dateList={dateListOptions}
               />
             </div> */}
-            <div className="text-base font-semibold text-[#6F7173]">
+            <div className="text-base font-semibold text-tx-alt">
               {" "}
               오늘({currentDate.format("YYYY.MM.DD")})
             </div>
 
-            <div className="flex items-center gap-4 text-sm font-medium pr-2 text-[#3D3F41]">
+            <div className="flex items-center gap-4 text-sm font-medium pr-2 text-tx-neutral">
               <button
                 onClick={() => {
                   const newDate = currentDate.subtract(1, "month");
@@ -165,7 +165,7 @@ function DashBoardPage() {
                 <Icon icon="ph:caret-left" className="w-4 h-4" /> 이전달
               </button>
 
-              <div className="w-[1px] h-3 bg-[#E5E7EB]"></div>
+              <div className="w-[1px] h-3 bg-line-alt"></div>
 
               <button
                 onClick={() => {
@@ -176,7 +176,7 @@ function DashBoardPage() {
                 disabled={isCurrentMonth} // 💡 이번 달이면 버튼 기능 비활성화
                 className={`flex items-center gap-1 transition-colors ${
                   isCurrentMonth
-                    ? "text-[#ADB5BD] cursor-not-allowed" // 💡 비활성화 시 회색 처리 및 마우스 커서 변경
+                    ? "text-icon-alt cursor-not-allowed" // 💡 비활성화 시 회색 처리 및 마우스 커서 변경
                     : "hover:text-[#151515]"
                 }`}
               >

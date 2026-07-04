@@ -44,17 +44,17 @@ export default function NewHeader() {
     TABS_CONFIG.find((tab) => tab.label === selectedTab) || TABS_CONFIG[0];
 
   return (
-    <header className="relative flex items-center justify-between w-full h-15 px-16 bg-white border-b border-[#ECEEF0] sticky top-0 z-20">
+    <header className="relative flex items-center justify-between w-full h-15 px-16 bg-white border-b border-line-divider sticky top-0 z-20">
       {/* 좌측 타이틀 영역 */}
       <div className="flex items-center gap-2">
-        <div className="rounded-lg p-1 bg-[#F2F9E9] text-[#0B0E0F] border border-[#E8FFD8]">
+        <div className="rounded-lg p-1 bg-brand-subtle text-tx-strong border border-brand-subtle-hover">
           {/* 2. 고정된 아이콘 대신 currentTabConfig.activeIcon 사용 */}
           <Icon
             icon={currentTabConfig.activeIcon}
-            className="w-5 h-5 text-[#3D3F41]"
+            className="w-5 h-5 text-tx-neutral"
           />
         </div>
-        <span className="text-lg font-bold text-[#3D3F41]">
+        <span className="text-lg font-bold text-tx-neutral">
           {selectedTab || "대시보드"}
         </span>
       </div>
@@ -64,18 +64,18 @@ export default function NewHeader() {
           <div className="relative group/brand">
             <div
               onClick={() => setBrandOpen((prev) => !prev)}
-              className="cursor-pointer flex items-center h-10 px-3 py-2 bg-[#F8F9FA] rounded-l-2xl hover:bg-[#F1F3F5] transition-colors"
+              className="cursor-pointer flex items-center h-10 px-3 py-2 bg-surface-base rounded-l-2xl hover:bg-surface-base transition-colors"
             >
-              <span className="text-[15px] font-bold text-[#495057] mr-2">
+              <span className="text-[15px] font-bold text-tx-alt mr-2">
                 브랜드
               </span>
-              <span className="flex items-center justify-center min-w-[42px] h-7 px-2 bg-[#3D3F41] text-white text-[13px] font-bold rounded-full">
+              <span className="flex items-center justify-center min-w-[42px] h-7 px-2 bg-tx-neutral text-white text-[13px] font-bold rounded-full">
                 {brandList.length}
               </span>
             </div>
 
             <div className="fixed left-0 z-30 invisible w-full transition-all duration-200 opacity-0 pointer-events-none top-15 group-hover/brand:opacity-100 group-hover/brand:visible group-hover/brand:pointer-events-auto">
-              <div className="bg-white border-b border-[#ECEEF0] shadow-md">
+              <div className="bg-white border-b border-line-divider shadow-md">
                 <BrandTab isProductTab={selectedTab === "상품 분석"} />
               </div>
             </div>
@@ -83,14 +83,14 @@ export default function NewHeader() {
 
           <div
             onClick={() => setSelectedTab("내 보드")}
-            className="cursor-pointer flex items-center h-10 px-4 bg-[#F8F9FA] rounded-r-2xl hover:bg-[#F1F3F5] transition-colors"
+            className="cursor-pointer flex items-center h-10 px-4 bg-surface-base rounded-r-2xl hover:bg-surface-base transition-colors"
           >
-            <span className="text-[15px] font-bold text-[#495057] mr-1.5">
+            <span className="text-[15px] font-bold text-tx-alt mr-1.5">
               내 보드
             </span>
             <Icon
               icon="ph:caret-down-bold"
-              className="w-3.5 h-3.5 text-[#868E96]"
+              className="w-3.5 h-3.5 text-icon-neutral"
             />
           </div>
         </div>

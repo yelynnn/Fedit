@@ -31,7 +31,7 @@ function LandingPage() {
         />
         <button
           onClick={() => navigate("/ask")}
-          className="hidden leading-6 cursor-pointer md:flex rounded-lg items-center justify-center bg-white w-fit h-fit px-3 py-2 text-[#242628] text-sm font-semibold"
+          className="hidden leading-6 cursor-pointer md:flex rounded-lg items-center justify-center bg-white w-fit h-fit px-3 py-2 text-tx-default text-sm font-semibold"
         >
           FEDIT 문의하기
         </button>
@@ -55,14 +55,14 @@ function LandingPage() {
             </span>
           </div>
 
-          <p className="break-keep px-12 text-center sm:text-2xl text-[#888A8C] leading-6 sm:leading-9">
+          <p className="break-keep px-12 text-center sm:text-2xl text-icon-neutral leading-6 sm:leading-9">
             국내 브랜드 데이터를 전략으로 바꾸는 유일한 패션 트렌드 솔루션
           </p>
         </div>
         <div className="z-10 flex gap-3 mb-47 sm:mb-64">
           <button
             onClick={() => navigate("/ask")}
-            className="cursor-pointer flex rounded-full items-center justify-center bg-white sm:w-54 w-30 h-10 sm:h-13 text-[#242628] sm:text-xl font-semibold"
+            className="cursor-pointer flex rounded-full items-center justify-center bg-white sm:w-54 w-30 h-10 sm:h-13 text-tx-default sm:text-xl font-semibold"
           >
             개인 플랜 문의
           </button>
@@ -137,7 +137,7 @@ function LandingPage() {
               국내 브랜드 데이터를 전략으로 바꾸는 <br />
               <span className="whitespace-nowrap">
                 유일한 패션 트렌드 솔루션<span className="mx-2">—</span>
-                <span className="text-[#242628] font-extrabold">FEDIT</span>
+                <span className="text-tx-default font-extrabold">FEDIT</span>
               </span>
             </div>
           </div>
@@ -154,7 +154,7 @@ function LandingPage() {
         <div className="mb-6 sm:mb-8 h-12 w-full flex items-center justify-center flex-shrink-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.25)_50%,rgba(255,255,255,0)_100%)] text-2xl sm:text-[40px] font-semibold leading-9 sm:leading-[36px] text-white">
           FEDIT의 서비스
         </div>
-        <p className="sm:text-2xl text-center text-[#888A8C] leading-6 sm:leading-9 mb-15 sm:mb-39">
+        <p className="sm:text-2xl text-center text-icon-neutral leading-6 sm:leading-9 mb-15 sm:mb-39">
           브랜드 데이터를 분석해, 한발 앞선 트렌드 전략을 완성합니다.
         </p>
         <div className="flex flex-col gap-9 sm:gap-22">
@@ -193,7 +193,7 @@ function LandingPage() {
             AI-Based 분석
           </h2>
 
-          <p className="sm:text-2xl text-[#888A8C] leading-6 sm:leading-9 mb-15 text-center break-keep">
+          <p className="sm:text-2xl text-icon-neutral leading-6 sm:leading-9 mb-15 text-center break-keep">
             보세부터 명품까지 다양한 패션 제품으로 훈련된
             <br /> 패션업계 특화 AI로 정확하게 분석하고 제안합니다.
           </p>
@@ -272,7 +272,7 @@ function LandingPage() {
           <div className="z-10 flex gap-3">
             <button
               onClick={() => navigate("/ask")}
-              className="cursor-pointer flex rounded-full items-center justify-center bg-white sm:w-54 w-30 h-10 sm:h-13 text-[#242628] sm:text-xl font-semibold"
+              className="cursor-pointer flex rounded-full items-center justify-center bg-white sm:w-54 w-30 h-10 sm:h-13 text-tx-default sm:text-xl font-semibold"
             >
               개인 플랜 문의
             </button>

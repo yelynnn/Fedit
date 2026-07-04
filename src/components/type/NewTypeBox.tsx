@@ -26,13 +26,13 @@ function NewTypeBox({ block }: Props) {
 
   return (
     <div className=" w-109 h-fit">
-      <span className="mb-3 text-lg font-semibold text-[#56585A] flex items-center gap-2">
-        <p>{block.brand}</p> | <p className="text-[#3D3F41]">{block.total}</p>
+      <span className="mb-3 text-lg font-semibold text-tx-alt flex items-center gap-2">
+        <p>{block.brand}</p> | <p className="text-tx-neutral">{block.total}</p>
         <p className="text-xs"> 전체 합계</p>
       </span>
       <TypeBarChart data={block.rows} />
       <section className="w-full mt-5 overflow-hidden border border-gray-200 rounded-xl">
-        <div className="flex text-xs font-semibold items-center justify-center gap-5 p-4 bg-[#242628] text-white h-9 rounded-t-xl">
+        <div className="flex text-xs font-semibold items-center justify-center gap-5 p-4 bg-fill-primary text-white h-9 rounded-t-xl">
           <span className="flex-1 text-center">카테고리</span>
           <span className="flex-1 text-center">합계(SKU)</span>
           <span className="flex-1 text-center">비중</span>
@@ -50,13 +50,13 @@ function NewTypeBox({ block }: Props) {
                       className="inline-block w-3 h-3 mr-2 rounded-full"
                       style={{ backgroundColor: color }}
                     />
-                    <span className="text-[#56585A]">{row.category}</span>
+                    <span className="text-tx-alt">{row.category}</span>
                   </div>
-                  <div className="flex-1 text-center text-[#56585A]">
+                  <div className="flex-1 text-center text-tx-alt">
                     {row.count?.toLocaleString?.() ?? row.count}
                   </div>
                   <div className="flex items-center justify-end flex-1 gap-2">
-                    <div className=" text-[#56585A]">
+                    <div className=" text-tx-alt">
                       {formatRatio(row.ratio)}
                     </div>
                     {row.category !== "전체" && (
@@ -77,7 +77,7 @@ function NewTypeBox({ block }: Props) {
                 </div>
 
                 {opened && (
-                  <div className="bg-[#EAF2FE]/50 px-6 pt-4">
+                  <div className="bg-falling-bg/50 px-6 pt-4">
                     <KeyWordBox
                       fit={row.fit}
                       material={row.material}

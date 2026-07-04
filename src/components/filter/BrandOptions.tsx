@@ -36,11 +36,11 @@ function BrandOptions() {
                 openCategories.includes(category) ? "rotate-90" : ""
               }`}
             />
-            <span className="text-sm text-[#1C1C1C]">{category} 브랜드</span>
+            <span className="text-sm text-tx-strong">{category} 브랜드</span>
           </div>
 
           {openCategories.includes(category) && (
-            <ul className="ml-6 mt-2 flex flex-col gap-2 text-sm text-[#4B4B4B]">
+            <ul className="ml-6 mt-2 flex flex-col gap-2 text-sm text-tx-neutral">
               {brandData[category].map((brand) => {
                 const isAllowed = allowedBrands.includes(brand);
                 const isChecked = filterList.includes(brand);
@@ -57,7 +57,7 @@ function BrandOptions() {
                             onChange={() =>
                               isChecked ? removeFilter(brand) : addFilter(brand)
                             }
-                            className="w-3 h-3 accent-[#95A4FC]"
+                            className="w-3 h-3 accent-data-violet"
                           />
                           <label htmlFor={brand} className="cursor-pointer">
                             {brand}

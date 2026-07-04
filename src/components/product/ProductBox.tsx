@@ -26,7 +26,7 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
   };
 
   return (
-    <section className="flex flex-col h-93 overflow-hidden rounded-lg w-55 bg-white border border-[#F2F4F6]">
+    <section className="flex flex-col h-93 overflow-hidden rounded-lg w-55 bg-white border border-surface-base">
       {/* 1. 상품 이미지 */}
       <div className="relative w-full h-55">
         <img
@@ -36,7 +36,7 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
           className="object-cover w-full h-full"
         />
         {product.platform && (
-          <div className="absolute bottom-2 left-2 flex items-center justify-center w-5 h-5 text-white bg-[#3D3F41] rounded text-xs font-medium">
+          <div className="absolute bottom-2 left-2 flex items-center justify-center w-5 h-5 text-white bg-tx-neutral rounded text-xs font-medium">
             {getPlatformLabel(product.platform)}
           </div>
         )}
@@ -45,23 +45,23 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
       <div className="flex flex-col w-full gap-2 p-2">
         {/* 2. 브랜드 & 카테고리 칩 */}
         <div className="flex items-center justify-between gap-1">
-          <span className="text-[#3D3F41] text-xs font-medium truncate flex-1">
+          <span className="text-tx-neutral text-xs font-medium truncate flex-1">
             {product.brand ?? ""}
           </span>
           {category && (
-            <div className="flex items-center justify-center h-5 px-[6px] bg-[#ECEEF0] rounded text-[10px] text-[#6F7173] whitespace-nowrap">
+            <div className="flex items-center justify-center h-5 px-[6px] bg-line-divider rounded text-[10px] text-tx-alt whitespace-nowrap">
               {category}
             </div>
           )}
         </div>
 
         {/* 3. 상품명 (2줄 제한) */}
-        <span className="w-full font-semibold text-sm leading-snug break-all text-[#242628] line-clamp-2 min-h-[40px]">
+        <span className="w-full font-semibold text-sm leading-snug break-all text-tx-default line-clamp-2 min-h-[40px]">
           {product.product_name}
         </span>
 
         {/* 4. 가격 */}
-        <span className="text-base font-bold text-[#242628]">
+        <span className="text-base font-bold text-tx-default">
           {formatPrice(product.current_price)}
         </span>
 
@@ -69,12 +69,12 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
         {(product.views || product.sales) && (
           <div className="flex flex-wrap gap-1 mt-1">
             {product.views && (
-              <div className="px-2 py-1 bg-[#EAF2FE] text-[#1A75FF] text-xs font-semibold rounded-md">
+              <div className="px-2 py-1 bg-falling-bg text-data-blue text-xs font-semibold rounded-md">
                 누적조회수 {Number(product.views).toLocaleString("ko-KR")}
               </div>
             )}
             {product.sales!=1 && (
-              <div className="px-2 py-1 bg-[#FFF5E9] text-[#FF9528] text-xs font-semibold rounded-md">
+              <div className="px-2 py-1 bg-data-orange-light text-status-warning text-xs font-semibold rounded-md">
                 누적판매 {Number(product.sales).toLocaleString("ko-KR")}
               </div>
             )}

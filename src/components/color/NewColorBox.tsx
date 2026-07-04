@@ -68,7 +68,7 @@ function NewColorBox({ block }: Props) {
 
   return (
     <div className="w-109 h-134">
-      <p className="mb-3 font-semibold text-[#3D3F41]">{block.brand}</p>
+      <p className="mb-3 font-semibold text-tx-neutral">{block.brand}</p>
 
       <article className="flex gap-2">
         <section className="overflow-hidden rounded-lg h-125 w-18">
@@ -99,7 +99,7 @@ function NewColorBox({ block }: Props) {
           </div>
         </section>
 
-        <section className="h-125 w-88 rounded-lg border border-[#E4E4E4] bg-white px-3 py-4 flex flex-col">
+        <section className="h-125 w-88 rounded-lg border border-line-alt bg-white px-3 py-4 flex flex-col">
           <div className="flex w-full mb-3 overflow-hidden rounded-lg h-9">
             {children.map((c, idx) => (
               <div
