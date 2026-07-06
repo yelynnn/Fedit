@@ -33,6 +33,12 @@ export type FilterStore = {
   selectedPatterns: string[];
   setSelectedTab: (tab: string) => void;
 
+  selectedYear: string;
+  selectedSeason: string;
+  setSelectedYear: (year: string) => void;
+  setSelectedSeason: (season: string) => void;
+  resetSeason: () => void;
+
   filterList: string[];
   addFilter: (filter: string) => void;
   removeFilter: (filter: string) => void;

@@ -86,8 +86,9 @@ const GetDashboardRanking = async ({
 }: GetDashboardRankingParams): Promise<DashboardRankingResponse> => {
   try {
     const testDate = "2026-03-w02";
+    const apiPlatform = platform === "29CM" ? "29cm" : platform;
     const res = await axiosInstance.get(`/dashboard/ranking`, {
-      params: { platform, category, date: testDate },
+      params: { platform: apiPlatform, category, date: testDate },
       paramsSerializer: (params) =>
         Object.entries(params)
           .map(([k, v]) => `${k}=${v}`)

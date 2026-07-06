@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Icon } from "@iconify/react";
 import TrendIndexBox from "../product/TrendIndexBox";
 import dayjs from "dayjs";
@@ -26,7 +26,7 @@ export default function RankBox() {
   const [similarCurrentPage, setSimilarCurrentPage] = useState(1);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
-  const ITEMS_PER_PAGE = 4;
+  const ITEMS_PER_PAGE = 6;
   const relatedItems = itemDetail?.related_items ?? [];
   const totalPages = Math.ceil(relatedItems.length / ITEMS_PER_PAGE);
 
@@ -98,7 +98,7 @@ export default function RankBox() {
           {" "}
           이번 달({currentDate.format("YYYY.MM")})
         </div>
-        <div className="ml-auto flex items-center gap-4 text-sm font-medium text-tx-neutral">
+        <div className="flex items-center gap-4 ml-auto text-sm font-medium text-tx-neutral">
           {" "}
           <button
             onClick={handlePrevMonth}
@@ -124,30 +124,34 @@ export default function RankBox() {
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {PLATFORMS.map((platform) => (
-            <button
-              key={platform}
-              onClick={() => setSelectedPlatform(platform)}
-              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
-                selectedPlatform === platform
-                  ? "bg-fill-primary text-white"
-                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              {platform}
-            </button>
+            <Fragment key={platform}>
+              {platform === "플랫폼 통합" && (
+                <div className="w-[2px] h-5 bg-[#E4E4E4]" />
+              )}
+              <button
+                onClick={() => setSelectedPlatform(platform)}
+                className={`flex h-[38px] justify-center items-center gap-2 px-3 py-2 rounded-md text-[16px] font-medium leading-[150%] tracking-[-0.08px] transition-colors ${
+                  selectedPlatform === platform
+                    ? "bg-fill-primary text-white"
+                    : "bg-white text-tx-neutral border border-line-alt hover:bg-gray-50"
+                }`}
+              >
+                {platform}
+              </button>
+            </Fragment>
           ))}
         </div>
 
-        <div className="flex gap-1 p-1 bg-fill-bg-strong border border-gray-200 rounded-full">
+        <div className="flex items-center gap-[4px] p-1 bg-fill-bg-strong border border-line-alt rounded-full">
           {CATEGORIES.map((category) => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-5 py-1 rounded-full text-sm font-medium transition-colors ${
+              className={`flex justify-center items-center gap-0.5 px-5 py-1 rounded-full text-sm font-medium transition-colors ${
                 selectedCategory === category
-                  ? "bg-white text-black font-semibold border border-gray-200 shadow-sm"
+                  ? "bg-white text-black font-semibold border border-gray-200"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
@@ -157,9 +161,9 @@ export default function RankBox() {
         </div>
       </div>
 
-      <div className="flex bg-white border border-gray-200 rounded-[24px] overflow-hidden h-[650px] shadow-sm">
+      <div className="flex bg-white border border-gray-200 rounded-[24px] overflow-hidden h-[757px] shadow-sm">
         <div className="flex flex-col flex-shrink-0 border-r border-gray-200 w-85">
-          <div className="py-4 text-sm font-bold text-center text-gray-700 border-b border-gray-200">
+          <div className="flex items-center justify-center text-sm font-bold text-center text-[#6F7173] border-b border-gray-200 h-9">
             트렌드 항목
           </div>
           <ul className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -169,26 +173,28 @@ export default function RankBox() {
                 <li
                   key={item.itemcode}
                   onClick={() => setActiveRank(item.rank)}
-                  className={`flex items-start gap-3 p-2 border-b border-gray-100 cursor-pointer transition-colors ${
-                    isActive ? "bg-surface-base" : "hover:bg-gray-50"
+                  className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
+                    isActive
+                      ? "border-b border-[#E4E4E4] bg-[#F4FFEE]"
+                      : "border-b border-gray-100 hover:bg-gray-50"
                   }`}
                 >
                   <div className="relative flex-shrink-0 w-18 h-18">
                     <img
                       src={item.thumbnail}
                       alt={item.product_name}
-                      className="object-cover w-full h-full border border-gray-200 rounded-md"
+                      className="object-cover w-full h-full border border-gray-200 rounded-sm"
                     />
-                    <div className="absolute top-1 left-1 flex items-center justify-center w-3 h-3 bg-white rounded text-[10px] font-normal text-gray-800">
+                    <div className="absolute top-0 left-0 flex items-center justify-center w-[19px] h-[19px] bg-[#242628] rounded text-[12px] font-medium leading-[133%] text-white">
                       {index + 1}
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-0.5 overflow-hidden">
-                    <span className="text-xs text-gray-500 truncate">
+                    <span className="overflow-hidden text-[12px] font-medium leading-[133%] text-[#6F7173] text-ellipsis truncate">
                       {item.brand}
                     </span>
-                    <span className="text-sm font-medium leading-tight text-gray-800 line-clamp-2">
+                    <span className="overflow-hidden text-[14px] font-semibold leading-[143%] tracking-[-0.07px] text-[#3D3F41] text-ellipsis line-clamp-2">
                       {item.product_name}
                     </span>
                   </div>
@@ -198,7 +204,7 @@ export default function RankBox() {
           </ul>
         </div>
 
-        <div className="relative flex-1 py-4 px-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="relative flex-1 py-5 px-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {isDetailLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/70 backdrop-blur-[2px]">
               <div className="border-2 border-gray-200 rounded-full w-7 h-7 border-t-gray-700 animate-spin" />
@@ -206,7 +212,7 @@ export default function RankBox() {
             </div>
           )}
 
-          <div className="px-8 mb-3 -mx-8">
+          <div className="px-8 mb-4 -mx-8">
             <TrendIndexBox
               itemCode={
                 rankingList.find((item) => item.rank === activeRank)
@@ -231,7 +237,7 @@ export default function RankBox() {
           />
 
           <div>
-            <div className="flex items-center gap-1.5 mb-3">
+            <div className="flex items-center gap-1.5 mt-8 mb-4">
               <Icon
                 icon="tabler:capture-filled"
                 className="w-5 h-5 text-gray-700"
@@ -241,7 +247,7 @@ export default function RankBox() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-5">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-3">
               {currentSimilarItems.map((item, idx) => (
                 <div
                   key={idx}
@@ -260,8 +266,10 @@ export default function RankBox() {
                     )}
                   </div>
                   <div className="flex flex-col justify-center gap-1.5">
-                    <span className="text-xs text-gray-500">{item.brand}</span>
-                    <span className="text-sm font-medium text-gray-800 line-clamp-2">
+                    <span className="overflow-hidden text-[12px] font-medium leading-[133%] text-[#6F7173] text-ellipsis truncate">
+                      {item.brand}
+                    </span>
+                    <span className="overflow-hidden text-[14px] font-semibold leading-[143%] tracking-[-0.07px] text-[#3D3F41] text-ellipsis line-clamp-2">
                       {item.product_name}
                     </span>
                     {item.details.length > 0 && (
@@ -282,7 +290,7 @@ export default function RankBox() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex justify-center gap-3 pt-3">
+              <div className="flex justify-center gap-3 pt-4">
                 <button
                   onClick={handlePrevPage}
                   disabled={similarCurrentPage === 1}

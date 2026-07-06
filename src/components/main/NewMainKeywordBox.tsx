@@ -147,7 +147,7 @@ function NewMainKeywordBox({
                     key={item.idx}
                     onMouseEnter={() => setHoveredIdx(item.idx)}
                     onMouseLeave={() => setHoveredIdx(null)}
-                    className={`relative flex items-center justify-center px-2 rounded-lg hover:bg-falling-bg transition-colors duration-150 ${isMonthly ? "h-14 mb-1" : "py-2"}`}
+                    className={`relative flex items-center justify-center px-2 rounded-lg ${isMonthly ? "h-14 mb-1" : "py-2"}`}
                   >
                     {isMonthly && hoveredIdx === item.idx && (
                       <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 bg-fill-primary text-white px-3 py-[6px] rounded-lg shadow-lg min-w-max max-w-50 whitespace-normal break-words z-50">
@@ -184,6 +184,9 @@ function NewMainKeywordBox({
                           icon="fe:drop-down"
                           className="w-6 h-6 text-blue-500"
                         />
+                      )}
+                      {item.status === 0 && title !== "네이버" && (
+                        <div className="w-[14px] h-[2px] bg-icon-alt" />
                       )}
                     </div>
                   </div>

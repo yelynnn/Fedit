@@ -1,18 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { useProductStore } from "@/stores/ProductStore";
 import ProductDetailModal from "@/components/product/ProductDetailModal";
+import {
+  DeleteBoard,
+  DeleteBoardItem,
+  GetBoardItems,
+  GetBoardList,
+  PatchBoardName,
+  type BoardItemThumbnail,
+  type BoardListItem,
+} from "@/apis/BoardAPI";
 
-type BoardItem = { itemcode: string; imageUrl: string };
-type Board = { id: string; name: string; items: BoardItem[] };
-
-function BoardThumbnail({ board }: { board: Board }) {
+function BoardThumbnail({ board }: { board: BoardListItem }) {
   return (
     <div className="grid grid-cols-2 w-full aspect-square rounded-xl overflow-hidden">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="bg-line-divider">
-          {board.items[i]?.imageUrl && (
-            <img src={board.items[i].imageUrl} className="w-full h-full object-cover" alt="" />
+          {board.recentThumbnails[i] && (
+            <img src={board.recentThumbnails[i]} className="w-full h-full object-cover" alt="" />
           )}
         </div>
       ))}
@@ -21,32 +27,87 @@ function BoardThumbnail({ board }: { board: Board }) {
 }
 
 export default function BoardsPage() {
-  const [boards, setBoards] = useState<Board[]>(() => {
-    try { return JSON.parse(localStorage.getItem("fedit-boards") || "[]"); } catch { return []; }
-  });
-  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
-  const [editBoard, setEditBoard] = useState<Board | null>(null);
+  const [boards, setBoards] = useState<BoardListItem[]>([]);
+  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
+  const [boardItems, setBoardItems] = useState<BoardItemThumbnail[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [editBoard, setEditBoard] = useState<BoardListItem | null>(null);
   const [editName, setEditName] = useState("");
   const { setModalProductId } = useProductStore((s) => s);
 
-  const selectedBoard = boards.find((b) => b.id === selectedBoardId) ?? null;
+  const selectedBoard = boards.find((b) => b.boardId === selectedBoardId) ?? null;
 
-  const persistBoards = (updated: Board[]) => {
-    setBoards(updated);
-    localStorage.setItem("fedit-boards", JSON.stringify(updated));
+  const loadBoards = () => {
+    GetBoardList()
+      .then(setBoards)
+      .catch(console.error);
   };
 
-  const handleEditSave = () => {
+  useEffect(() => {
+    loadBoards();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedBoardId) {
+      setBoardItems([]);
+      return;
+    }
+    let canceled = false;
+    setItemsLoading(true);
+    GetBoardItems(selectedBoardId)
+      .then((items) => {
+        if (!canceled) setBoardItems(items);
+      })
+      .catch(() => {
+        if (!canceled) setBoardItems([]);
+      })
+      .finally(() => {
+        if (!canceled) setItemsLoading(false);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [selectedBoardId]);
+
+  const handleEditSave = async () => {
     if (!editBoard || !editName.trim()) return;
-    persistBoards(boards.map((b) => b.id === editBoard.id ? { ...b, name: editName.trim() } : b));
-    setEditBoard(null);
+    const trimmedName = editName.trim();
+    try {
+      await PatchBoardName(editBoard.boardId, trimmedName);
+      setBoards((prev) =>
+        prev.map((b) => (b.boardId === editBoard.boardId ? { ...b, name: trimmedName } : b)),
+      );
+      setEditBoard(null);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleDeleteBoard = () => {
+  const handleDeleteBoard = async () => {
     if (!editBoard) return;
-    persistBoards(boards.filter((b) => b.id !== editBoard.id));
-    if (selectedBoardId === editBoard.id) setSelectedBoardId(null);
-    setEditBoard(null);
+    try {
+      await DeleteBoard(editBoard.boardId, editBoard.name);
+      setBoards((prev) => prev.filter((b) => b.boardId !== editBoard.boardId));
+      if (selectedBoardId === editBoard.boardId) setSelectedBoardId(null);
+      setEditBoard(null);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleRemoveItem = async (itemcode: string) => {
+    if (!selectedBoardId) return;
+    try {
+      await DeleteBoardItem(selectedBoardId, itemcode);
+      setBoardItems((prev) => prev.filter((item) => item.itemcode !== itemcode));
+      setBoards((prev) =>
+        prev.map((b) =>
+          b.boardId === selectedBoardId ? { ...b, itemCount: Math.max(0, b.itemCount - 1) } : b,
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -62,33 +123,50 @@ export default function BoardsPage() {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-tx-strong">{selectedBoard.name}</h1>
-              <p className="text-sm text-tx-assistive">상품 {selectedBoard.items.length}개</p>
+              <p className="text-sm text-tx-assistive">상품 {boardItems.length}개</p>
             </div>
           </div>
 
-          {selectedBoard.items.length === 0 ? (
+          {itemsLoading ? (
+            <div className="flex items-center justify-center py-24 text-tx-assistive">
+              불러오는 중...
+            </div>
+          ) : boardItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-tx-assistive">
               <Icon icon="ph:bookmark" className="w-12 h-12 mb-3" />
               <p className="text-base font-medium">저장된 상품이 없습니다</p>
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-4">
-              {selectedBoard.items.map((item, i) => (
-                <button
-                  key={item.itemcode + i}
-                  onClick={() => setModalProductId(item.itemcode)}
+              {boardItems.map((item) => (
+                <div
+                  key={item.itemcode}
                   className="group relative rounded-xl overflow-hidden bg-surface-base aspect-[3/4]"
                 >
-                  {item.imageUrl ? (
-                    <img
-                      src={item.imageUrl}
-                      className="w-full h-full object-cover group-hover:brightness-90 transition-all"
-                      alt=""
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-line-divider" />
-                  )}
-                </button>
+                  <button
+                    onClick={() => setModalProductId(item.itemcode)}
+                    className="block w-full h-full"
+                  >
+                    {item.thumbnail ? (
+                      <img
+                        src={item.thumbnail}
+                        className="w-full h-full object-cover group-hover:brightness-90 transition-all"
+                        alt=""
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-line-divider" />
+                    )}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveItem(item.itemcode);
+                    }}
+                    className="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  >
+                    <Icon icon="material-symbols:close" className="w-4 h-4 text-tx-neutral" />
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -107,9 +185,9 @@ export default function BoardsPage() {
             <div className="grid grid-cols-3 gap-6">
               {boards.map((board) => (
                 <div
-                  key={board.id}
+                  key={board.boardId}
                   className="group relative cursor-pointer"
-                  onClick={() => setSelectedBoardId(board.id)}
+                  onClick={() => setSelectedBoardId(board.boardId)}
                 >
                   <div className="relative">
                     <BoardThumbnail board={board} />
@@ -126,7 +204,7 @@ export default function BoardsPage() {
                   </div>
                   <div className="mt-3">
                     <p className="font-bold text-tx-strong">{board.name}</p>
-                    <p className="text-sm text-tx-assistive">상품 {board.items.length}개</p>
+                    <p className="text-sm text-tx-assistive">상품 {board.itemCount}개</p>
                   </div>
                 </div>
               ))}

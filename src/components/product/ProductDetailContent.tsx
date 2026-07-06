@@ -3,6 +3,14 @@ import dayjs from "dayjs";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useProductStore } from "@/stores/ProductStore";
 import { GetDetailInfo, GetProductByItemCode, GetRelatedItemInfo } from "@/apis/AnalysisAPI";
+import {
+  PostCreateBoard,
+  PostAddBoardItem,
+  DeleteBoardItem,
+  GetBoardList,
+  GetBoardItems,
+  type BoardListItem,
+} from "@/apis/BoardAPI";
 import type { ApiDetail } from "@/types/Product";
 import DetailItem from "./DetailItem";
 import defaultImg from "@/assets/logo/defaultImg.svg";
@@ -37,23 +45,47 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
   const [loading, setLoading] = useState(false);
   const [related, setRelated] = useState<RelatedItem[]>([]);
 
-  type BoardItem = { itemcode: string; imageUrl: string };
-  type Board = { id: string; name: string; items: BoardItem[] };
-  const [boards, setBoards] = useState<Board[]>(() => {
-    try { return JSON.parse(localStorage.getItem("fedit-boards") || "[]"); } catch { return []; }
-  });
-  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(
-    () => localStorage.getItem("fedit-recent-board"),
-  );
+  const [boards, setBoards] = useState<BoardListItem[]>([]);
+  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
+  const [savedItemcodes, setSavedItemcodes] = useState<Set<string>>(new Set());
   const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
   const [createBoardOpen, setCreateBoardOpen] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
+  const [createBoardError, setCreateBoardError] = useState<string | null>(null);
+  const [isCreatingBoard, setIsCreatingBoard] = useState(false);
   const [toast, setToast] = useState<{ boardName: string; imageUrl: string } | null>(null);
   const boardDropdownRef = useRef<HTMLDivElement>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const selectedBoard = boards.find((b) => b.id === selectedBoardId) ?? boards[boards.length - 1] ?? null;
-  const isSaved = !!(effectiveId && selectedBoard?.items.some((i) => i.itemcode === effectiveId));
+  const selectedBoard = boards.find((b) => b.boardId === selectedBoardId) ?? null;
+  const isSaved = !!(effectiveId && savedItemcodes.has(effectiveId));
+
+  useEffect(() => {
+    GetBoardList()
+      .then((list) => {
+        setBoards(list);
+        setSelectedBoardId((prev) => prev ?? list[0]?.boardId ?? null);
+      })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedBoardId) {
+      setSavedItemcodes(new Set());
+      return;
+    }
+    let canceled = false;
+    GetBoardItems(selectedBoardId)
+      .then((items) => {
+        if (!canceled) setSavedItemcodes(new Set(items.map((i) => i.itemcode)));
+      })
+      .catch(() => {
+        if (!canceled) setSavedItemcodes(new Set());
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [selectedBoardId]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -65,55 +97,74 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const persistBoards = (updated: Board[]) => {
-    setBoards(updated);
-    localStorage.setItem("fedit-boards", JSON.stringify(updated));
-  };
-
-  const handleSelectBoard = (id: string) => {
-    setSelectedBoardId(id);
-    localStorage.setItem("fedit-recent-board", id);
+  const handleSelectBoard = (boardId: number) => {
+    setSelectedBoardId(boardId);
     setBoardDropdownOpen(false);
   };
 
-  const handleCreateBoard = () => {
-    if (!newBoardName.trim()) return;
-    const newBoard: Board = { id: Date.now().toString(), name: newBoardName.trim(), items: [] };
-    const updated = [...boards, newBoard];
-    persistBoards(updated);
-    setSelectedBoardId(newBoard.id);
-    localStorage.setItem("fedit-recent-board", newBoard.id);
-    setNewBoardName("");
+  const closeCreateBoard = () => {
     setCreateBoardOpen(false);
+    setCreateBoardError(null);
   };
 
-  const handleSave = () => {
+  const handleCreateBoard = async () => {
+    if (!newBoardName.trim() || isCreatingBoard) return;
+    setIsCreatingBoard(true);
+    setCreateBoardError(null);
+    try {
+      const trimmedName = newBoardName.trim();
+      const created = await PostCreateBoard(trimmedName);
+      const newBoard: BoardListItem = {
+        boardId: created.boardId,
+        name: trimmedName,
+        itemCount: 0,
+        createdAt: new Date().toISOString(),
+        recentThumbnails: [],
+      };
+      setBoards((prev) => [...prev, newBoard]);
+      setSelectedBoardId(newBoard.boardId);
+      setNewBoardName("");
+      setCreateBoardOpen(false);
+    } catch (error: any) {
+      setCreateBoardError(error.message);
+    } finally {
+      setIsCreatingBoard(false);
+    }
+  };
+
+  const handleSave = async () => {
     if (!effectiveId) return;
-    if (!selectedBoard) { setCreateBoardOpen(true); return; }
-    persistBoards(
-      boards.map((b) =>
-        b.id === selectedBoard.id && !b.items.some((i) => i.itemcode === effectiveId)
-          ? { ...b, items: [...b.items, { itemcode: effectiveId, imageUrl: detailData?.thumbnail || detailData?.front_image_url || "" }] }
-          : b,
-      ),
-    );
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({
-      boardName: selectedBoard.name,
-      imageUrl: detailData?.thumbnail || detailData?.front_image_url || "",
-    });
-    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+    if (!selectedBoard) {
+      setCreateBoardOpen(true);
+      return;
+    }
+    if (isSaved) return;
+    try {
+      await PostAddBoardItem(selectedBoard.boardId, effectiveId);
+      setSavedItemcodes((prev) => new Set(prev).add(effectiveId));
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      setToast({
+        boardName: selectedBoard.name,
+        imageUrl: detailData?.thumbnail || detailData?.front_image_url || "",
+      });
+      toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleUndoSave = () => {
+  const handleUndoSave = async () => {
     if (!effectiveId || !selectedBoard) return;
-    persistBoards(
-      boards.map((b) =>
-        b.id === selectedBoard.id
-          ? { ...b, items: b.items.filter((item) => item.itemcode !== effectiveId) }
-          : b,
-      ),
-    );
+    try {
+      await DeleteBoardItem(selectedBoard.boardId, effectiveId);
+      setSavedItemcodes((prev) => {
+        const next = new Set(prev);
+        next.delete(effectiveId);
+        return next;
+      });
+    } catch (error) {
+      console.error(error);
+    }
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(null);
   };
@@ -277,10 +328,10 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                             ) : (
                               boards.map((b) => (
                                 <button
-                                  key={b.id}
-                                  onClick={() => handleSelectBoard(b.id)}
+                                  key={b.boardId}
+                                  onClick={() => handleSelectBoard(b.boardId)}
                                   className={`w-full text-left px-4 py-3 text-sm hover:bg-surface-base transition-colors ${
-                                    selectedBoard?.id === b.id ? "font-semibold text-tx-default" : "text-tx-neutral"
+                                    selectedBoard?.boardId === b.boardId ? "font-semibold text-tx-default" : "text-tx-neutral"
                                   }`}
                                 >
                                   {b.name}
@@ -429,15 +480,15 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
 
       {createBoardOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setCreateBoardOpen(false)} />
+          <div className="absolute inset-0 bg-black/30" onClick={closeCreateBoard} />
           <div className="relative bg-white rounded-2xl p-8 w-full max-w-[400px] shadow-xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-tx-default">보드 만들기</h2>
-              <button onClick={() => setCreateBoardOpen(false)}>
+              <button onClick={closeCreateBoard}>
                 <Icon icon="material-symbols:close" className="w-6 h-6 text-tx-assistive hover:text-black transition-colors" />
               </button>
             </div>
-            <div className="border border-line-divider rounded-xl px-4 py-3 mb-6">
+            <div className="border border-line-divider rounded-xl px-4 py-3 mb-2">
               <div className="text-xs text-tx-assistive mb-1">보드 이름</div>
               <input
                 className="w-full text-sm font-semibold text-tx-default outline-none placeholder:font-normal placeholder:text-[#C4C6C8]"
@@ -448,11 +499,12 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                 autoFocus
               />
             </div>
+            <p className="text-xs text-status-error mb-4 min-h-4">{createBoardError}</p>
             <button
               onClick={handleCreateBoard}
-              disabled={!newBoardName.trim()}
+              disabled={!newBoardName.trim() || isCreatingBoard}
               className={`w-full py-3 rounded-xl font-bold text-base transition-colors ${
-                newBoardName.trim() ? "bg-fill-primary text-white hover:bg-black cursor-pointer" : "bg-surface-base text-tx-assistive cursor-not-allowed"
+                newBoardName.trim() && !isCreatingBoard ? "bg-fill-primary text-white hover:bg-black cursor-pointer" : "bg-surface-base text-tx-assistive cursor-not-allowed"
               }`}
             >
               만들기

@@ -3,7 +3,6 @@ import RootLayout from "./RootLayout";
 import FilterLayout from "./FilterLayout";
 import ProductDetailPage from "@/pages/ProductDetailPage";
 import RootNewLayout from "./RootNewLayout";
-import LandingPage from "@/pages/LandingPage";
 import AskPage from "@/pages/AskPage";
 import AskSuccessPage from "@/pages/AskSuccessPage";
 import LoginPage from "@/pages/Auth/LoginPage";
@@ -31,21 +30,16 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: "/main",
-    element: <ProtectedRoute />,
-    children: [
-      {
-        index: true,
-        element: <RootNewLayout />,
-      },
-    ],
-  },
-  {
     path: "/",
     children: [
       {
-        index: true,
-        element: <LandingPage />,
+        element: <ProtectedRoute />,
+        children: [
+          {
+            index: true,
+            element: <RootNewLayout />,
+          },
+        ],
       },
       {
         path: "ask",

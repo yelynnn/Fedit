@@ -40,6 +40,7 @@ function NewProductAnalysis() {
     selectedCategories,
     selectedDetails,
     selectedPatterns,
+    selectedSeasons,
   } = useFilteredData();
   const { brandList } = useFilterStore();
 
@@ -57,6 +58,7 @@ function NewProductAnalysis() {
           selectedCategories,
           selectedDetails,
           selectedPatterns,
+          selectedSeasons,
           cursor,
         });
 
@@ -83,6 +85,7 @@ function NewProductAnalysis() {
       selectedCategories,
       selectedDetails,
       selectedPatterns,
+      selectedSeasons,
       setResultLists,
     ],
   );
@@ -108,6 +111,7 @@ function NewProductAnalysis() {
     selectedCategories,
     selectedDetails,
     selectedPatterns,
+    selectedSeasons,
     fetchData,
   ]);
 
