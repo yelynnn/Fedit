@@ -17,6 +17,12 @@ export const useFilterStore = create<FilterStore>()(
       selectedPatterns: [],
       setSelectedTab: (tab: string) => set({ selectedTab: tab }),
 
+      selectedYear: "",
+      selectedSeason: "",
+      setSelectedYear: (year: string) => set({ selectedYear: year }),
+      setSelectedSeason: (season: string) => set({ selectedSeason: season }),
+      resetSeason: () => set({ selectedYear: "", selectedSeason: "" }),
+
       filterList: [],
       addFilter: (filter: string) =>
         set((state) => {

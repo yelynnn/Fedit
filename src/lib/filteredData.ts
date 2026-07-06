@@ -9,7 +9,9 @@ import {
 import { GetDetailList, GetPatternList } from "@/apis/AnalysisAPI";
 
 export default function useFilteredData() {
-  const { filterList } = useFilterStore((state) => state);
+  const { filterList, selectedYear, selectedSeason } = useFilterStore(
+    (state) => state
+  );
   const [apiDetails, setApiDetails] = useState<string[]>([]);
   const [apiPatterns, setApiPatterns] = useState<string[]>([]);
 
@@ -67,6 +69,11 @@ export default function useFilteredData() {
     return [...new Set(expanded)];
   }, [filterList, allTypes]);
 
+  const selectedSeasons = useMemo(() => {
+    if (!selectedYear || !selectedSeason) return [];
+    return [`${selectedYear.slice(-2)}${selectedSeason}`];
+  }, [selectedYear, selectedSeason]);
+
   return {
     selectedBrands,
     selectedColors,
@@ -74,5 +81,6 @@ export default function useFilteredData() {
     selectedDetails,
     selectedPatterns,
     selectedCategories,
+    selectedSeasons,
   };
 }

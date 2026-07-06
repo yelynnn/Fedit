@@ -11,17 +11,65 @@ interface TrendIndexBoxProps {
 const fmt = (v: number | null | undefined): string =>
   v == null ? "-" : v.toLocaleString("ko-KR");
 
+const hasDetail = (
+  subBadges: { label: string; value: number | null }[],
+  extraValues?: (string | null)[],
+) =>
+  subBadges.some((badge, idx) => badge.value != null || extraValues?.[idx] != null);
+
 function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
   const [trendData, setTrendData] = useState<TrendIndexResponse | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!itemCode) return;
     GetTrendIndex(itemCode).then(setTrendData).catch(console.error);
+    setDetailsOpen(false);
   }, [itemCode]);
 
   if (!trendData) return null;
 
   const { isPlatform, brand, purchase, category } = trendData;
+
+  // 브랜드 지수
+  const brandBadges = isPlatform
+    ? [
+        { label: "플랫폼 화력도", value: brand.likes },
+        { label: "시장 주목도", value: brand.search },
+      ]
+    : [{ label: "유사 브랜드 대비", value: brand.marketScore }];
+
+  // 상품 지수
+  const productBadges = isPlatform
+    ? [
+        { label: "상품 찜하기수", value: null },
+        { label: "리오더 여부", value: null },
+      ]
+    : [{ label: "타스타일 대비", value: category.categoryPctl }];
+
+  const productExtras = isPlatform
+    ? [
+        category.likes == null ? "-" : fmt(category.likes),
+        category.reorder == null
+          ? "- 차 리오더"
+          : `${category.reorder}차 리오더`,
+      ]
+    : undefined;
+
+  // 구매 화력도
+  const purchaseBadges = [{ label: "판매수량", value: null }];
+  const purchaseExtras = isPlatform
+    ? [`지난달 ${fmt(purchase.sales)}건`]
+    : ["지난달 - 건"];
+
+  // 세 카드 중 하나라도 상세 값이 있으면 전부 펼치고 화살표를 숨긴다.
+  // 셋 다 값이 없을 때만 화살표로 접었다 펼 수 있게 한다.
+  const anyHasDetail =
+    hasDetail(brandBadges) ||
+    hasDetail(productBadges, productExtras) ||
+    hasDetail(purchaseBadges, purchaseExtras);
+  const isOpen = anyHasDetail ? true : detailsOpen;
+  const showToggle = !anyHasDetail;
 
   const renderCard = (
     title: string,
@@ -47,13 +95,25 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
       : `평균 대비 ${fmt(pctlVal)}%`;
 
     return (
-      <div className="w-full box-border p-3 rounded-xl bg-fill-bg-strong">
+      <div className="box-border w-full p-4 rounded-xl bg-fill-bg-strong">
         <div className="flex items-center gap-1 mb-2">
           <span className="text-base font-bold text-tx-neutral">{title}</span>
           <Icon
             icon="ph:question"
-            className="w-4 h-4 text-icon-alt cursor-pointer"
+            className="w-4 h-4 cursor-pointer text-icon-alt"
           />
+          {showToggle && (
+            <button
+              type="button"
+              onClick={() => setDetailsOpen((prev) => !prev)}
+              className="flex items-center justify-center w-4 h-4 ml-auto text-icon-alt"
+            >
+              <Icon
+                icon="ph:caret-down"
+                className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
@@ -70,7 +130,7 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className={`flex flex-col gap-1.5 ${isOpen ? "" : "hidden"}`}>
           {subBadges.map((badge, idx) => {
             const isGray = isPurchase || (title === "상품 지수" && isPlatform);
             const badgeText =
@@ -104,40 +164,9 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
     );
   };
 
-  // 브랜드 지수
-  const brandBadges = isPlatform
-    ? [
-        { label: "플랫폼 화력도", value: brand.likes },
-        { label: "시장 주목도", value: brand.search },
-      ]
-    : [{ label: "유사 브랜드 대비", value: brand.marketScore }];
-
-  // 상품 지수
-  const productBadges = isPlatform
-    ? [
-        { label: "상품 찜하기수", value: null },
-        { label: "리오더 여부", value: null },
-      ]
-    : [{ label: "타스타일 대비", value: category.categoryPctl }];
-
-  const productExtras = isPlatform
-    ? [
-        category.likes == null ? "-" : fmt(category.likes),
-        category.reorder == null
-          ? "- 차 리오더"
-          : `${category.reorder}차 리오더`,
-      ]
-    : undefined;
-
-  // 구매 화력도
-  const purchaseBadges = [{ label: "판매수량", value: null }];
-  const purchaseExtras = isPlatform
-    ? [`지난달 ${fmt(purchase.sales)}건`]
-    : ["지난달 - 건"];
-
   return (
-    <div className="w-full p-2">
-      <div className="grid grid-cols-3 gap-3">
+    <div className="w-full">
+      <div className="grid grid-cols-3 gap-5">
         {renderCard(
           "브랜드 지수",
           brand.brandScore,

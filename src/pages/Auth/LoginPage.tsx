@@ -32,7 +32,7 @@ const LoginPage = () => {
     try {
       await PostLogin(id.trim(), password);
       setSelectedTab("상품 분석");
-      navigate("/main");
+      navigate("/");
     } catch (error: any) {
       setErrorMessage(error.message);
     } finally {
@@ -44,7 +44,7 @@ const LoginPage = () => {
     <div className="flex min-h-screen flex-col bg-white text-[#222]">
       <LoginHeader />
 
-      <main className="flex flex-1 justify-center px-5 pt-[40px]">
+      <main className="flex flex-1 justify-center px-5 pt-[40px] pb-[70px]">
         <section className="w-full max-w-[420px]">
           <div className="mb-[28px] grid grid-cols-2 gap-3">
             <button

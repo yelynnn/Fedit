@@ -92,28 +92,31 @@ function DashBoardPage() {
   return (
     <div className="w-full h-full px-14">
       <section>
-        <div className="flex items-center justify-between p-1 bg-white border border-line-default rounded-full w-64 mt-3">
-          {["adult", "kids"].map((type) => (
-            <button
-              key={type}
-              onClick={() => type !== "kids" && setAudienceType(type)}
-              disabled={type === "kids"}
-              className={`relative w-1/2 h-9 rounded-full text-sm font-semibold transition-colors duration-200 ${
-                audienceType === type
-                  ? "bg-[#1A1A1A] text-white"
-                  : "text-gray-400 cursor-not-allowed"
-              }`}
-            >
-              {type === "adult" ? (
-                "어덜트"
-              ) : (
-                <span className="flex items-center justify-center gap-1">
-                  <Icon icon="si:lock-duotone" className="w-4 h-8" />
-                  키즈
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="flex items-stretch w-full mt-3 p-1 gap-1 rounded-lg border border-line-alt bg-fill-bg-strong">
+          {["adult", "kids"].map((type) => {
+            const isSelected = audienceType === type;
+            return (
+              <button
+                key={type}
+                onClick={() => type !== "kids" && setAudienceType(type)}
+                disabled={type === "kids"}
+                className={`flex flex-1 h-9 justify-center items-center gap-[10px] px-3 rounded-md text-[16px] font-semibold leading-[150%] tracking-[-0.08px] transition-colors duration-200 ${
+                  isSelected
+                    ? "border border-line-neutral bg-fill-bg text-tx-default"
+                    : "border border-transparent text-tx-alt cursor-not-allowed"
+                }`}
+              >
+                {type === "adult" ? (
+                  "어덜트"
+                ) : (
+                  <span className="flex items-center justify-center gap-1">
+                    키즈
+                    <Icon icon="si:lock-duotone" className="w-4 h-4" />
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex items-end gap-2 mb-3">
