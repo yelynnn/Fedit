@@ -90,7 +90,7 @@ const NextSignupPage = () => {
                 <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <p className="text-[17px] font-bold tracking-[-0.04em] text-tx-default">
+            <p className="text-[17px] font-semibold tracking-[-0.04em] text-tx-default">
               회원가입이 완료되었어요!
             </p>
             <p className="text-[13px] font-medium tracking-[-0.03em] text-icon-neutral">
@@ -105,7 +105,7 @@ const NextSignupPage = () => {
       <main className="flex flex-1 justify-center px-5 pt-[74px]">
         <section className="w-full max-w-[392px]">
           <div className="mb-[34px]">
-            <h1 className="text-[24px] font-bold leading-[1.35] tracking-[-0.04em] text-tx-default">
+            <h1 className="text-[24px] font-semibold leading-[1.35] tracking-[-0.04em] text-tx-default">
               회원님의 정보에 맞춰
               <br />
               트렌드와 리포트를 최적화해드려요.
@@ -188,7 +188,7 @@ const NextSignupPage = () => {
                 },
               })
             }
-            className="mt-[28px] flex h-[42px] w-full items-center justify-between rounded-[6px] border border-line-alt bg-fill-bg-strong px-[14px] text-[13px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-surface-base"
+            className="mt-[28px] flex h-[42px] w-full items-center justify-between rounded-[6px] border border-line-alt bg-fill-bg-strong px-[14px] text-[13px] font-semibold tracking-[-0.03em] text-tx-default transition hover:bg-surface-base"
           >
             <span className="flex items-center gap-[10px]">
               <CheckCircle
@@ -208,7 +208,7 @@ const NextSignupPage = () => {
             <button
               type="button"
               onClick={handlePrev}
-              className="h-[42px] rounded-[7px] border border-line-alt bg-white text-[14px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
+              className="h-[42px] rounded-[7px] border border-line-alt bg-white text-[14px] font-semibold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
             >
               이전
             </button>
@@ -217,7 +217,7 @@ const NextSignupPage = () => {
               type="button"
               disabled={!isFormValid || isLoading}
               onClick={handleNext}
-              className={`h-[42px] rounded-[7px] text-[14px] font-bold tracking-[-0.03em] transition ${
+              className={`h-[42px] rounded-[7px] text-[14px] font-semibold tracking-[-0.03em] transition ${
                 isFormValid && !isLoading
                   ? "bg-fill-primary text-white hover:bg-[#111111]"
                   : "cursor-not-allowed bg-surface-base text-icon-alt"
@@ -249,7 +249,7 @@ const InputField = ({
 }: InputFieldProps) => {
   return (
     <div>
-      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default">
+      <label className="mb-[8px] block text-[14px] font-semibold tracking-[-0.03em] text-tx-default">
         <span className="mr-[2px] text-rising">*</span>
         {label}
       </label>
@@ -286,7 +286,7 @@ const SelectField = ({
 }: SelectFieldProps) => {
   return (
     <div className="relative">
-      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default">
+      <label className="mb-[8px] block text-[14px] font-semibold tracking-[-0.03em] text-tx-default">
         <span className="mr-[2px] text-rising">*</span>
         {label}
       </label>
@@ -313,7 +313,7 @@ const SelectField = ({
               key={option}
               type="button"
               onClick={() => onSelect(option)}
-              className={`block h-[40px] w-full rounded-[7px] px-[12px] text-left text-[14px] font-bold tracking-[-0.03em] transition hover:bg-surface-base ${
+              className={`block h-[40px] w-full rounded-[7px] px-[12px] text-left text-[14px] font-semibold tracking-[-0.03em] transition hover:bg-surface-base ${
                 value === option ? "bg-surface-base text-tx-default" : "text-tx-default"
               }`}
             >

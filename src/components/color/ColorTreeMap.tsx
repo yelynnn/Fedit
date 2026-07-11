@@ -107,7 +107,7 @@ export default function ColorTreeMap({
   return (
     <div className="flex flex-col w-full overflow-hidden bg-white border border-gray-100 shadow-sm h-91 rounded-xl">
       <div className="flex items-center justify-between px-6 pt-4 mb-3">
-        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
         {onClose && (
           <button
             onClick={onClose}

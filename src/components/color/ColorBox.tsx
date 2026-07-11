@@ -33,7 +33,7 @@ function ColorBox({ brand }: ColorBoxProps) {
   return (
     <div className="w-90 h-190 rounded-2xl bg-surface-base">
       <div className="p-6">
-        <header className="text-tx-strong text-base font-bold mb-4">
+        <header className="text-tx-strong text-base font-semibold mb-4">
           {brand}
         </header>
         {brandData ? (
@@ -43,7 +43,7 @@ function ColorBox({ brand }: ColorBoxProps) {
         )}
       </div>
 
-      <div className="bg-[#EAE9EE] h-7 text-sm pl-6 font-bold flex items-center">
+      <div className="bg-[#EAE9EE] h-7 text-sm pl-6 font-semibold flex items-center">
         상품 상세 보기
       </div>
 

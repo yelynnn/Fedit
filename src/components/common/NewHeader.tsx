@@ -7,7 +7,7 @@ import { useState } from "react";
 // 사이드바와 동일한 설정 (이 설정은 별도 파일로 분리해서 공통으로 쓰는 것이 가장 좋습니다)
 const TABS_CONFIG = [
   {
-    label: "대시보드",
+    label: "실시간 랭킹",
     activeIcon: "material-symbols:dashboard-rounded",
     inactiveIcon: "material-symbols:dashboard-outline-rounded",
   },
@@ -54,8 +54,8 @@ export default function NewHeader() {
             className="w-5 h-5 text-tx-neutral"
           />
         </div>
-        <span className="text-lg font-bold text-tx-neutral">
-          {selectedTab || "대시보드"}
+        <span className="text-lg font-semibold text-tx-neutral">
+          {selectedTab || "실시간 랭킹"}
         </span>
       </div>
 
@@ -66,10 +66,10 @@ export default function NewHeader() {
               onClick={() => setBrandOpen((prev) => !prev)}
               className="cursor-pointer flex items-center h-10 px-3 py-2 bg-surface-base rounded-l-2xl hover:bg-surface-base transition-colors"
             >
-              <span className="text-[15px] font-bold text-tx-alt mr-2">
+              <span className="text-[15px] font-semibold text-tx-alt mr-2">
                 브랜드
               </span>
-              <span className="flex items-center justify-center min-w-[42px] h-7 px-2 bg-tx-neutral text-white text-[13px] font-bold rounded-full">
+              <span className="flex items-center justify-center min-w-[42px] h-7 px-2 bg-tx-neutral text-white text-[13px] font-semibold rounded-full">
                 {brandList.length}
               </span>
             </div>
@@ -85,7 +85,7 @@ export default function NewHeader() {
             onClick={() => setSelectedTab("내 보드")}
             className="cursor-pointer flex items-center h-10 px-4 bg-surface-base rounded-r-2xl hover:bg-surface-base transition-colors"
           >
-            <span className="text-[15px] font-bold text-tx-alt mr-1.5">
+            <span className="text-[15px] font-semibold text-tx-alt mr-1.5">
               내 보드
             </span>
             <Icon
@@ -96,7 +96,7 @@ export default function NewHeader() {
         </div>
 
         {/* 사용자 아바타
-        <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+        <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center text-white font-semibold text-sm shadow-sm">
           E
         </div> */}
       </div>

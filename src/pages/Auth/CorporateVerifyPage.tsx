@@ -51,7 +51,7 @@ const CorporateVerifyPage = () => {
           {successMessage ? (
             <div className="flex flex-col items-center gap-[32px] text-center">
               <div className="flex flex-col gap-[12px]">
-                <h1 className="text-[24px] font-bold tracking-[-0.04em] text-tx-default">
+                <h1 className="text-[24px] font-semibold tracking-[-0.04em] text-tx-default">
                   임시 비밀번호 확인
                 </h1>
                 <p className="text-[15px] leading-[1.8] tracking-[-0.03em] text-tx-alt">
@@ -63,7 +63,7 @@ const CorporateVerifyPage = () => {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="h-[48px] w-full rounded-[6px] bg-fill-primary text-[14px] font-bold tracking-[-0.03em] text-white transition hover:bg-[#111111]"
+                className="h-[48px] w-full rounded-[6px] bg-fill-primary text-[14px] font-semibold tracking-[-0.03em] text-white transition hover:bg-[#111111]"
               >
                 로그인 화면으로 이동
               </button>
@@ -71,13 +71,13 @@ const CorporateVerifyPage = () => {
           ) : (
             <>
               <div className="mb-[28px]">
-                <h1 className="mb-[10px] text-[24px] font-bold tracking-[-0.04em] text-tx-default">
+                <h1 className="mb-[10px] text-[24px] font-semibold tracking-[-0.04em] text-tx-default">
                   인증코드 확인
                 </h1>
                 <p className="text-[15px] leading-[1.6] tracking-[-0.03em] text-tx-alt">
                   {email ? (
                     <>
-                      <span className="font-bold text-tx-default">{email}</span>
+                      <span className="font-semibold text-tx-default">{email}</span>
                       <br />
                     </>
                   ) : null}
@@ -89,7 +89,7 @@ const CorporateVerifyPage = () => {
                 <div className="mb-[30px]">
                   <label
                     htmlFor="verify-code"
-                    className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default"
+                    className="mb-[8px] block text-[14px] font-semibold tracking-[-0.03em] text-tx-default"
                   >
                     <span className="mr-[2px] text-rising">*</span>
                     인증코드를 입력해주세요.
@@ -111,7 +111,7 @@ const CorporateVerifyPage = () => {
 
                   {hasCodeError && (
                     <p className="mt-[7px] flex items-center gap-[5px] text-[12px] font-medium tracking-[-0.03em] text-rising">
-                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-rising text-[10px] font-bold text-white">
+                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-rising text-[10px] font-semibold text-white">
                         !
                       </span>
                       인증코드를 입력해주세요.
@@ -120,7 +120,7 @@ const CorporateVerifyPage = () => {
 
                   {errorMessage && (
                     <p className="mt-[7px] flex items-center gap-[5px] text-[12px] font-medium tracking-[-0.03em] text-rising">
-                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-rising text-[10px] font-bold text-white">
+                      <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-rising text-[10px] font-semibold text-white">
                         !
                       </span>
                       {errorMessage}
@@ -131,7 +131,7 @@ const CorporateVerifyPage = () => {
                 <button
                   type="submit"
                   disabled={!isCodeValid || isLoading}
-                  className={`h-[42px] w-full rounded-[6px] text-[14px] font-bold tracking-[-0.03em] transition ${
+                  className={`h-[42px] w-full rounded-[6px] text-[14px] font-semibold tracking-[-0.03em] transition ${
                     isCodeValid && !isLoading
                       ? "bg-fill-primary text-white hover:bg-[#111111]"
                       : "cursor-not-allowed bg-surface-base text-icon-alt"

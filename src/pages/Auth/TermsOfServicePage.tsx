@@ -31,7 +31,7 @@ const TermsOfServicePage = () => {
       <main className="flex flex-1 justify-center px-5 py-[56px]">
         <section className="w-full max-w-[720px]">
           <div className="mb-[28px]">
-            <h1 className="mb-[10px] text-[24px] font-bold tracking-[-0.04em] text-tx-default">
+            <h1 className="mb-[10px] text-[24px] font-semibold tracking-[-0.04em] text-tx-default">
               fedit 서비스 이용약관
             </h1>
             <p className="text-[14px] leading-[1.7] tracking-[-0.03em] text-tx-alt">
@@ -753,7 +753,7 @@ const TermsOfServicePage = () => {
             <button
               type="button"
               onClick={handleBack}
-              className="h-[46px] flex-1 rounded-[7px] border border-line-alt bg-white text-[14px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
+              className="h-[46px] flex-1 rounded-[7px] border border-line-alt bg-white text-[14px] font-semibold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
             >
               이전으로
             </button>
@@ -761,7 +761,7 @@ const TermsOfServicePage = () => {
             <button
               type="button"
               onClick={handleAgree}
-              className="h-[46px] flex-1 rounded-[7px] bg-fill-primary text-[14px] font-bold tracking-[-0.03em] text-white transition hover:bg-[#111111]"
+              className="h-[46px] flex-1 rounded-[7px] bg-fill-primary text-[14px] font-semibold tracking-[-0.03em] text-white transition hover:bg-[#111111]"
             >
               동의하고 돌아가기
             </button>
@@ -782,7 +782,7 @@ const Chapter = ({
   children: React.ReactNode;
 }) => (
   <section className="mt-[44px]">
-    <h2 className="mb-[20px] border-b border-line-divider pb-[10px] text-[18px] font-bold tracking-[-0.03em] text-tx-default">
+    <h2 className="mb-[20px] border-b border-line-divider pb-[10px] text-[18px] font-semibold tracking-[-0.03em] text-tx-default">
       {title}
     </h2>
     <div className="flex flex-col gap-[28px]">{children}</div>
@@ -798,7 +798,7 @@ const Article = ({
 }) => (
   <article>
     {title && (
-      <h3 className="mb-[10px] text-[15px] font-bold tracking-[-0.03em] text-tx-default">
+      <h3 className="mb-[10px] text-[15px] font-semibold tracking-[-0.03em] text-tx-default">
         {title}
       </h3>
     )}
@@ -834,7 +834,7 @@ const Quote = ({
   children: React.ReactNode;
 }) => (
   <div className="rounded-[8px] bg-surface-base px-[16px] py-[12px] text-[12px] leading-[1.7] text-icon-neutral">
-    {title && <p className="mb-[4px] font-bold text-tx-alt">{title}</p>}
+    {title && <p className="mb-[4px] font-semibold text-tx-alt">{title}</p>}
     {children}
   </div>
 );
@@ -853,7 +853,7 @@ const Table = ({
           {headers.map((header) => (
             <th
               key={header}
-              className="border-b border-line-divider px-[12px] py-[10px] text-left font-bold text-tx-default"
+              className="border-b border-line-divider px-[12px] py-[10px] text-left font-semibold text-tx-default"
             >
               {header}
             </th>
@@ -881,7 +881,7 @@ const InfoTable = ({ rows }: { rows: string[][] }) => (
       <tbody>
         {rows.map((row, i) => (
           <tr key={i} className={i !== rows.length - 1 ? "border-b border-surface-base" : ""}>
-            <th className="w-[120px] bg-surface-base px-[14px] py-[10px] text-left font-bold text-tx-default">
+            <th className="w-[120px] bg-surface-base px-[14px] py-[10px] text-left font-semibold text-tx-default">
               {row[0]}
             </th>
             <td className="px-[14px] py-[10px] text-tx-alt">{row[1]}</td>

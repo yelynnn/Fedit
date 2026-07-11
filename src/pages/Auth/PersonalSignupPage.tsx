@@ -108,7 +108,7 @@ const PersonalSignupPage = () => {
       <main className="flex flex-1 justify-center px-5 pt-[74px] pb-[60px]">
         <section className="w-full max-w-[458px]">
           <div className="mb-[38px]">
-            <h1 className="text-[24px] font-bold leading-[1.35] tracking-[-0.04em] text-tx-default">
+            <h1 className="text-[24px] font-semibold leading-[1.35] tracking-[-0.04em] text-tx-default">
               회원님의 정보에 맞춰
               <br />
               트렌드와 리포트를 최적화해드려요.
@@ -161,7 +161,7 @@ const PersonalSignupPage = () => {
             <button
               type="button"
               onClick={handlePrev}
-              className="h-[42px] rounded-[7px] border border-line-alt bg-white text-[14px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
+              className="h-[42px] rounded-[7px] border border-line-alt bg-white text-[14px] font-semibold tracking-[-0.03em] text-tx-default transition hover:bg-fill-bg-strong"
             >
               이전
             </button>
@@ -170,7 +170,7 @@ const PersonalSignupPage = () => {
               type="button"
               disabled={!isFormValid}
               onClick={handleNext}
-              className={`h-[42px] rounded-[7px] text-[14px] font-bold tracking-[-0.03em] transition ${
+              className={`h-[42px] rounded-[7px] text-[14px] font-semibold tracking-[-0.03em] transition ${
                 isFormValid
                   ? "bg-fill-primary text-white hover:bg-[#111111]"
                   : "cursor-not-allowed bg-surface-base text-icon-alt"
@@ -208,7 +208,7 @@ const InputField = ({
 }: InputFieldProps) => {
   return (
     <div>
-      <label className="mb-[8px] block text-[14px] font-bold tracking-[-0.03em] text-tx-default">
+      <label className="mb-[8px] block text-[14px] font-semibold tracking-[-0.03em] text-tx-default">
         <span className="mr-[2px] text-rising">*</span>
         {label}
       </label>

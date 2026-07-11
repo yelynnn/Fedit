@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useTypeStore } from "@/stores/TypeStore";
-import naverIcon from "@/assets/naverIcon.png";
-import musinsaIcon from "@/assets/musinsaIcon.png";
-import wconceptIcon from "@/assets/wconceptIcon.png";
+import naverIcon from "@/assets/brand/naverIcon.png";
+import musinsaIcon from "@/assets/brand/musinsaIcon.png";
+import wconceptIcon from "@/assets/brand/wconceptIcon.png";
 import MonthModal from "./modal/MonthModal";
 
 function getImageByTitle(title: string) {

@@ -1,6 +1,6 @@
-import vogue from "@/assets/vogue.png";
-import W from "@/assets/W.png";
-import allure from "@/assets/allure.png";
+import vogue from "@/assets/magazine/vogue.png";
+import W from "@/assets/brand/W.png";
+import allure from "@/assets/magazine/allure.png";
 import SingleChart from "../chart/SingleChart";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEffect, useState } from "react";

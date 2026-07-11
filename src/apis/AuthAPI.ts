@@ -101,9 +101,80 @@ const PostCorporateSignupConfirm = async (
   }
 };
 
+const PatchChangePassword = async (
+  currentPassword: string,
+  newPassword: string,
+  newPasswordConfirm: string,
+) => {
+  try {
+    const res = await axiosInstance.patch("/my/password", {
+      currentPassword,
+      newPassword,
+      newPasswordConfirm,
+    });
+    return res.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+      throw new Error(data?.message || "비밀번호 변경에 실패했습니다.");
+    }
+    throw new Error("서버에 연결할 수 없습니다.");
+  }
+};
+
+const PostLogout = async () => {
+  try {
+    const res = await axiosInstance.post("/auth/logout");
+    return res.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+      throw new Error(data?.message || "로그아웃에 실패했습니다.");
+    }
+    throw new Error("서버에 연결할 수 없습니다.");
+  }
+};
+
+export interface Me {
+  name: string;
+  email: string;
+}
+
+const GetMe = async (): Promise<Me> => {
+  try {
+    const res = await axiosInstance.get("/auth/me");
+    return res.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+      throw new Error(data?.message || "회원 정보를 불러오지 못했습니다.");
+    }
+    throw new Error("서버에 연결할 수 없습니다.");
+  }
+};
+
+const DeleteWithdraw = async (feedback: string[]) => {
+  try {
+    const res = await axiosInstance.delete("/auth/withdraw", {
+      data: { feedback },
+    });
+    return res.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+      throw new Error(data?.message || "회원 탈퇴에 실패했습니다.");
+    }
+    throw new Error("서버에 연결할 수 없습니다.");
+  }
+};
+
 export {
   PostPersonalSignup,
   PostCorporateAuthRequest,
   PostCorporateSignupConfirm,
   PostLogin,
+  PatchChangePassword,
+  PostLogout,
+  DeleteWithdraw,
+  GetMe,
 };

@@ -75,7 +75,7 @@ const LoginPage = () => {
           </div>
 
           <div className="mb-[26px]">
-            <h1 className="mb-2 text-[22px] font-bold tracking-[-0.04em]">
+            <h1 className="mb-2 text-[22px] font-semibold tracking-[-0.04em]">
               FEDIT {isActivePersonal ? "개인 회원" : "기업 회원"} 로그인
             </h1>
 
@@ -88,7 +88,7 @@ const LoginPage = () => {
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="login-id"
-                className="text-[13px] font-bold text-tx-default"
+                className="text-[13px] font-semibold text-tx-default"
               >
                 <span className="mr-[2px] text-rising">*</span>
                 이메일
@@ -107,7 +107,7 @@ const LoginPage = () => {
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="login-password"
-                className="text-[13px] font-bold text-tx-default"
+                className="text-[13px] font-semibold text-tx-default"
               >
                 <span className="mr-[2px] text-rising">*</span>
                 비밀번호
