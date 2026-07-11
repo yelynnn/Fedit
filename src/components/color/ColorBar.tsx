@@ -46,7 +46,7 @@ export default function ColorBar({ title, brand, data, onClose }: ColorBarProps)
       <div className="flex flex-col w-full p-4 overflow-hidden bg-fill-bg-strong rounded-xl">
         {/* 헤더 영역 */}
         <div className="flex items-center justify-between px-2 mb-4">
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           {onClose && (
             <button
               onClick={onClose}
@@ -82,7 +82,7 @@ export default function ColorBar({ title, brand, data, onClose }: ColorBarProps)
                   className="w-5 h-5 border border-gray-100 rounded-full shadow-sm"
                   style={{ backgroundColor: item.fill }}
                 />
-                <span className="text-sm font-bold text-tx-default">
+                <span className="text-sm font-semibold text-tx-default">
                   {item.name}
                 </span>
               </div>
@@ -94,7 +94,7 @@ export default function ColorBar({ title, brand, data, onClose }: ColorBarProps)
 
                 <button
                   onClick={() => handleRelatedItemClick(item.fill)}
-                  className="px-2 py-1 bg-surface-base rounded-lg text-xs font-bold text-tx-alt hover:bg-gray-50 transition-all"
+                  className="px-2 py-1 bg-surface-base rounded-lg text-xs font-semibold text-tx-alt hover:bg-gray-50 transition-all"
                 >
                   관련 아이템
                 </button>

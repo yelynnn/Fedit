@@ -122,7 +122,7 @@ export default function BoardsPage() {
               <Icon icon="lucide:arrow-left" className="w-5 h-5 text-tx-default" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-tx-strong">{selectedBoard.name}</h1>
+              <h1 className="text-2xl font-semibold text-tx-strong">{selectedBoard.name}</h1>
               <p className="text-sm text-tx-assistive">상품 {boardItems.length}개</p>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function BoardsPage() {
         </div>
       ) : (
         <div>
-          <h1 className="text-2xl font-bold text-tx-strong mb-6">내 보드</h1>
+          <h1 className="text-2xl font-semibold text-tx-strong mb-6">내 보드</h1>
 
           {boards.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-tx-assistive">
@@ -203,7 +203,7 @@ export default function BoardsPage() {
                     </button>
                   </div>
                   <div className="mt-3">
-                    <p className="font-bold text-tx-strong">{board.name}</p>
+                    <p className="font-semibold text-tx-strong">{board.name}</p>
                     <p className="text-sm text-tx-assistive">상품 {board.itemCount}개</p>
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function BoardsPage() {
           <div className="absolute inset-0 bg-black/30" onClick={() => setEditBoard(null)} />
           <div className="relative bg-white rounded-2xl p-8 w-full max-w-[400px] shadow-xl">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-tx-default">보드 수정</h2>
+              <h2 className="text-xl font-semibold text-tx-default">보드 수정</h2>
               <button onClick={() => setEditBoard(null)}>
                 <Icon icon="material-symbols:close" className="w-6 h-6 text-tx-assistive hover:text-black transition-colors" />
               </button>
@@ -236,7 +236,7 @@ export default function BoardsPage() {
             <button
               onClick={handleEditSave}
               disabled={!editName.trim()}
-              className={`w-full py-3 rounded-xl font-bold text-base transition-colors mb-3 ${
+              className={`w-full py-3 rounded-xl font-semibold text-base transition-colors mb-3 ${
                 editName.trim() ? "bg-fill-primary text-white hover:bg-black cursor-pointer" : "bg-surface-base text-tx-assistive cursor-not-allowed"
               }`}
             >
@@ -244,7 +244,7 @@ export default function BoardsPage() {
             </button>
             <button
               onClick={handleDeleteBoard}
-              className="w-full py-3 rounded-xl font-bold text-base text-status-error border border-[#FEE4E2] hover:bg-rising-bg transition-colors"
+              className="w-full py-3 rounded-xl font-semibold text-base text-status-error border border-[#FEE4E2] hover:bg-rising-bg transition-colors"
             >
               보드 삭제
             </button>

@@ -6,7 +6,7 @@ function MainKeywordBox({ title, keywords }: KeywordBox) {
     <section
       className={`flex flex-col ${title === "키워드 순위" ? "w-40" : "w-50"}`}
     >
-      <header className="text-sm font-bold">{title}</header>
+      <header className="text-sm font-semibold">{title}</header>
       <div className="w-full h-[1px] bg-[#A6A4B2] mt-1 my-2"></div>
       <div className="flex flex-col gap-2">
         {keywords.map((item) => (

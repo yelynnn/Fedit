@@ -5,7 +5,7 @@ const LoginHeader = () => {
     <header className="flex h-[48px] items-center border-b border-line-divider px-[56px]">
       <Link
         to="/"
-        className="flex items-center text-[20px] font-extrabold tracking-[-0.04em]"
+        className="flex items-center text-[20px] font-semibold tracking-[-0.04em]"
       >
         <img src={feditLogo} alt="FEDIT" className="h-[22px] w-auto" />
       </Link>

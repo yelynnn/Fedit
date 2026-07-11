@@ -9,7 +9,7 @@ const BRAND_SET = new Set<string>(Object.values(brandData).flat());
 export const useFilterStore = create<FilterStore>()(
   persist(
     (set) => ({
-      selectedTab: "대시보드",
+      selectedTab: "실시간 랭킹",
       selectedColors: [],
       selectedGenders: [],
       selectedTypes: [],
@@ -49,6 +49,14 @@ export const useFilterStore = create<FilterStore>()(
     }),
     {
       name: "filter-storage",
+      version: 1,
+      migrate: (persistedState) => {
+        const state = persistedState as { selectedTab?: string } | undefined;
+        if (state?.selectedTab === "대시보드") {
+          state.selectedTab = "실시간 랭킹";
+        }
+        return state;
+      },
     }
   )
 );

@@ -13,7 +13,7 @@ const SignupSelectPage = () => {
       <main className="flex flex-1 justify-center px-5 pt-[110px]">
         <section className="w-full max-w-[520px]">
           <div className="mb-[40px]">
-            <h1 className="mb-[10px] text-[26px] font-bold tracking-[-0.04em] text-tx-default">
+            <h1 className="mb-[10px] text-[26px] font-semibold tracking-[-0.04em] text-tx-default">
               어떤 계정으로 시작할까요?
             </h1>
             <p className="text-[16px] font-medium tracking-[-0.03em] text-tx-alt">
@@ -25,7 +25,7 @@ const SignupSelectPage = () => {
             <button
               type="button"
               onClick={() => navigate("/signup/personal")}
-              className="flex h-[106px] w-full items-center justify-center gap-[14px] rounded-[10px] bg-surface-base text-[18px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-surface-base"
+              className="flex h-[106px] w-full items-center justify-center gap-[14px] rounded-[10px] bg-surface-base text-[18px] font-semibold tracking-[-0.03em] text-tx-default transition hover:bg-surface-base"
             >
               <User size={24} fill="#333333" strokeWidth={2.2} />
               개인 회원으로 가입하기
@@ -34,7 +34,7 @@ const SignupSelectPage = () => {
             <button
               type="button"
               onClick={() => navigate("/signup/company")}
-              className="flex h-[106px] w-full items-center justify-center gap-[14px] rounded-[10px] bg-surface-base text-[18px] font-bold tracking-[-0.03em] text-tx-default transition hover:bg-surface-base"
+              className="flex h-[106px] w-full items-center justify-center gap-[14px] rounded-[10px] bg-surface-base text-[18px] font-semibold tracking-[-0.03em] text-tx-default transition hover:bg-surface-base"
             >
               <Building2 size={24} strokeWidth={2.2} />
               기업 회원으로 가입하기

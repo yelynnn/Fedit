@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Icon } from "@iconify/react";
 import TrendIndexBox from "../product/TrendIndexBox";
 import dayjs from "dayjs";
@@ -25,6 +25,11 @@ export default function RankBox() {
     useState<RankingItemDetailResponse | null>(null);
   const [similarCurrentPage, setSimilarCurrentPage] = useState(1);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const detailPanelRef = useRef<HTMLDivElement>(null);
+  const trendListRef = useRef<HTMLUListElement>(null);
+  const [thumbTop, setThumbTop] = useState(0);
+  const [showThumb, setShowThumb] = useState(false);
+  const TREND_THUMB_HEIGHT = 100;
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
   const ITEMS_PER_PAGE = 6;
   const relatedItems = itemDetail?.related_items ?? [];
@@ -36,6 +41,24 @@ export default function RankBox() {
   );
   const MOCK_DATE_LIST = ["2026-01", "2026-02"];
 
+  const updateTrendThumb = () => {
+    const el = trendListRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    if (scrollHeight <= clientHeight) {
+      setShowThumb(false);
+      return;
+    }
+    setShowThumb(true);
+    const maxThumbTop = Math.max(clientHeight - TREND_THUMB_HEIGHT, 0);
+    const scrollRatio = scrollTop / (scrollHeight - clientHeight);
+    setThumbTop(Math.min(maxThumbTop, Math.max(0, scrollRatio * maxThumbTop)));
+  };
+
+  useEffect(() => {
+    updateTrendThumb();
+  }, [rankingList]);
+
   useEffect(() => {
     const activeItem = rankingList.find((item) => item.rank === activeRank);
     if (!activeItem) return;
@@ -46,6 +69,10 @@ export default function RankBox() {
       .catch(console.error)
       .finally(() => setIsDetailLoading(false));
   }, [activeRank, rankingList]);
+
+  useEffect(() => {
+    if (detailPanelRef.current) detailPanelRef.current.scrollTop = 0;
+  }, [activeRank]);
 
   useEffect(() => {
     GetDashboardRanking({
@@ -163,48 +190,68 @@ export default function RankBox() {
 
       <div className="flex bg-white border border-gray-200 rounded-[24px] overflow-hidden h-[757px] shadow-sm">
         <div className="flex flex-col flex-shrink-0 border-r border-gray-200 w-85">
-          <div className="flex items-center justify-center text-sm font-bold text-center text-[#6F7173] border-b border-gray-200 h-9">
+          <div className="flex items-center justify-center text-sm font-semibold text-center text-[#6F7173] border-b border-gray-200 h-9">
             트렌드 항목
           </div>
-          <ul className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {rankingList.map((item, index) => {
-              const isActive = activeRank === item.rank;
-              return (
-                <li
-                  key={item.itemcode}
-                  onClick={() => setActiveRank(item.rank)}
-                  className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
-                    isActive
-                      ? "border-b border-[#E4E4E4] bg-[#F4FFEE]"
-                      : "border-b border-gray-100 hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="relative flex-shrink-0 w-18 h-18">
-                    <img
-                      src={item.thumbnail}
-                      alt={item.product_name}
-                      className="object-cover w-full h-full border border-gray-200 rounded-sm"
-                    />
-                    <div className="absolute top-0 left-0 flex items-center justify-center w-[19px] h-[19px] bg-[#242628] rounded text-[12px] font-medium leading-[133%] text-white">
-                      {index + 1}
+          <div className="relative flex-1 overflow-hidden">
+            <ul
+              ref={trendListRef}
+              onScroll={updateTrendThumb}
+              className="h-full overflow-y-auto hide-scrollbar"
+            >
+              {rankingList.map((item, index) => {
+                const isActive = activeRank === item.rank;
+                return (
+                  <li
+                    key={item.itemcode}
+                    onClick={() => setActiveRank(item.rank)}
+                    className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
+                      isActive
+                        ? "border-b border-[#E4E4E4] bg-[#F4FFEE]"
+                        : "border-b border-gray-100 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="relative flex-shrink-0 w-18 h-18">
+                      <img
+                        src={item.thumbnail}
+                        alt={item.product_name}
+                        className="object-cover w-full h-full border border-gray-200 rounded-sm"
+                      />
+                      <div className="absolute top-0 left-0 flex items-center justify-center w-[19px] h-[19px] bg-[#242628] rounded text-[12px] font-medium leading-[133%] text-white">
+                        {index + 1}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex flex-col gap-0.5 overflow-hidden">
-                    <span className="overflow-hidden text-[12px] font-medium leading-[133%] text-[#6F7173] text-ellipsis truncate">
-                      {item.brand}
-                    </span>
-                    <span className="overflow-hidden text-[14px] font-semibold leading-[143%] tracking-[-0.07px] text-[#3D3F41] text-ellipsis line-clamp-2">
-                      {item.product_name}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                    <div className="flex flex-col gap-0.5 overflow-hidden">
+                      <span className="overflow-hidden text-[12px] font-medium leading-[133%] text-[#6F7173] text-ellipsis truncate">
+                        {item.brand}
+                      </span>
+                      <span className="overflow-hidden text-[14px] font-semibold leading-[143%] tracking-[-0.07px] text-[#3D3F41] text-ellipsis line-clamp-2">
+                        {item.product_name}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {showThumb && (
+              <div
+                className="absolute pointer-events-none right-1 rounded-xl"
+                style={{
+                  width: 8,
+                  height: TREND_THUMB_HEIGHT,
+                  top: thumbTop,
+                  background: "rgba(11, 14, 15, 0.08)",
+                }}
+              />
+            )}
+          </div>
         </div>
 
-        <div className="relative flex-1 py-5 px-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div
+          ref={detailPanelRef}
+          className="relative flex-1 py-3 px-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        >
           {isDetailLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/70 backdrop-blur-[2px]">
               <div className="border-2 border-gray-200 rounded-full w-7 h-7 border-t-gray-700 animate-spin" />
@@ -242,7 +289,7 @@ export default function RankBox() {
                 icon="tabler:capture-filled"
                 className="w-5 h-5 text-gray-700"
               />
-              <h3 className="text-base font-bold text-gray-800">
+              <h3 className="text-base font-semibold text-gray-800">
                 디테일 유사 아이템
               </h3>
             </div>

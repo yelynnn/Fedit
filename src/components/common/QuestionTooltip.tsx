@@ -1,5 +1,5 @@
 import { useState } from "react";
-import helpSmall from "@/assets/helpSmall.png";
+import helpSmall from "@/assets/etc/helpSmall.png";
 import { Icon } from "@iconify/react";
 
 interface QuestionTooltipProps {
@@ -35,7 +35,7 @@ function QuestionTooltip({ label, infoText }: QuestionTooltipProps) {
             <span className="text-sm font-semibold">도움말</span>
           </div>
 
-          <p className="text-sm font-semibold text-white leading-[22px] whitespace-pre-line">
+          <p className="text-sm font-semibold text-white whitespace-pre-line">
             {infoText}
           </p>
 

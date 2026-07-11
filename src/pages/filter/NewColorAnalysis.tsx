@@ -127,7 +127,7 @@ function NewColorAnalysis() {
                 className="w-4 h-4 text-tx-neutral"
               />
             </div>
-            <header className="text-xl font-bold tracking-tight text-tx-neutral">
+            <header className="text-xl font-semibold tracking-tight text-tx-neutral">
               색상 비중 비교
             </header>
           </div>

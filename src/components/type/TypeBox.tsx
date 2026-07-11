@@ -16,7 +16,7 @@ function TypeBox({ title, chartData, rows }: TypeBoxProps) {
 
   return (
     <div className="w-90 p-6 rounded-2xl bg-surface-base">
-      <header className="text-tx-strong text-base font-bold">{title}</header>
+      <header className="text-tx-strong text-base font-semibold">{title}</header>
       <TypeChart chartData={chartData} />
       <div className="w-full max-w-xs text-s1">
         <table className="w-full text-left">

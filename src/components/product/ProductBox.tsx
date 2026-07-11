@@ -61,7 +61,7 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
         </span>
 
         {/* 4. 가격 */}
-        <span className="text-base font-bold text-tx-default">
+        <span className="text-base font-semibold text-tx-default">
           {formatPrice(product.current_price)}
         </span>
 

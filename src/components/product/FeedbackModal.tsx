@@ -62,7 +62,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit, fixed = false
       />
       <div className="relative w-full max-w-[440px] bg-white rounded-2xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-line-divider">
         <div className="flex items-start justify-between mb-2">
-          <h2 className="text-xl font-bold text-tx-default">
+          <h2 className="text-xl font-semibold text-tx-default">
             아쉬웠던 점을 선택해주세요.
           </h2>
           <button
@@ -122,7 +122,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit, fixed = false
                 <Icon icon="lucide:check" className="w-4 h-4 text-white" />
               )}
             </div>
-            <span className="text-tx-default text-sm font-bold">직접 입력</span>
+            <span className="text-tx-default text-sm font-semibold">직접 입력</span>
           </label>
         </div>
 
@@ -140,7 +140,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit, fixed = false
         <button
           disabled={!isSubmitEnabled}
           onClick={handleSubmit}
-          className={`w-full mt-8 h-10 rounded-xl font-bold transition-colors ${
+          className={`w-full mt-8 h-10 rounded-xl font-semibold transition-colors ${
             isSubmitEnabled
               ? "bg-fill-primary text-white cursor-pointer hover:bg-black"
               : "bg-surface-base text-tx-assistive cursor-not-allowed"

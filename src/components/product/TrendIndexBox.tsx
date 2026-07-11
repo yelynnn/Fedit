@@ -97,7 +97,7 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
     return (
       <div className="box-border w-full p-4 rounded-xl bg-fill-bg-strong">
         <div className="flex items-center gap-1 mb-2">
-          <span className="text-base font-bold text-tx-neutral">{title}</span>
+          <span className="text-base font-semibold text-tx-neutral">{title}</span>
           <Icon
             icon="ph:question"
             className="w-4 h-4 cursor-pointer text-icon-alt"
@@ -117,13 +117,13 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
-          <span className="text-base font-bold text-[#151515] whitespace-nowrap">
+          <span className="text-base font-semibold text-[#151515] whitespace-nowrap">
             {displayValue}
           </span>
           {/* isPlatform true일 때만 주황 뱃지 표시 */}
           {isPlatform && (
             <div className="px-1.5 py-0.5 bg-data-orange-light rounded-md">
-              <span className="text-[11px] font-semibold text-status-warning whitespace-nowrap">
+              <span className="text-[12px] font-semibold text-status-warning whitespace-nowrap">
                 {displayCompareText}
               </span>
             </div>
@@ -141,7 +141,7 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
             return (
               <div key={idx} className="flex flex-wrap items-center gap-1.5">
                 <div
-                  className={`px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap ${
+                  className={`px-2 py-1 rounded-md text-[12px] font-semibold whitespace-nowrap ${
                     isGray
                       ? "bg-surface-base text-tx-alt"
                       : "bg-falling-bg text-data-blue"
@@ -152,7 +152,7 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
                     : badgeText}
                 </div>
                 {extraValues && extraValues[idx] != null && (
-                  <span className="text-sm font-bold text-[#151515] whitespace-nowrap">
+                  <span className="text-sm font-semibold text-[#151515] whitespace-nowrap">
                     {extraValues[idx]}
                   </span>
                 )}

@@ -298,7 +298,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between ">
                   <div className="flex flex-col gap-1">
-                    <span className="text-sm font-bold text-tx-default">
+                    <span className="text-sm font-semibold text-tx-default">
                       {detailData.brand || "-"}
                     </span>
                     <div className="text-xs text-tx-assistive mb-4">
@@ -372,7 +372,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                         {formatPrice(detailData.regular_price)}
                       </span>
                     )}
-                    <span className="text-base font-bold text-tx-default">
+                    <span className="text-base font-semibold text-tx-default">
                       {formatPrice(detailData.current_price)}
                     </span>
                   </div>
@@ -380,7 +380,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                   <div className="w-[1px] h-4 bg-line-alt" />
 
                   <div className="flex items-center gap-2">
-                    <span className="bg-line-divider px-2 py-1 rounded text-[11px] font-bold text-tx-alt">
+                    <span className="bg-line-divider px-2 py-1 rounded text-[11px] font-semibold text-tx-alt">
                       성별
                     </span>
                     <span className="text-xs font-medium text-tx-default">
@@ -391,7 +391,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                   <div className="w-[1px] h-4 bg-line-alt" />
 
                   <div className="flex items-center gap-2">
-                    <span className="bg-line-divider px-2 py-1 rounded text-[11px] font-bold text-tx-alt">
+                    <span className="bg-line-divider px-2 py-1 rounded text-[11px] font-semibold text-tx-alt">
                       신상 업데이트
                     </span>
                     <span className="text-xs font-medium text-tx-default">
@@ -402,13 +402,13 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
 
                 <div className="flex gap-2 mt-2 mb-6">
                   {detailData.views && (
-                    <div className="px-3 py-1.5 bg-falling-bg text-[#3E7EFF] text-xs font-bold rounded-lg">
+                    <div className="px-3 py-1.5 bg-falling-bg text-[#3E7EFF] text-xs font-semibold rounded-lg">
                       누적조회수{" "}
                       {Number(detailData.views).toLocaleString("ko-KR")}
                     </div>
                   )}
                   {detailData.sales != 1 && (
-                    <div className="px-3 py-1.5 bg-data-orange-light text-status-warning text-xs font-bold rounded-lg">
+                    <div className="px-3 py-1.5 bg-data-orange-light text-status-warning text-xs font-semibold rounded-lg">
                       누적판매{" "}
                       {Number(detailData.sales).toLocaleString("ko-KR")}
                     </div>
@@ -467,7 +467,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
             <img src={toast.imageUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
           )}
           <span className="text-sm font-semibold whitespace-nowrap">
-            <span className="font-bold">{toast.boardName}</span>에 저장됨
+            <span className="font-semibold">{toast.boardName}</span>에 저장됨
           </span>
           <button
             onClick={handleUndoSave}
@@ -483,7 +483,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
           <div className="absolute inset-0 bg-black/30" onClick={closeCreateBoard} />
           <div className="relative bg-white rounded-2xl p-8 w-full max-w-[400px] shadow-xl">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-tx-default">보드 만들기</h2>
+              <h2 className="text-xl font-semibold text-tx-default">보드 만들기</h2>
               <button onClick={closeCreateBoard}>
                 <Icon icon="material-symbols:close" className="w-6 h-6 text-tx-assistive hover:text-black transition-colors" />
               </button>
@@ -503,7 +503,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
             <button
               onClick={handleCreateBoard}
               disabled={!newBoardName.trim() || isCreatingBoard}
-              className={`w-full py-3 rounded-xl font-bold text-base transition-colors ${
+              className={`w-full py-3 rounded-xl font-semibold text-base transition-colors ${
                 newBoardName.trim() && !isCreatingBoard ? "bg-fill-primary text-white hover:bg-black cursor-pointer" : "bg-surface-base text-tx-assistive cursor-not-allowed"
               }`}
             >

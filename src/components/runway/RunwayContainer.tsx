@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import vogueIcon from "../../assets/vogue.png";
-import elleIcon from "../../assets/elle.png";
-import wIcon from "../../assets/W.png";
-import bazaarIcon from "../../assets/bazaar.svg";
+import vogueIcon from "../../assets/magazine/vogue.png";
+import elleIcon from "../../assets/magazine/elle.png";
+import wIcon from "../../assets/brand/W.png";
+import bazaarIcon from "../../assets/magazine/bazaar.svg";
 
 // 매거진 아이콘 매핑 (소문자 키로 통일)
 const MAGAZINE_ICONS: Record<string, string> = {
@@ -51,7 +51,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
             <h1 className="text-xl font-semibold">
               {data.brand === "all" ? "" : data.brand} 전반적 분석
             </h1>
-            <span className="bg-falling-bg text-[#3E7EFF] text-xs px-2 py-1 rounded-md font-bold">
+            <span className="bg-falling-bg text-[#3E7EFF] text-xs px-2 py-1 rounded-md font-semibold">
               시즌 분석
             </span>
           </div>
@@ -81,7 +81,7 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
                     className="object-contain w-full h-full"
                   />
                 ) : (
-                  <span className="text-[10px] font-bold uppercase text-tx-neutral">
+                  <span className="text-[10px] font-semibold uppercase text-tx-neutral">
                     {m.name.substring(0, 1)}
                   </span>
                 )}

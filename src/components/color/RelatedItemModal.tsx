@@ -54,7 +54,7 @@ export default function RelatedItemModal({
       <div className="relative w-full max-w-[480px] bg-white rounded-2xl p-8 shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-line-divider">
         {/* 헤더 */}
         <div className="flex items-start justify-between mb-2">
-          <h2 className="text-xl font-bold text-tx-default">
+          <h2 className="text-xl font-semibold text-tx-default">
             해당 컬러 기반 아이템 확인하기
           </h2>
           <button

@@ -47,7 +47,7 @@ const WeekModal: React.FC<WeekModalProps> = ({
       <div className="relative p-6 bg-white shadow-xl rounded-2xl w-[500px] h-[460px] flex flex-col">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-tx-default">기간</h2>
+          <h2 className="text-xl font-semibold text-tx-default">기간</h2>
           <button onClick={onClose} className="p-1 hover:opacity-60">
             <Icon icon="formkit:close" className="h-6 w-8 text-tx-neutral" />
           </button>
@@ -75,7 +75,7 @@ const WeekModal: React.FC<WeekModalProps> = ({
           <div className="flex flex-col gap-6 pt-2">
             {monthsInYear.map((month) => (
               <div key={month} className="flex flex-col gap-2">
-                <h3 className="text-base font-bold text-tx-default">
+                <h3 className="text-base font-semibold text-tx-default">
                   {month}월
                 </h3>
 

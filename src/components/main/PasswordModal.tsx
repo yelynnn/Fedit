@@ -76,7 +76,7 @@ export default function PasswordModal({ isOpen, onClose }: Props) {
 
       <div className="relative flex flex-col p-6 bg-white shadow-xl outline-none h-96 w-125 rounded-xl">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
-          <h2 className="text-xl font-bold text-tx-neutral mb-6">로그인</h2>
+          <h2 className="text-xl font-semibold text-tx-neutral mb-6">로그인</h2>
 
           <label className="flex items-center gap-1 text-base font-semibold text-tx-neutral mb-1">
             <span className={isError ? "text-status-error" : "text-status-error"}>

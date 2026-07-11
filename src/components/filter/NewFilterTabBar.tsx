@@ -13,7 +13,7 @@ import BoardsPage from "@/pages/BoardsPage";
 type TabOption = { label: string; icon: string };
 
 const TAB_OPTIONS: TabOption[] = [
-  { label: "대시보드", icon: "material-symbols:dashboard-rounded" },
+  { label: "실시간 랭킹", icon: "material-symbols:dashboard-rounded" },
   { label: "패션쇼 분석", icon: "material-symbols:dashboard-rounded" },
   { label: "상품 분석", icon: "streamline-plump:tag-alt-solid" },
   { label: "색상 분석", icon: "material-symbols:palette" },
@@ -59,7 +59,7 @@ export function NewFilterTabBar() {
           );
         })}
       </nav>
-      {selectedTab !== "대시보드" && selectedTab !== "내 보드" && (
+      {selectedTab !== "실시간 랭킹" && selectedTab !== "내 보드" && (
         <BrandTab isProductTab={selectedTab === "상품 분석"} />
       )}
     </div>
@@ -70,7 +70,7 @@ export function NewFilterTabPanels() {
   const { selectedTab } = useFilterStore((s) => s);
   return (
     <div className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-      {selectedTab === "대시보드" && <DashBoardPage />}
+      {selectedTab === "실시간 랭킹" && <DashBoardPage />}
       {selectedTab === "패션쇼 분석" && <RunwayPage />}
       {selectedTab === "상품 분석" && <NewProductAnalysis />}
       {selectedTab === "색상 분석" && <NewColorAnalysis />}

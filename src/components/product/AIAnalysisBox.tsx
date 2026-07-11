@@ -84,7 +84,7 @@ export default function AIAnalysisBox({
   return (
     <div className="bg-[#FBFAFF] rounded-xl p-3 mb-4 border border-surface-base">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 font-bold text-gray-800 mb-3 text-sm">
+        <div className="flex items-center gap-1.5 font-semibold text-gray-800 mb-3 text-sm">
           AI 개요 <Icon icon="ph:question" className="w-4 h-4 text-gray-400" />
         </div>
         {isRanking && (

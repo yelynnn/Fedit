@@ -25,7 +25,7 @@ function FilterBar({ setIsBrandOpen }: FilterBarProps) {
 
   return (
     <aside className="relative flex flex-col h-screen px-1 pt-4 overflow-x-hidden overflow-y-auto bg-white hide-scrollbar w-43 border-[#40424B] border-r">
-      <header className="pl-2 mb-2 text-sm font-bold leading-5">필터</header>
+      <header className="pl-2 mb-2 text-sm font-semibold leading-5">필터</header>
       <Icon
         icon="ri:reset-left-line"
         className="absolute text-gray-500 right-3"

@@ -1,9 +1,84 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { useChatStore } from "@/stores/ChatStore";
 import { useUIStore } from "@/stores/UIStore";
+import { useUserStore } from "@/stores/UserStore";
+import {
+  GetCustomerKey,
+  GetSubscription,
+  PostChangePlan,
+  PostCancelSubscription,
+  type PlanType,
+  type Subscription,
+} from "@/apis/BillingAPI";
+import { getTossPayments } from "@/lib/toss";
+import ChangePasswordModal from "@/components/common/ChangePasswordModal";
+import { PostLogout, DeleteWithdraw } from "@/apis/AuthAPI";
 
 type Section = "내정보" | "알림" | "FEDI대화" | "사용가이드" | "FAQ" | "구독";
+
+const PLAN_DEFS: {
+  key: "free" | PlanType;
+  label: string;
+  badge: string | null;
+  originalPrice: string | null;
+  discount: string | null;
+  price: string;
+  sub: string;
+  features: { ok: boolean; text: string }[];
+}[] = [
+  {
+    key: "free",
+    label: "무료 체험",
+    badge: null,
+    originalPrice: null,
+    discount: null,
+    price: "0원",
+    sub: "7일 · Basic 기능 일부 (브랜드 제한)",
+    features: [
+      { ok: true, text: "모니터링 (필터 항목별 2개·무신사)" },
+      { ok: true, text: "키워드 분석 제공" },
+      { ok: false, text: "유형·색상 분석 미지원" },
+    ],
+  },
+  {
+    key: "basic",
+    label: "Basic",
+    badge: "추천",
+    originalPrice: "29,000원",
+    discount: "34% 할인",
+    price: "19,000원",
+    sub: "/월",
+    features: [
+      {
+        ok: true,
+        text: "크롤링 기반 기본 분석 (브랜드 유형별 1개·무신사 포함)",
+      },
+      { ok: true, text: "엑셀 다운로드 월 3회" },
+      { ok: true, text: "플랫폼·키워드 대시보드 제공" },
+      { ok: true, text: "유형·색상 분석 제공" },
+      { ok: true, text: "추가 브랜드 제안 문의 가능" },
+    ],
+  },
+  {
+    key: "pro",
+    label: "Pro",
+    badge: null,
+    originalPrice: "79,000원",
+    discount: "25% 할인",
+    price: "59,000원",
+    sub: "/월",
+    features: [
+      { ok: true, text: "모든 Basic 기능 포함" },
+      { ok: true, text: "엑셀 다운로드 무제한" },
+      { ok: true, text: "패션쇼 분석 제공" },
+      { ok: true, text: "기업별 트렌드 리포트 제공" },
+      { ok: true, text: "AI Agent 기능" },
+    ],
+  },
+];
+
+const PLAN_RANK: Record<"free" | PlanType, number> = { free: 0, basic: 1, pro: 2 };
 
 const NAV_GROUPS: {
   title: string;
@@ -76,14 +151,80 @@ export default function SettingsPage() {
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
-  const userEmail = localStorage.getItem("userEmail") || "example@fedit.com";
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [billingLoading, setBillingLoading] = useState<PlanType | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userEmail");
-    window.location.href = "/login";
+  const userEmail = useUserStore((s) => s.email);
+
+  useEffect(() => {
+    GetSubscription()
+      .then(setSubscription)
+      .catch(() => setSubscription(null))
+      .finally(() => setSubscriptionLoading(false));
+  }, []);
+
+  const currentPlan: "free" | PlanType = subscription?.plan ?? "free";
+
+  const handleSelectPlan = async (plan: PlanType) => {
+    if (plan === currentPlan || billingLoading) return;
+    setBillingLoading(plan);
+    try {
+      if (subscription?.hasBillingKey) {
+        const updated = await PostChangePlan(plan);
+        setSubscription(updated);
+        const label = PLAN_DEFS.find((p) => p.key === plan)?.label ?? plan;
+        alert(`${label} 요금제로 변경되었습니다.`);
+      } else {
+        const customerKey = await GetCustomerKey();
+        const tossPayments = await getTossPayments();
+        const payment = tossPayments.payment({ customerKey });
+        await payment.requestBillingAuth({
+          method: "CARD",
+          windowTarget: "self",
+          successUrl: `${window.location.origin}/billing/success?plan=${plan}`,
+          failUrl: `${window.location.origin}/billing/fail?plan=${plan}`,
+          customerEmail: userEmail,
+        });
+      }
+    } catch (error: any) {
+      alert(error?.message || "결제 처리 중 오류가 발생했습니다.");
+    } finally {
+      setBillingLoading(null);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (isCanceling) return;
+    setIsCanceling(true);
+    try {
+      const updated = await PostCancelSubscription();
+      setSubscription(updated);
+      setShowCancelModal(false);
+    } catch (error: any) {
+      alert(error?.message || "구독 해지에 실패했습니다.");
+    } finally {
+      setIsCanceling(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await PostLogout();
+    } catch {
+      // 서버 로그아웃 실패와 무관하게 로컬 세션은 정리한다.
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("userName");
+      localStorage.removeItem("userEmail");
+      useUserStore.getState().reset();
+      window.location.href = "/login";
+    }
   };
 
   const toggleReason = (r: string) =>
@@ -156,7 +297,7 @@ export default function SettingsPage() {
           {/* FEDIT Pro upgrade card */}
           <div className="w-full shrink-0">
             <div className="flex flex-col items-start self-stretch gap-3 p-3 rounded-xl border border-[#E4E4E4] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.06)]">
-              <p className="text-sm font-bold text-tx-strong">FEDIT Pro</p>
+              <p className="text-sm font-semibold text-tx-strong">FEDIT Pro</p>
               <p className="text-xs leading-relaxed text-tx-alt">
                 무제한 분석과 트렌드 리포트를 확인
               </p>
@@ -188,10 +329,10 @@ export default function SettingsPage() {
             {/* ── 내 정보 ── */}
             {active === "내정보" && (
               <div className="max-w-[560px]">
-                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
                   내 정보
                 </h1>
-                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                   계정 정보와 로그인 방식을 관리해요
                 </p>
 
@@ -218,7 +359,10 @@ export default function SettingsPage() {
                       ••••••••••
                     </p>
                   </div>
-                  <button className="flex h-[34px] px-2 py-1 justify-center items-center gap-1.5 rounded-lg border border-[#E4E4E4] bg-white text-sm font-semibold text-tx-neutral hover:bg-surface-base transition-colors whitespace-nowrap">
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="flex h-[34px] px-2 py-1 justify-center items-center gap-1.5 rounded-lg border border-[#E4E4E4] bg-white text-sm font-semibold text-tx-neutral hover:bg-surface-base transition-colors whitespace-nowrap"
+                  >
                     변경하기
                   </button>
                 </div>
@@ -271,10 +415,10 @@ export default function SettingsPage() {
             {/* ── 알림 ── */}
             {active === "알림" && (
               <div className="max-w-[560px]">
-                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
                   알림
                 </h1>
-                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                   알림을 받을 시점과 방법을 설정하세요
                 </p>
 
@@ -318,10 +462,10 @@ export default function SettingsPage() {
             {/* ── FEDI 채팅 목록 ── */}
             {active === "FEDI대화" && (
               <div className="max-w-[620px]">
-                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
                   FEDI 채팅 목록
                 </h1>
-                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                   총 {conversations.length}개의 대화
                 </p>
 
@@ -433,10 +577,10 @@ export default function SettingsPage() {
             {/* ── AI 사용 가이드 ── */}
             {active === "사용가이드" && (
               <div className="max-w-[600px]">
-                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
                   AI 사용 가이드
                 </h1>
-                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                   주제를 골라 FEDI 활용법을 자세히 알아보세요
                 </p>
 
@@ -491,10 +635,10 @@ export default function SettingsPage() {
             {/* ── FAQ ── */}
             {active === "FAQ" && (
               <div className="max-w-[560px]">
-                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
                   자주 찾는 질문
                 </h1>
-                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                   궁금한 점을 빠르게 해결하세요
                 </p>
 
@@ -610,10 +754,10 @@ export default function SettingsPage() {
             {/* ── 구독 관리 ── */}
             {active === "구독" && (
               <div className="max-w-[680px]">
-                <h1 className="text-2xl font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
                   구독 관리
                 </h1>
-                <p className="text-base font-medium leading-[150%] tracking-[-0.08px] text-[#6F7173] mt-1 mb-6">
+                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                   모든 Fedit 요금제를 살펴보세요
                 </p>
 
@@ -622,153 +766,161 @@ export default function SettingsPage() {
                 </h3>
                 <div className="flex items-center justify-between p-5 bg-[#F9FAFB] border border-line-divider rounded-xl mb-8">
                   <div>
-                    <p className="text-base font-bold text-tx-strong">
-                      무료 체험
-                    </p>
-                    <p className="text-sm text-tx-alt mt-0.5">
-                      14일 동안 Basic 기능 일부 사용 가능한 요금제
-                    </p>
+                    {subscriptionLoading ? (
+                      <>
+                        <div className="w-20 h-5 rounded bg-line-divider animate-pulse" />
+                        <div className="w-40 h-4 mt-2 rounded bg-line-divider animate-pulse" />
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-base font-semibold text-tx-strong">
+                          {PLAN_DEFS.find((p) => p.key === currentPlan)?.label}
+                        </p>
+                        {currentPlan === "free" ? (
+                          <p className="text-sm text-tx-alt mt-0.5">
+                            14일 동안 Basic 기능 일부 사용 가능한 요금제
+                          </p>
+                        ) : subscription?.status === "past_due" ? (
+                          <p className="flex items-center gap-1 mt-0.5 text-sm text-status-error">
+                            <Icon icon="ph:warning-circle" className="w-4 h-4" />
+                            결제에 실패했어요. 카드 정보를 확인해주세요.
+                          </p>
+                        ) : (
+                          <p className="text-sm text-tx-alt mt-0.5">
+                            다음 결제일 {subscription?.nextBillingDate ?? "-"}
+                          </p>
+                        )}
+                      </>
+                    )}
                   </div>
-                  <button className="px-5 py-2 bg-[#111827] text-white text-sm font-semibold rounded-xl hover:bg-black transition-colors">
-                    업그레이드
-                  </button>
+                  {currentPlan !== "pro" && (
+                    <button
+                      onClick={() =>
+                        document
+                          .getElementById("plan-comparison")
+                          ?.scrollIntoView({ behavior: "smooth" })
+                      }
+                      className="px-5 py-2 bg-[#111827] text-white text-sm font-semibold rounded-xl hover:bg-black transition-colors"
+                    >
+                      업그레이드
+                    </button>
+                  )}
                 </div>
 
                 <h3 className="mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
                   모든 요금제 비교하기
                 </h3>
-                <div className="flex overflow-hidden border-t border-line-divider">
-                  {[
-                    {
-                      label: "무료 체험",
-                      badge: null,
-                      originalPrice: null,
-                      discount: null,
-                      price: "0원",
-                      sub: "7일 · Basic 기능 일부 (브랜드 제한)",
-                      features: [
-                        { ok: true, text: "모니터링 (필터 항목별 2개·무신사)" },
-                        { ok: true, text: "키워드 분석 제공" },
-                        { ok: false, text: "유형·색상 분석 미지원" },
-                      ],
-                      btnLabel: "현재 플랜",
-                      isCurrent: true,
-                    },
-                    {
-                      label: "Basic",
-                      badge: "추천",
-                      originalPrice: "29,000원",
-                      discount: "34% 할인",
-                      price: "19,000원",
-                      sub: "/월",
-                      features: [
-                        {
-                          ok: true,
-                          text: "크롤링 기반 기본 분석 (브랜드 유형별 1개·무신사 포함)",
-                        },
-                        { ok: true, text: "엑셀 다운로드 월 3회" },
-                        { ok: true, text: "플랫폼·키워드 대시보드 제공" },
-                        { ok: true, text: "유형·색상 분석 제공" },
-                        { ok: true, text: "추가 브랜드 제안 문의 가능" },
-                      ],
-                      btnLabel: "Basic으로 업그레이드",
-                      isCurrent: false,
-                    },
-                    {
-                      label: "Pro",
-                      badge: null,
-                      originalPrice: "79,000원",
-                      discount: "25% 할인",
-                      price: "59,000원",
-                      sub: "/월",
-                      features: [
-                        { ok: true, text: "모든 Basic 기능 포함" },
-                        { ok: true, text: "엑셀 다운로드 무제한" },
-                        { ok: true, text: "패션쇼 분석 제공" },
-                        { ok: true, text: "기업별 트렌드 리포트 제공" },
-                        { ok: true, text: "AI Agent 기능" },
-                      ],
-                      btnLabel: "Pro로 업그레이드",
-                      isCurrent: false,
-                    },
-                  ].map((plan, index, arr) => (
-                    <div
-                      key={plan.label}
-                      className={`flex flex-col flex-1 ${index === 1 ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
-                      style={{ padding: "20px 16px", gap: 20 }}
-                    >
-                      {/* 플랜명 + 배지 */}
-                      <div className="flex items-center gap-2">
-                        <p className="text-[16px] font-semibold leading-[150%] tracking-[-0.08px] text-[#242628]">
-                          {plan.label}
-                        </p>
-                        {plan.badge && (
-                          <span
-                            className="px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#1A75FF]"
-                            style={{ borderRadius: 4, background: "#EAF2FE" }}
-                          >
-                            {plan.badge}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* 가격 영역 */}
-                      <div className="flex flex-col gap-0.5">
-                        {plan.originalPrice && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs line-through text-[#A1A3A5]">
-                              정가 {plan.originalPrice}
-                            </span>
-                            <span className="text-xs text-[#3E7EFF] font-semibold">
-                              {plan.discount}
-                            </span>
-                          </div>
-                        )}
-                        <p className="text-[24px] font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
-                          {plan.price}
-                          {!plan.isCurrent && (
-                            <span className="text-sm font-medium text-[#6F7173] ml-0.5">
-                              {plan.sub}
+                <div
+                  id="plan-comparison"
+                  className="flex overflow-hidden border-t border-line-divider"
+                >
+                  {PLAN_DEFS.map((plan, index, arr) => {
+                    const isCurrent = plan.key === currentPlan;
+                    const isDowngrade =
+                      PLAN_RANK[plan.key] < PLAN_RANK[currentPlan];
+                    const btnLabel = isCurrent
+                      ? "현재 플랜"
+                      : plan.key === "free"
+                        ? "무료 체험"
+                        : `${plan.label}${isDowngrade ? "로 다운그레이드" : "으로 업그레이드"}`;
+                    const isLoading = billingLoading === plan.key;
+                    return (
+                      <div
+                        key={plan.label}
+                        className={`flex flex-col flex-1 ${index === 1 ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
+                        style={{ padding: "20px 16px", gap: 20 }}
+                      >
+                        {/* 플랜명 + 배지 */}
+                        <div className="flex items-center gap-2">
+                          <p className="text-[16px] font-semibold leading-[150%] tracking-[-0.08px] text-[#242628]">
+                            {plan.label}
+                          </p>
+                          {plan.badge && (
+                            <span
+                              className="px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#1A75FF]"
+                              style={{ borderRadius: 4, background: "#EAF2FE" }}
+                            >
+                              {plan.badge}
                             </span>
                           )}
-                        </p>
-                        {plan.isCurrent && (
-                          <p className="text-[12px] font-medium leading-[133%] text-[#6F7173]">
-                            {plan.sub}
+                        </div>
+
+                        {/* 가격 영역 */}
+                        <div className="flex flex-col gap-0.5">
+                          {plan.originalPrice && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs line-through text-[#A1A3A5]">
+                                정가 {plan.originalPrice}
+                              </span>
+                              <span className="text-xs text-[#3E7EFF] font-semibold">
+                                {plan.discount}
+                              </span>
+                            </div>
+                          )}
+                          <p className="text-[24px] font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
+                            {plan.price}
+                            {!isCurrent && (
+                              <span className="text-sm font-medium text-[#6F7173] ml-0.5">
+                                {plan.sub}
+                              </span>
+                            )}
                           </p>
+                          {isCurrent && (
+                            <p className="text-[12px] font-medium leading-[133%] text-[#6F7173]">
+                              {plan.sub}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* 버튼 */}
+                        <button
+                          disabled={
+                            isCurrent || plan.key === "free" || !!billingLoading
+                          }
+                          onClick={() =>
+                            plan.key !== "free" && handleSelectPlan(plan.key)
+                          }
+                          className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
+                            isCurrent || plan.key === "free"
+                              ? "border border-[#E4E4E4] bg-[#E4E4E4] text-[#A1A3A5] cursor-default"
+                              : "border border-line-divider bg-white text-[#3D3F41] hover:bg-surface-base cursor-pointer disabled:opacity-60 disabled:cursor-default"
+                          }`}
+                        >
+                          {isLoading ? (
+                            <Icon icon="ph:spinner" className="w-4 h-4 animate-spin" />
+                          ) : (
+                            btnLabel
+                          )}
+                        </button>
+
+                        {/* 기능 목록 */}
+                        <ul className="flex flex-col gap-3">
+                          {plan.features.map((f) => (
+                            <li key={f.text} className="flex items-start gap-2">
+                              <Icon
+                                icon={f.ok ? "ph:check" : "ph:x"}
+                                className={`w-4 h-4 flex-shrink-0 mt-0.5 ${f.ok ? "text-[#3D3F41]" : "text-[#A1A3A5]"}`}
+                              />
+                              <span
+                                className={`text-[14px] font-medium leading-[143%] tracking-[-0.07px] ${f.ok ? "text-[#3D3F41]" : "text-[#A1A3A5]"}`}
+                              >
+                                {f.text}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {isCurrent && plan.key !== "free" && (
+                          <button
+                            onClick={() => setShowCancelModal(true)}
+                            className="self-start pt-2 mt-auto text-xs font-medium underline transition-colors text-tx-assistive hover:text-status-error underline-offset-2"
+                          >
+                            구독 해지
+                          </button>
                         )}
                       </div>
-
-                      {/* 버튼 */}
-                      <button
-                        disabled={plan.isCurrent}
-                        className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
-                          plan.isCurrent
-                            ? "border border-[#E4E4E4] bg-[#E4E4E4] text-[#A1A3A5] cursor-default"
-                            : "border border-line-divider bg-white text-[#3D3F41] hover:bg-surface-base cursor-pointer"
-                        }`}
-                      >
-                        {plan.btnLabel}
-                      </button>
-
-                      {/* 기능 목록 */}
-                      <ul className="flex flex-col gap-3">
-                        {plan.features.map((f) => (
-                          <li key={f.text} className="flex items-start gap-2">
-                            <Icon
-                              icon={f.ok ? "ph:check" : "ph:x"}
-                              className={`w-4 h-4 flex-shrink-0 mt-0.5 ${f.ok ? "text-[#3D3F41]" : "text-[#A1A3A5]"}`}
-                            />
-                            <span
-                              className={`text-[14px] font-medium leading-[143%] tracking-[-0.07px] ${f.ok ? "text-[#3D3F41]" : "text-[#A1A3A5]"}`}
-                            >
-                              {f.text}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -787,7 +939,7 @@ export default function SettingsPage() {
           {withdrawStep === "reason" && (
             <div className="relative bg-white rounded-2xl p-8 w-full max-w-[440px] shadow-xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-tx-default">
+                <h2 className="text-xl font-semibold text-tx-default">
                   탈퇴 사유 선택
                 </h2>
                 <button onClick={() => setWithdrawStep(null)}>
@@ -845,7 +997,7 @@ export default function SettingsPage() {
                   if (withdrawReasons.length > 0) setWithdrawStep("confirm");
                 }}
                 disabled={withdrawReasons.length === 0}
-                className={`w-full py-3 rounded-xl font-bold transition-colors ${
+                className={`w-full py-3 rounded-xl font-semibold transition-colors ${
                   withdrawReasons.length > 0
                     ? "bg-status-error text-white hover:bg-red-600 cursor-pointer"
                     : "bg-surface-base text-tx-assistive cursor-not-allowed"
@@ -861,7 +1013,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-center mx-auto mb-4 rounded-full w-14 h-14 bg-rising-bg">
                 <Icon icon="ph:warning" className="w-7 h-7 text-status-error" />
               </div>
-              <h2 className="mb-2 text-xl font-bold text-tx-strong">
+              <h2 className="mb-2 text-xl font-semibold text-tx-strong">
                 정말 탈퇴하시겠어요?
               </h2>
               <p className="mb-8 text-sm leading-relaxed text-tx-alt">
@@ -870,24 +1022,76 @@ export default function SettingsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setWithdrawStep(null)}
-                  className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
+                  disabled={isWithdrawing}
+                  className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base disabled:cursor-not-allowed"
                 >
                   취소
                 </button>
                 <button
-                  onClick={() => {
-                    localStorage.clear();
-                    window.location.href = "/login";
+                  onClick={async () => {
+                    if (isWithdrawing) return;
+                    setIsWithdrawing(true);
+                    try {
+                      await DeleteWithdraw(withdrawReasons);
+                      localStorage.clear();
+                      window.location.href = "/login";
+                    } catch (error: any) {
+                      alert(error?.message || "회원 탈퇴에 실패했습니다.");
+                      setIsWithdrawing(false);
+                    }
                   }}
-                  className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-status-error rounded-xl hover:bg-red-600"
+                  disabled={isWithdrawing}
+                  className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-status-error rounded-xl hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  탈퇴하기
+                  {isWithdrawing ? "탈퇴 처리 중..." : "탈퇴하기"}
                 </button>
               </div>
             </div>
           )}
         </div>
       )}
+
+      {/* ── 구독 해지 모달 ── */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => !isCanceling && setShowCancelModal(false)}
+          />
+          <div className="relative w-full max-w-[380px] p-8 text-center bg-white shadow-xl rounded-2xl">
+            <div className="flex items-center justify-center w-14 h-14 mx-auto mb-4 rounded-full bg-rising-bg">
+              <Icon icon="ph:warning" className="w-7 h-7 text-status-error" />
+            </div>
+            <h2 className="mb-2 text-xl font-semibold text-tx-strong">
+              구독을 해지하시겠어요?
+            </h2>
+            <p className="mb-8 text-sm leading-relaxed text-tx-alt">
+              해지 시 다음 결제일부터 청구가 중단돼요.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCanceling}
+                className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base disabled:cursor-not-allowed"
+              >
+                유지하기
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                disabled={isCanceling}
+                className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-status-error rounded-xl hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCanceling ? "해지 처리 중..." : "해지하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </div>
   );
 }

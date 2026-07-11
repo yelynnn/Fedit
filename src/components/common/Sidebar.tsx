@@ -3,34 +3,23 @@ import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useChatStore } from "@/stores/ChatStore";
 import { useUIStore } from "@/stores/UIStore";
+import { useUserStore } from "@/stores/UserStore";
 import feditLogo from "@/assets/logo/feditLogo.svg";
+import snbLogoButton from "@/assets/logo/SNB_Logo button.svg";
+import profileIcon from "@/assets/etc/profileIcon.svg";
+import foldIcon from "@/assets/etc/fonldIcon.svg";
+import dashboardIcon from "@/assets/etc/dashboardIcon.svg";
+import analysisIcon from "@/assets/etc/analysisIcon.svg";
+import colorIcon from "@/assets/etc/colorIcon.svg";
+import categoryIcon from "@/assets/etc/categoryIcon.svg";
+import runwayIcon from "@/assets/etc/runwayIcon.svg";
 
 const TABS_CONFIG = [
-  {
-    label: "대시보드",
-    activeIcon: "material-symbols:dashboard-rounded",
-    inactiveIcon: "material-symbols:dashboard-outline-rounded",
-  },
-  {
-    label: "상품 분석",
-    activeIcon: "fluent:tag-32-filled",
-    inactiveIcon: "fluent:tag-28-regular",
-  },
-  {
-    label: "색상 분석",
-    activeIcon: "zondicons:color-palette",
-    inactiveIcon: "qlementine-icons:color-swatch-16",
-  },
-  {
-    label: "유형 분석",
-    activeIcon: "ph:chart-pie-slice-fill",
-    inactiveIcon: "ph:chart-pie-slice",
-  },
-  {
-    label: "패션쇼 분석",
-    activeIcon: "ph:dress-fill",
-    inactiveIcon: "ph:dress",
-  },
+  { label: "실시간 랭킹", icon: dashboardIcon },
+  { label: "상품 분석", icon: analysisIcon },
+  { label: "색상 분석", icon: colorIcon },
+  { label: "유형 분석", icon: categoryIcon },
+  { label: "패션쇼 분석", icon: runwayIcon },
 ];
 
 function ConversationItem({
@@ -132,9 +121,13 @@ export default function Sidebar() {
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const [popupPos, setPopupPos] = useState({ bottom: 0, left: 0 });
 
-  const userName = localStorage.getItem("userName") || "사용자명";
-  const userEmail = localStorage.getItem("userEmail") || "";
-  const userInitial = userName.charAt(0).toUpperCase();
+  const { name, email, fetchMe } = useUserStore((s) => s);
+  const userName = name || "사용자명";
+  const userEmail = email;
+
+  useEffect(() => {
+    fetchMe();
+  }, [fetchMe]);
 
   const recentConversations = [...conversations]
     .sort((a, b) => b.updatedAt - a.updatedAt)
@@ -163,6 +156,7 @@ export default function Sidebar() {
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("userName");
     localStorage.removeItem("userEmail");
+    useUserStore.getState().reset();
     window.location.href = "/login";
   };
 
@@ -184,47 +178,46 @@ export default function Sidebar() {
     >
       {/* 로고 영역 */}
       <div
-        className={`flex items-center px-5 py-6 flex-shrink-0 ${isCollapsed ? "flex-col gap-2" : "justify-between"}`}
+        className={`flex items-center px-5 pt-3 pb-4 flex-shrink-0 ${isCollapsed ? "flex-col gap-2" : "justify-between"}`}
       >
         {!isCollapsed ? (
           <>
-            <img src={feditLogo} alt="fedit logo" className="h-7" />
+            <img src={feditLogo} alt="fedit logo" className="h-[22px]" />
             <button
               onClick={() => toggleCollapsed(true)}
-              className="p-1 transition-colors rounded hover:bg-gray-100"
+              className="p-1 transition-colors rounded-lg hover:bg-surface-base active:bg-line-divider"
             >
-              <Icon
-                icon="meteor-icons:angles-left"
-                className="w-5 h-5 text-icon-neutral"
-              />
+              <img src={foldIcon} alt="사이드바 접기" className="w-6 h-6" />
             </button>
           </>
         ) : (
           <div
-            className="relative flex items-center justify-center flex-shrink-0 w-10 h-10 overflow-hidden transition-all duration-200 bg-black rounded-md cursor-pointer group hover:bg-surface-base"
+            className="relative flex items-center justify-center flex-shrink-0 w-9 h-9 rounded-xl bg-white border border-line-alt cursor-pointer group"
             onClick={() => toggleCollapsed(false)}
           >
             <img
-              src="/feditIcon.png"
-              alt="Fedit Icon"
-              className="object-contain w-full h-full transition-opacity duration-200 rounded-md group-hover:opacity-0"
+              src={snbLogoButton}
+              alt="Fedit"
+              className="absolute inset-0 w-9 h-9 transition-opacity duration-150 group-hover:opacity-0"
             />
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20 backdrop-blur-[2px]">
-              <Icon
-                icon="lucide:chevrons-right"
-                className="w-6 h-6 text-white"
-              />
-            </div>
+            <img
+              src={foldIcon}
+              alt="사이드바 펼치기"
+              className="absolute w-6 h-6 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            />
           </div>
         )}
       </div>
 
       {/* 탭 네비게이션 */}
       <nav
-        className={`px-2 space-y-2 flex-shrink-0 ${isCollapsed ? "mt-0" : "mt-4"}`}
+        className={`px-2 flex-shrink-0 ${isCollapsed ? "space-y-4" : ""}`}
       >
         {TABS_CONFIG.map((tab) => {
           const active = selectedTab === tab.label;
+          const stateClasses = active
+            ? "bg-brand-subtle hover:bg-brand-subtle-hover"
+            : "hover:bg-[rgba(11,14,15,0.05)] active:bg-[rgba(11,14,15,0.08)]";
           return (
             <button
               key={tab.label}
@@ -233,23 +226,23 @@ export default function Sidebar() {
           ${
             isCollapsed
               ? "flex-col items-center justify-center"
-              : "flex-row items-center h-9 p-2 gap-3 rounded-lg self-stretch"
+              : `flex-row items-center h-10 p-2 gap-3 rounded-lg self-stretch ${stateClasses}`
           }
-          ${!isCollapsed && active ? "bg-brand-subtle" : ""}
         `}
             >
               <div
                 className={`flex items-center justify-center transition-colors
     ${
       isCollapsed
-        ? `w-10 h-10 rounded-xl ${active ? "bg-brand-subtle text-tx-strong border border-[#F6F8FA]" : "text-icon-alt"}`
+        ? `w-10 h-10 rounded-lg ${stateClasses} ${active ? "text-tx-strong" : "text-icon-alt"}`
         : `${active ? "text-tx-strong" : "text-icon-alt"}`
     }
   `}
               >
-                <Icon
-                  icon={active ? tab.activeIcon : tab.inactiveIcon}
-                  className={`${isCollapsed ? "w-7 h-7" : "w-6 h-6"}`}
+                <img
+                  src={tab.icon}
+                  alt={tab.label}
+                  className="w-[18px] h-[18px]"
                 />
               </div>
 
@@ -268,7 +261,7 @@ export default function Sidebar() {
 
       {/* FEDI 최근 대화 — 사이드바 펼쳐진 경우에만 표시 */}
       {!isCollapsed && (
-        <div className="flex flex-col flex-1 min-h-0 px-2 mt-4">
+        <div className="flex flex-col flex-1 min-h-0 px-2 mt-6">
           <div className="flex items-center justify-between px-2 mb-2">
             <span className="text-[10px] font-semibold text-tx-assistive uppercase tracking-wider">
               FEDI 최근 대화
@@ -312,12 +305,12 @@ export default function Sidebar() {
           <div className="flex items-center rounded-lg bg-[#F9FAFB] overflow-hidden">
             <button
               onClick={() => openSettingsModal("사용가이드")}
-              className="flex-1 py-2 text-center text-[12px] font-semibold leading-[133%] text-[#6F7173] hover:text-tx-default transition-colors"
+              className="flex-1 py-3 text-center text-[12px] font-semibold leading-[133%] text-[#6F7173] hover:text-tx-default transition-colors"
             >
               가이드
             </button>
             <div className="flex-shrink-0 w-px h-4 bg-line-divider" />
-            <button className="flex-1 py-2 text-center text-[12px] font-semibold leading-[133%] text-[#6F7173] hover:text-tx-default transition-colors">
+            <button className="flex-1 py-3 text-center text-[12px] font-semibold leading-[133%] text-[#6F7173] hover:text-tx-default transition-colors">
               의견보내기
             </button>
           </div>
@@ -330,19 +323,24 @@ export default function Sidebar() {
           <button
             ref={profileButtonRef}
             onClick={handleProfileButtonClick}
-            className={`w-full flex items-center gap-3 rounded-xl transition-colors
+            className={`w-full flex items-center gap-2 rounded-xl transition-colors
               ${profileOpen ? "bg-surface-base" : "hover:bg-surface-base"}
               ${isCollapsed ? "justify-center py-2" : "px-2 py-2"}`}
           >
-            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#F47C2B] flex items-center justify-center text-white font-semibold text-sm">
-              {userInitial}
-            </div>
+            <img
+              src={profileIcon}
+              alt=""
+              className="flex-shrink-0"
+              style={{ width: 34, height: 34, aspectRatio: "1/1" }}
+            />
             {!isCollapsed && (
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-semibold truncate text-tx-default">
+                <p className="truncate type-body-small text-tx-neutral">
                   {userName}
                 </p>
-                <p className="text-xs truncate text-tx-alt">{userEmail}</p>
+                <p className="truncate type-body-xsmall text-tx-assistive">
+                  {userEmail}
+                </p>
               </div>
             )}
           </button>
@@ -355,14 +353,19 @@ export default function Sidebar() {
           >
             {/* 유저 정보 */}
             <div className="flex items-center w-full gap-2 px-2 py-2">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#F47C2B] flex items-center justify-center text-white font-semibold text-sm">
-                {userInitial}
-              </div>
+              <img
+                src={profileIcon}
+                alt=""
+                className="flex-shrink-0"
+                style={{ width: 34, height: 34, aspectRatio: "1/1" }}
+              />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate text-tx-default">
+                <p className="truncate type-body-small text-tx-neutral">
                   {userName}
                 </p>
-                <p className="text-xs truncate text-tx-alt">{userEmail}</p>
+                <p className="truncate type-body-xsmall text-tx-assistive">
+                  {userEmail}
+                </p>
               </div>
             </div>
 
@@ -370,21 +373,30 @@ export default function Sidebar() {
 
             {/* 메뉴 항목 */}
             <button
-              onClick={() => { openSettingsModal("구독"); setProfileOpen(false); }}
+              onClick={() => {
+                openSettingsModal("구독");
+                setProfileOpen(false);
+              }}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
             >
               <Icon icon="ph:sparkle" className="flex-shrink-0 w-5 h-5" />
               요금제 업그레이드
             </button>
             <button
-              onClick={() => { openSettingsModal("내정보"); setProfileOpen(false); }}
+              onClick={() => {
+                openSettingsModal("내정보");
+                setProfileOpen(false);
+              }}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
             >
               <Icon icon="ph:user-circle" className="flex-shrink-0 w-5 h-5" />
               프로필
             </button>
             <button
-              onClick={() => { openSettingsModal("내정보"); setProfileOpen(false); }}
+              onClick={() => {
+                openSettingsModal("내정보");
+                setProfileOpen(false);
+              }}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
             >
               <Icon
@@ -396,7 +408,10 @@ export default function Sidebar() {
 
             <div className="w-full h-px my-2 bg-line-divider" />
             <button
-              onClick={() => { openSettingsModal("사용가이드"); setProfileOpen(false); }}
+              onClick={() => {
+                openSettingsModal("사용가이드");
+                setProfileOpen(false);
+              }}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
             >
               <Icon icon="ph:question" className="flex-shrink-0 w-5 h-5" />
