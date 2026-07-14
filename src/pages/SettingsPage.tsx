@@ -314,21 +314,23 @@ export default function SettingsPage() {
           </div>
 
           {/* FEDIT Pro upgrade card */}
-          <div className="w-full shrink-0">
-            <div className="flex flex-col items-start self-stretch gap-3 p-3 rounded-xl border border-[#E4E4E4] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.06)]">
-              <p className="text-sm font-semibold text-tx-strong">FEDIT Pro</p>
-              <p className="text-xs leading-relaxed text-tx-alt">
-                무제한 분석과 트렌드 리포트를 확인
-              </p>
-              <button
-                onClick={() => setActive("구독")}
-                className="w-full flex items-center justify-center gap-1.5 py-2 bg-[#111827] text-white text-xs font-semibold rounded-lg hover:bg-black transition-colors"
-              >
-                <Icon icon="ph:plus-circle" className="w-3.5 h-3.5" />
-                요금제 업그레이드
-              </button>
+          {currentPlan !== "pro" && (
+            <div className="w-full shrink-0">
+              <div className="flex flex-col items-start self-stretch gap-3 p-3 rounded-xl border border-[#E4E4E4] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.06)]">
+                <p className="text-sm font-semibold text-tx-strong">FEDIT Pro</p>
+                <p className="text-xs leading-relaxed text-tx-alt">
+                  무제한 분석과 트렌드 리포트를 확인
+                </p>
+                <button
+                  onClick={() => setActive("구독")}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 bg-[#111827] text-white text-xs font-semibold rounded-lg hover:bg-black transition-colors"
+                >
+                  <Icon icon="ph:plus-circle" className="w-3.5 h-3.5" />
+                  요금제 업그레이드
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </aside>
 
         {/* Right content */}
