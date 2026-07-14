@@ -9,6 +9,7 @@ export interface Subscription {
   amount: number;
   hasBillingKey: boolean;
   nextBillingDate: string | null;
+  cancelAtPeriodEnd?: boolean;
 }
 
 const handleError = (error: any, fallbackMessage: string): never => {

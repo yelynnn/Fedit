@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import AgentMessage from './AgentMessage';
 import type { Message } from '@/types/chat';
-import { FEDI_SYSTEM_PROMPT } from '@/prompts/fedi';
 import { useChatStore } from '@/stores/ChatStore';
+import { axiosInstance } from '@/apis/AxiosInstance';
 
 const DEFAULT_SUGGESTIONS = [
-  '전년 동기간 인기 스타일 분석',
-  '최근 시즌 주요 트렌드',
-  '경쟁사 가격 분석표',
-  '상품 비교',
+  '이번 시즌 여성복 트렌드 키워드',
+  '여성복 스타일 무드별 추천',
+  '경쟁사 여성복 디자인 비교',
+  '여성복 시즌 컬러·소재 제안',
 ];
 
 function parseAiResponse(raw: string) {
@@ -79,29 +79,10 @@ export default function AgentChat({ conversationId, onClose }: Props) {
     setIsLoading(true);
 
     try {
-      const res = await fetch('https://api.upstage.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_UPSTAGE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'solar-pro',
-          messages: [
-            { role: 'system', content: FEDI_SYSTEM_PROMPT },
-            ...nextMessages.map((m) => ({
-              role: m.role,
-              content: m.content || m.parsed?.message.summary || '',
-            })),
-          ],
-        }),
-      });
+      const res = await axiosInstance.post('/chat', { message: query });
 
-      if (!res.ok) throw new Error(`${res.status}`);
-
-      const data = await res.json();
-      const raw: string = data.choices[0].message.content;
-      const parsed = parseAiResponse(raw);
+      const raw = res.data.answer || '';
+      const parsed = res.data.parsed || parseAiResponse(raw);
 
       const assistantMsg: Message = {
         id: `${Date.now()}-assistant`,
