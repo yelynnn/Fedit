@@ -36,9 +36,9 @@ const PLAN_DEFS: {
     price: "0원",
     sub: "7일 · Basic 기능 일부 (브랜드 제한)",
     features: [
-      { ok: true, text: "모니터링 (필터 항목별 2개·무신사)" },
-      { ok: true, text: "키워드 분석 제공" },
-      { ok: false, text: "유형·색상 분석 미지원" },
+      { ok: true, text: "무신사 입점 브랜드 모니터링 제공" },
+      { ok: true, text: "플랫폼별 키워드 분석 제공" },
+      { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
     ],
   },
   {
@@ -50,14 +50,11 @@ const PLAN_DEFS: {
     price: "19,000원",
     sub: "/월",
     features: [
-      {
-        ok: true,
-        text: "크롤링 기반 기본 분석 (브랜드 유형별 1개·무신사 포함)",
-      },
+      { ok: true, text: "기본 무신사 입점 브랜드 외 브랜드 10개 추가 모니터링" },
+      { ok: true, text: "플랫폼별 키워드 분석 제공" },
       { ok: true, text: "엑셀 다운로드 월 3회" },
-      { ok: true, text: "플랫폼·키워드 대시보드 제공" },
-      { ok: true, text: "유형·색상 분석 제공" },
-      { ok: true, text: "추가 브랜드 제안 문의 가능" },
+      { ok: true, text: "추가 제안 브랜드 제안 문의 가능" },
+      { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
     ],
   },
   {
@@ -69,16 +66,20 @@ const PLAN_DEFS: {
     price: "59,000원",
     sub: "/월",
     features: [
+      { ok: true, text: "모든 브랜드 모니터링 제공" },
       { ok: true, text: "모든 Basic 기능 포함" },
       { ok: true, text: "엑셀 다운로드 무제한" },
-      { ok: true, text: "패션쇼 분석 제공" },
-      { ok: true, text: "기업별 트렌드 리포트 제공" },
-      { ok: true, text: "AI Agent 기능" },
+      { ok: true, text: "유형/색상/패션쇼 분석 지원" },
+      { ok: true, text: "기업 트렌드 리포트 제공 (월말 추가 제공)" },
+      { ok: true, text: "자사 맞춤형 AI Agent 제공" },
     ],
   },
 ];
 
 const PLAN_RANK: Record<"free" | PlanType, number> = { free: 0, basic: 1, pro: 2 };
+
+// "Basic으로", "Pro로" — 플랜명 발음(받침 유무)에 맞춘 조사
+const PLAN_PARTICLE: Record<PlanType, string> = { basic: "으로", pro: "로" };
 
 const NAV_GROUPS: {
   title: string;
@@ -780,6 +781,11 @@ export default function SettingsPage() {
                           <p className="text-sm text-tx-alt mt-0.5">
                             14일 동안 Basic 기능 일부 사용 가능한 요금제
                           </p>
+                        ) : subscription?.cancelAtPeriodEnd ? (
+                          <p className="flex items-center gap-1 mt-0.5 text-sm text-tx-alt">
+                            <Icon icon="ph:info" className="w-4 h-4" />
+                            해지 예약됨 · {subscription?.nextBillingDate ?? "-"}까지 이용 가능
+                          </p>
                         ) : subscription?.status === "past_due" ? (
                           <p className="flex items-center gap-1 mt-0.5 text-sm text-status-error">
                             <Icon icon="ph:warning-circle" className="w-4 h-4" />
@@ -822,7 +828,7 @@ export default function SettingsPage() {
                       ? "현재 플랜"
                       : plan.key === "free"
                         ? "무료 체험"
-                        : `${plan.label}${isDowngrade ? "로 다운그레이드" : "으로 업그레이드"}`;
+                        : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
                     const isLoading = billingLoading === plan.key;
                     return (
                       <div
@@ -859,13 +865,13 @@ export default function SettingsPage() {
                           )}
                           <p className="text-[24px] font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
                             {plan.price}
-                            {!isCurrent && (
+                            {plan.key !== "free" && (
                               <span className="text-sm font-medium text-[#6F7173] ml-0.5">
                                 {plan.sub}
                               </span>
                             )}
                           </p>
-                          {isCurrent && (
+                          {plan.key === "free" && (
                             <p className="text-[12px] font-medium leading-[133%] text-[#6F7173]">
                               {plan.sub}
                             </p>
@@ -911,12 +917,18 @@ export default function SettingsPage() {
                         </ul>
 
                         {isCurrent && plan.key !== "free" && (
-                          <button
-                            onClick={() => setShowCancelModal(true)}
-                            className="self-start pt-2 mt-auto text-xs font-medium underline transition-colors text-tx-assistive hover:text-status-error underline-offset-2"
-                          >
-                            구독 해지
-                          </button>
+                          subscription?.cancelAtPeriodEnd ? (
+                            <p className="pt-2 mt-auto text-xs font-medium text-tx-assistive">
+                              {subscription?.nextBillingDate ?? "-"}까지 이용 가능 · 해지 예약됨
+                            </p>
+                          ) : (
+                            <button
+                              onClick={() => setShowCancelModal(true)}
+                              className="self-start pt-2 mt-auto text-xs font-medium underline transition-colors text-tx-assistive hover:text-status-error underline-offset-2"
+                            >
+                              구독 해지
+                            </button>
+                          )
                         )}
                       </div>
                     );
