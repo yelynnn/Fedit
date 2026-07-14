@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { PostConfirmBilling, type PlanType } from "@/apis/BillingAPI";
 import { useUIStore } from "@/stores/UIStore";
+import { useSubscriptionStore } from "@/stores/SubscriptionStore";
 
 const PLAN_LABELS: Record<PlanType, string> = { basic: "Basic", pro: "Pro" };
 
@@ -10,6 +11,8 @@ function BillingSuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const openSettingsModal = useUIStore((s) => s.openSettingsModal);
+  const openInterestBrandModal = useUIStore((s) => s.openInterestBrandModal);
+  const setSubscription = useSubscriptionStore((s) => s.setSubscription);
   const [status, setStatus] = useState<"loading" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const requested = useRef(false);
@@ -29,15 +32,26 @@ function BillingSuccessPage() {
     }
 
     PostConfirmBilling({ authKey, customerKey, plan })
-      .then(() => {
-        openSettingsModal("구독");
+      .then((subscription) => {
+        setSubscription(subscription);
+        if (plan === "basic") {
+          openInterestBrandModal();
+        } else {
+          openSettingsModal("구독");
+        }
         navigate("/", { replace: true });
       })
       .catch((error: Error) => {
         setStatus("error");
         setErrorMessage(error.message);
       });
-  }, [searchParams, navigate, openSettingsModal]);
+  }, [
+    searchParams,
+    navigate,
+    openSettingsModal,
+    openInterestBrandModal,
+    setSubscription,
+  ]);
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-screen gap-4 bg-white">

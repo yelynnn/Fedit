@@ -8,12 +8,17 @@ import { NewFilterTabPanels } from "@/components/filter/NewFilterTabBar";
 import SessionExpiredModal from "@/components/common/SessionExpiredModal";
 import AgentChat from "@/components/agent/AgentChat";
 import SettingsPage from "@/pages/SettingsPage";
+import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import { CaptureGuard } from "@/capture-guard";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
     useChatStore((s) => s);
-  const { settingsModalTab } = useUIStore();
+  const {
+    settingsModalTab,
+    isInterestBrandModalOpen,
+    closeInterestBrandModal,
+  } = useUIStore();
 
   useEffect(() => {
     const guard = new CaptureGuard({
@@ -58,7 +63,10 @@ function RootNewLayout() {
       <div className="flex flex-col flex-1 h-full min-w-0">
         <NewHeader />
 
-        <main className="flex-1 overflow-auto bg-white" data-capture-protect>
+        <main
+          className="relative flex-1 overflow-auto bg-white [contain:layout]"
+          data-capture-protect
+        >
           <div className="h-full py-8">
             <NewFilterTabPanels />
           </div>
@@ -66,6 +74,11 @@ function RootNewLayout() {
       </div>
 
       {settingsModalTab !== null && <SettingsPage />}
+
+      <InterestBrandModal
+        isOpen={isInterestBrandModalOpen}
+        onClose={closeInterestBrandModal}
+      />
 
       {/* FEDI Agent 플로팅 버튼 & 채팅창 */}
       <div className="fixed z-50 flex flex-col items-end gap-3 bottom-6 right-6">

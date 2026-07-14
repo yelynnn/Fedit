@@ -120,6 +120,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
       className="fixed inset-0 z-[400] flex items-center justify-center"
       aria-modal="true"
       role="dialog"
+      onClick={(e) => e.stopPropagation()}
     >
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
 

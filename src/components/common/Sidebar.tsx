@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
-import { useChatStore } from "@/stores/ChatStore";
 import { useUIStore } from "@/stores/UIStore";
 import { useUserStore } from "@/stores/UserStore";
 import feditLogo from "@/assets/logo/feditLogo.svg";
@@ -22,95 +21,8 @@ const TABS_CONFIG = [
   { label: "패션쇼 분석", icon: runwayIcon },
 ];
 
-function ConversationItem({
-  title,
-  isActive,
-  onOpen,
-  onRename,
-}: {
-  id: string;
-  title: string;
-  isActive: boolean;
-  onOpen: () => void;
-  onRename: (newTitle: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(title);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editing) inputRef.current?.focus();
-  }, [editing]);
-
-  useEffect(() => {
-    setDraft(title);
-  }, [title]);
-
-  const commit = () => {
-    const trimmed = draft.trim();
-    if (trimmed && trimmed !== title) onRename(trimmed);
-    else setDraft(title);
-    setEditing(false);
-  };
-
-  return (
-    <div
-      className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-colors
-        ${isActive ? "bg-brand-subtle" : "hover:bg-surface-base"}`}
-      onClick={() => {
-        if (!editing) onOpen();
-      }}
-    >
-      <Icon
-        icon="ph:chat-teardrop-text"
-        className="w-3.5 h-3.5 text-icon-alt flex-shrink-0"
-      />
-      {editing ? (
-        <input
-          ref={inputRef}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") {
-              setDraft(title);
-              setEditing(false);
-            }
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 text-xs text-tx-neutral bg-white rounded px-1 py-0.5 outline-none border border-line-neutral"
-        />
-      ) : (
-        <>
-          <span className="flex-1 min-w-0 text-xs truncate text-tx-neutral">
-            {title}
-          </span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setDraft(title);
-              setEditing(true);
-            }}
-            className="flex-shrink-0 transition-opacity opacity-0 group-hover:opacity-100 text-icon-alt hover:text-tx-neutral"
-          >
-            <Icon icon="lucide:pencil" className="w-3 h-3" />
-          </button>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function Sidebar() {
   const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
-  const {
-    conversations,
-    activeConversationId,
-    openConversation,
-    openNewConversation,
-    updateTitle,
-  } = useChatStore((s) => s);
   const { openSettingsModal } = useUIStore();
 
   const [isCollapsed, setIsCollapsed] = useState(
@@ -128,10 +40,6 @@ export default function Sidebar() {
   useEffect(() => {
     fetchMe();
   }, [fetchMe]);
-
-  const recentConversations = [...conversations]
-    .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, 4);
 
   const toggleCollapsed = (value: boolean) => {
     setIsCollapsed(value);
@@ -259,45 +167,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* FEDI 최근 대화 — 사이드바 펼쳐진 경우에만 표시 */}
-      {!isCollapsed && (
-        <div className="flex flex-col flex-1 min-h-0 px-2 mt-6">
-          <div className="flex items-center justify-between px-2 mb-2">
-            <span className="text-[10px] font-semibold text-tx-assistive uppercase tracking-wider">
-              FEDI 최근 대화
-            </span>
-            <button
-              onClick={() => openNewConversation()}
-              title="새 대화 시작"
-              className="flex items-center justify-center w-5 h-5 transition-colors rounded hover:bg-surface-base text-icon-alt hover:text-tx-neutral"
-            >
-              <Icon icon="lucide:plus" className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {recentConversations.length === 0 ? (
-            <p className="text-[11px] text-icon-alt px-2">
-              대화 내역이 없습니다
-            </p>
-          ) : (
-            <div className="flex flex-col gap-0.5 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {recentConversations.map((conv) => (
-                <ConversationItem
-                  key={conv.id}
-                  id={conv.id}
-                  title={conv.title}
-                  isActive={conv.id === activeConversationId}
-                  onOpen={() => openConversation(conv.id)}
-                  onRename={(newTitle) => updateTitle(conv.id, newTitle)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* collapsed 상태면 flex-1 spacer */}
-      {isCollapsed && <div className="flex-1" />}
+      <div className="flex-1" />
 
       {/* 가이드 / 의견보내기 — 펼쳐진 상태에서만 표시 */}
       {!isCollapsed && (
