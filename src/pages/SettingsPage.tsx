@@ -1,19 +1,25 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useChatStore } from "@/stores/ChatStore";
 import { useUIStore } from "@/stores/UIStore";
 import { useUserStore } from "@/stores/UserStore";
 import {
   GetCustomerKey,
-  GetSubscription,
   PostChangePlan,
   PostCancelSubscription,
   type PlanType,
-  type Subscription,
 } from "@/apis/BillingAPI";
 import { getTossPayments } from "@/lib/toss";
 import ChangePasswordModal from "@/components/common/ChangePasswordModal";
 import { PostLogout, DeleteWithdraw } from "@/apis/AuthAPI";
+import { AI_GUIDE_TOPICS, getGuideTopicsByCategory } from "@/content/aiGuides";
+import GuideDetailView from "@/components/settings/guide/GuideDetailView";
+import GuideCard from "@/components/settings/GuideCard";
+import { GUIDE_CATEGORIES, type GuideCategory } from "@/types/guide";
+import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+
+const GUIDE_TABS: ("전체" | GuideCategory)[] = ["전체", ...GUIDE_CATEGORIES];
 
 type Section = "내정보" | "알림" | "FEDI대화" | "사용가이드" | "FAQ" | "구독";
 
@@ -151,9 +157,19 @@ export default function SettingsPage() {
   const [chatSearch, setChatSearch] = useState("");
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
+  const [activeGuideTab, setActiveGuideTab] = useState<"전체" | GuideCategory>(
+    "전체",
+  );
+  const [agreedCancelTerms, setAgreedCancelTerms] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<PlanType | null>(null);
 
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const {
+    subscription,
+    loaded: subscriptionLoaded,
+    fetchSubscription,
+    setSubscription,
+  } = useSubscriptionStore((s) => s);
   const [billingLoading, setBillingLoading] = useState<PlanType | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -163,10 +179,8 @@ export default function SettingsPage() {
   const userEmail = useUserStore((s) => s.email);
 
   useEffect(() => {
-    GetSubscription()
-      .then(setSubscription)
-      .catch(() => setSubscription(null))
-      .finally(() => setSubscriptionLoading(false));
+    fetchSubscription();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currentPlan: "free" | PlanType = subscription?.plan ?? "free";
@@ -260,10 +274,14 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
+      onClick={closeSettingsModal}
+    >
       <div
         className="relative flex overflow-hidden bg-white shadow-2xl rounded-2xl"
         style={{ height: 740 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Left nav */}
         <aside
@@ -577,60 +595,73 @@ export default function SettingsPage() {
 
             {/* ── AI 사용 가이드 ── */}
             {active === "사용가이드" && (
-              <div className="max-w-[600px]">
-                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
-                  AI 사용 가이드
-                </h1>
-                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
-                  주제를 골라 FEDI 활용법을 자세히 알아보세요
-                </p>
+              activeGuideId ? (
+                (() => {
+                  const topic = AI_GUIDE_TOPICS.find(
+                    (t) => t.id === activeGuideId,
+                  );
+                  return topic ? (
+                    <GuideDetailView
+                      topic={topic}
+                      onBack={() => setActiveGuideId(null)}
+                    />
+                  ) : null;
+                })()
+              ) : (
+                <div className="max-w-[600px]">
+                  <h1 className="text-2xl font-semibold text-[#0B0E0F]">
+                    AI 사용 가이드
+                  </h1>
+                  <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
+                    주제를 골라 FEDIT 활용법을 자세히 알아보세요
+                  </p>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    {
-                      title: "FEDI 시작하기",
-                      desc: "FEDI가 무엇을 도와주는지 3분 만에 알아봐요",
-                    },
-                    {
-                      title: "트렌드 지수 분석",
-                      desc: "실시간 판매·조회 데이터를 기반으로 트렌드 지수를 확인해요",
-                    },
-                    {
-                      title: "상품 AI 개요",
-                      desc: "색상, 소재, 핏 등 스타일 정보를 AI가 자동으로 요약해요",
-                    },
-                    {
-                      title: "패션쇼 분석",
-                      desc: "글로벌 런웨이 컬렉션을 브랜드·시즌별로 비교 분석해요",
-                    },
-                    {
-                      title: "색상 트렌드",
-                      desc: "시즌별 주요 컬러 팔레트와 트렌드 변화를 한눈에 파악해요",
-                    },
-                    {
-                      title: "상품 유형 분석",
-                      desc: "카테고리·성별별 상품 비중과 유형 트렌드를 분석해요",
-                    },
-                  ].map((item) => (
-                    <button
-                      key={item.title}
-                      className="flex flex-col items-start p-5 gap-4 border border-[#E4E4E4] rounded-[12px] bg-white hover:border-[#3E7EFF] transition-colors text-left"
-                    >
-                      <div className="flex w-10 h-10 flex-col justify-center items-center rounded-[10px] bg-[#F4FFEE]">
-                        <div className="w-5 h-5 bg-[#4CAF50] rounded" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <p className="text-[16px] font-semibold leading-[150%] tracking-[-0.08px] text-[#3D3F41]">
-                          {item.title}
+                  <div className="flex items-center gap-5 overflow-x-auto hide-scrollbar border-b border-line-divider mb-8">
+                    {GUIDE_TABS.map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveGuideTab(tab)}
+                        className={`relative flex-shrink-0 pb-3 text-sm font-semibold whitespace-nowrap transition-colors ${
+                          activeGuideTab === tab
+                            ? "text-[#0B0E0F]"
+                            : "text-tx-assistive hover:text-tx-neutral"
+                        }`}
+                      >
+                        {tab}
+                        {activeGuideTab === tab && (
+                          <span className="absolute inset-x-0 -bottom-px h-[2px] bg-[#0B0E0F]" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col gap-10">
+                    {getGuideTopicsByCategory(
+                      activeGuideTab === "전체"
+                        ? AI_GUIDE_TOPICS
+                        : AI_GUIDE_TOPICS.filter(
+                            (t) => t.category === activeGuideTab,
+                          ),
+                    ).map((group) => (
+                      <div key={group.category}>
+                        <p className="mb-3 text-sm font-semibold text-tx-assistive">
+                          {group.category}
                         </p>
-                        <p className="text-[14px] font-medium leading-[143%] tracking-[-0.07px] text-[#A1A3A5]">
-                          {item.desc}
-                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          {group.topics.map((topic) => (
+                            <GuideCard
+                              key={topic.id}
+                              title={topic.title}
+                              desc={topic.desc}
+                              onClick={() => setActiveGuideId(topic.id)}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </button>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* ── FAQ ── */}
@@ -767,7 +798,7 @@ export default function SettingsPage() {
                 </h3>
                 <div className="flex items-center justify-between p-5 bg-[#F9FAFB] border border-line-divider rounded-xl mb-8">
                   <div>
-                    {subscriptionLoading ? (
+                    {!subscriptionLoaded ? (
                       <>
                         <div className="w-20 h-5 rounded bg-line-divider animate-pulse" />
                         <div className="w-40 h-4 mt-2 rounded bg-line-divider animate-pulse" />
@@ -802,9 +833,7 @@ export default function SettingsPage() {
                   {currentPlan !== "pro" && (
                     <button
                       onClick={() =>
-                        document
-                          .getElementById("plan-comparison")
-                          ?.scrollIntoView({ behavior: "smooth" })
+                        setPendingPlan(currentPlan === "free" ? "basic" : "pro")
                       }
                       className="px-5 py-2 bg-[#111827] text-white text-sm font-semibold rounded-xl hover:bg-black transition-colors"
                     >
@@ -816,6 +845,7 @@ export default function SettingsPage() {
                 <h3 className="mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
                   모든 요금제 비교하기
                 </h3>
+
                 <div
                   id="plan-comparison"
                   className="flex overflow-hidden border-t border-line-divider"
@@ -884,7 +914,7 @@ export default function SettingsPage() {
                             isCurrent || plan.key === "free" || !!billingLoading
                           }
                           onClick={() =>
-                            plan.key !== "free" && handleSelectPlan(plan.key)
+                            plan.key !== "free" && setPendingPlan(plan.key)
                           }
                           className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
                             isCurrent || plan.key === "free"
@@ -924,7 +954,7 @@ export default function SettingsPage() {
                           ) : (
                             <button
                               onClick={() => setShowCancelModal(true)}
-                              className="self-start pt-2 mt-auto text-xs font-medium underline transition-colors text-tx-assistive hover:text-status-error underline-offset-2"
+                              className="self-start text-left mt-auto pt-2 text-[12px] font-medium leading-[133%] underline decoration-solid decoration-auto underline-offset-auto [text-underline-position:from-font] text-[#242628] transition-colors hover:text-status-error"
                             >
                               구독 해지
                             </button>
@@ -942,7 +972,10 @@ export default function SettingsPage() {
 
       {/* ── 회원 탈퇴 모달 ── */}
       {withdrawStep && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div
             className="absolute inset-0 bg-black/30"
             onClick={() => setWithdrawStep(null)}
@@ -1065,13 +1098,16 @@ export default function SettingsPage() {
 
       {/* ── 구독 해지 모달 ── */}
       {showCancelModal && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div
             className="absolute inset-0 bg-black/30"
             onClick={() => !isCanceling && setShowCancelModal(false)}
           />
           <div className="relative w-full max-w-[380px] p-8 text-center bg-white shadow-xl rounded-2xl">
-            <div className="flex items-center justify-center w-14 h-14 mx-auto mb-4 rounded-full bg-rising-bg">
+            <div className="flex items-center justify-center mx-auto mb-4 rounded-full w-14 h-14 bg-rising-bg">
               <Icon icon="ph:warning" className="w-7 h-7 text-status-error" />
             </div>
             <h2 className="mb-2 text-xl font-semibold text-tx-strong">
@@ -1094,6 +1130,77 @@ export default function SettingsPage() {
                 className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-status-error rounded-xl hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCanceling ? "해지 처리 중..." : "해지하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 정기결제 동의 모달 (플랜 업그레이드 직전) ── */}
+      {pendingPlan && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => {
+              setPendingPlan(null);
+              setAgreedCancelTerms(false);
+            }}
+          />
+          <div className="relative w-full max-w-[400px] p-8 bg-white shadow-xl rounded-2xl">
+            <h2 className="mb-2 text-xl font-semibold text-tx-strong">
+              {PLAN_DEFS.find((p) => p.key === pendingPlan)?.label} 요금제로
+              시작할게요
+            </h2>
+            <p className="mb-6 text-sm leading-relaxed text-tx-alt">
+              {PLAN_DEFS.find((p) => p.key === pendingPlan)?.price}
+              {PLAN_DEFS.find((p) => p.key === pendingPlan)?.sub}에 정기결제가
+              시작됩니다. 진행 전 아래 내용을 확인해주세요.
+            </p>
+
+            <label className="flex items-start gap-2 p-4 mb-6 cursor-pointer select-none bg-surface-base rounded-xl">
+              <input
+                type="checkbox"
+                checked={agreedCancelTerms}
+                onChange={(e) => setAgreedCancelTerms(e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-tx-neutral flex-shrink-0"
+              />
+              <span className="text-sm text-tx-alt">
+                정기결제(자동 결제) 및 해지 방법, 환불 정책을 확인했으며 이에
+                동의합니다.{" "}
+                <Link
+                  to="/terms/cancellation"
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-semibold underline text-tx-neutral hover:text-tx-strong"
+                >
+                  자세히 보기
+                </Link>
+              </span>
+            </label>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setPendingPlan(null);
+                  setAgreedCancelTerms(false);
+                }}
+                className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  const plan = pendingPlan;
+                  setPendingPlan(null);
+                  setAgreedCancelTerms(false);
+                  handleSelectPlan(plan);
+                }}
+                disabled={!agreedCancelTerms}
+                className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                결제 진행하기
               </button>
             </div>
           </div>

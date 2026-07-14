@@ -12,6 +12,8 @@ import PersonalSignupPage from "@/pages/Auth/PersonalSignupPage";
 import NextSignupPage from "@/pages/Auth/NextSignupPage";
 import CorporateVerifyPage from "@/pages/Auth/CorporateVerifyPage";
 import TermsOfServicePage from "@/pages/Auth/TermsOfServicePage";
+import CancellationTermsPage from "@/pages/Auth/CancellationTermsPage";
+import PrivacyPolicyPage from "@/pages/Auth/PrivacyPolicyPage";
 import BillingSuccessPage from "@/pages/BillingSuccessPage";
 import BillingFailPage from "@/pages/BillingFailPage";
 import ProtectedRoute from "./ProtectedRoute";
@@ -79,6 +81,14 @@ const router = createBrowserRouter([
       {
         path: "/terms",
         element: <TermsOfServicePage />,
+      },
+      {
+        path: "/terms/cancellation",
+        element: <CancellationTermsPage />,
+      },
+      {
+        path: "/privacy",
+        element: <PrivacyPolicyPage />,
       },
       {
         element: <ProtectedRoute />,

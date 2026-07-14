@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { Link } from "react-router-dom";
 import logo from "@/assets/logo/feditLogo.svg";
 
 function Footer() {
@@ -13,31 +13,19 @@ function Footer() {
               데이터를 분석하는 패션 트렌드의 새로운 기준
             </p>
 
-            <div className="flex items-center gap-3 mt-5">
-              <a
-                href="#"
-                aria-label="Instagram"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-base hover:bg-line-divider transition"
-              >
-                <Icon icon="mdi:instagram" className="h-4 w-4 text-tx-alt" />
-              </a>
-              <a
-                href="#"
-                aria-label="Naver"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-base hover:bg-line-divider transition"
-              >
-                <Icon
-                  icon="simple-icons:naver"
-                  className="h-4 w-4 text-tx-alt"
-                />
-              </a>
-              <a
-                href="#"
-                aria-label="Facebook"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-base hover:bg-line-divider transition"
-              >
-                <Icon icon="mdi:facebook" className="h-4 w-4 text-tx-alt" />
-              </a>
+            <div className="flex flex-col gap-1 mt-5 text-xs leading-relaxed text-tx-assistive">
+              <p className="flex flex-wrap items-center gap-x-1.5">
+                <span>상호명: 미피(MIFY)</span>
+                <span className="text-line-divider">·</span>
+                <span>대표자명: 김예린</span>
+              </p>
+              <p>사업자등록번호: 535-03-03921</p>
+              <p>사업장 주소: 경기도 고양시 덕양구 오금로 193</p>
+              <p className="flex flex-wrap items-center gap-x-1.5">
+                <span>고객센터: 010-7939-1833</span>
+                <span className="text-line-divider">·</span>
+                <span>이메일: team.mify@gmail.com</span>
+              </p>
             </div>
           </div>
 
@@ -116,13 +104,13 @@ function Footer() {
           <p>© 2025 FEDIT. All rights reserved.</p>
 
           <div className="flex items-center gap-4">
-            <a href="#" className="hover:text-white">
+            <Link to="/privacy" className="hover:text-white">
               개인정보처리방침
-            </a>
+            </Link>
             <span className="hidden w-px h-3 bg-white/30 md:block" />
-            <a href="#" className="hover:text-white">
+            <Link to="/terms" className="hover:text-white">
               이용약관
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -9,6 +9,11 @@ import { useProductStore } from "@/stores/ProductStore";
 import { useEffect } from "react";
 import RunwayPage from "@/pages/RunwayPage";
 import BoardsPage from "@/pages/BoardsPage";
+import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import ProUpgradeOverlay from "@/components/common/ProUpgradeOverlay";
+
+// PRO 요금제에서만 이용 가능한 탭
+const PRO_ONLY_TABS = new Set(["색상 분석", "유형 분석", "패션쇼 분석"]);
 
 type TabOption = { label: string; icon: string };
 
@@ -68,6 +73,18 @@ export function NewFilterTabBar() {
 
 export function NewFilterTabPanels() {
   const { selectedTab } = useFilterStore((s) => s);
+  const { subscription, loaded, fetchSubscription } = useSubscriptionStore(
+    (s) => s,
+  );
+
+  useEffect(() => {
+    fetchSubscription();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isLocked =
+    loaded && subscription?.plan !== "pro" && PRO_ONLY_TABS.has(selectedTab);
+
   return (
     <div className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       {selectedTab === "실시간 랭킹" && <DashBoardPage />}
@@ -76,6 +93,8 @@ export function NewFilterTabPanels() {
       {selectedTab === "색상 분석" && <NewColorAnalysis />}
       {selectedTab === "유형 분석" && <NewTypeAnalysis />}
       {selectedTab === "내 보드" && <BoardsPage />}
+
+      {isLocked && <ProUpgradeOverlay featureName={selectedTab} />}
     </div>
   );
 }
