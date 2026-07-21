@@ -28,7 +28,7 @@ const askFedi: GuideTopic = {
       type: "list",
       items: [
         "FEDI 채팅 목록에서 지난 대화 내역을 다시 열람",
-        "AI 사용 가이드에서 기능별 사용법 확인",
+        "서비스 사용 가이드에서 기능별 사용법 확인",
       ],
     },
 

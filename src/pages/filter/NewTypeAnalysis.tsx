@@ -2,8 +2,7 @@ import NewTypeBox from "@/components/type/NewTypeBox";
 import { MockNewTypeData } from "@/data/mock/MockNewTypeData";
 import { useEffect, useState } from "react";
 import { GetCategoryGraph } from "@/apis/AnalysisAPI";
-
-
+import QuestionTooltip from "@/components/common/QuestionTooltip";
 
 type TypeBlock = (typeof MockNewTypeData)[number];
 
@@ -16,7 +15,6 @@ function NewTypeAnalysis() {
       try {
         setLoading(true);
         const res = await GetCategoryGraph();
-        console.log("유형 그래프 응답:", res);
 
         const list = (
           Array.isArray(res)
@@ -25,9 +23,7 @@ function NewTypeAnalysis() {
         ) as TypeBlock[];
 
         setBlocks(list);
-      } catch (e) {
-
-        console.error("유형 그래프 불러오기 실패:", e);
+      } catch {
         setBlocks([]);
       } finally {
         setLoading(false);
@@ -39,10 +35,16 @@ function NewTypeAnalysis() {
   return (
     <div className="px-14">
       <div className="flex flex-col gap-2">
-        <header className="text-2xl font-semibold leading-9 text-tx-neutral">
-          유형 분석
-        </header>
-        <p className="text-icon-neutral leading-6 text-base font-semibold">
+        <div className="flex items-center gap-3">
+          <header className="text-2xl font-semibold leading-9 text-tx-neutral">
+            유형 분석
+          </header>
+          <QuestionTooltip
+            label="유형 트렌드"
+            infoText="상품 유형별 출시 비중과 최근 빠르게 증가한 실루엣을 확인하고, 시장에서 성장하고 있는 유형의 흐름을 남보다 먼저 잡아보세요."
+          />
+        </div>
+        <p className="text-base font-semibold leading-6 text-icon-neutral">
           최근 주목받는 상품 유형과 연관 키워드를 탐색해보세요.
         </p>
       </div>

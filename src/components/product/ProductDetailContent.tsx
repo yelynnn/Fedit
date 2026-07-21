@@ -16,6 +16,7 @@ import DetailItem from "./DetailItem";
 import defaultImg from "@/assets/logo/defaultImg.svg";
 import AIAnalysisBox from "./AIAnalysisBox";
 import TrendIndexBox from "./TrendIndexBox";
+import { formatSalesCount } from "@/lib/utils";
 
 const hasValue = (v: string | string[] | undefined | null) =>
   Array.isArray(v)
@@ -66,7 +67,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
         setBoards(list);
         setSelectedBoardId((prev) => prev ?? list[0]?.boardId ?? null);
       })
-      .catch(console.error);
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -148,9 +149,8 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
         imageUrl: detailData?.thumbnail || detailData?.front_image_url || "",
       });
       toastTimerRef.current = setTimeout(() => setToast(null), 3000);
-    } catch (error) {
-      console.error(error);
-    }
+    } catch {
+      }
   };
 
   const handleUndoSave = async () => {
@@ -162,9 +162,8 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
         next.delete(effectiveId);
         return next;
       });
-    } catch (error) {
-      console.error(error);
-    }
+    } catch {
+      }
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(null);
   };
@@ -410,7 +409,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                   {detailData.sales != 1 && (
                     <div className="px-3 py-1.5 bg-data-orange-light text-status-warning text-xs font-semibold rounded-lg">
                       누적판매{" "}
-                      {Number(detailData.sales).toLocaleString("ko-KR")}
+                      {formatSalesCount(detailData.sales!)}
                     </div>
                   )}
                 </div>

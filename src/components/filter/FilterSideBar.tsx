@@ -22,7 +22,10 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void 
   const data = useFilteredData();
 
   return (
-    <aside className="flex flex-col gap-3 w-53 h-fit p-2 bg-surface-base rounded-xl ">
+    <aside
+      data-tour="filter-panel"
+      className="flex flex-col gap-3 w-53 h-fit p-2 bg-surface-base rounded-xl "
+    >
       <div className="flex w-full gap-2">
         <Select
           value={selectedYear}

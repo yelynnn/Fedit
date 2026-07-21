@@ -4,6 +4,7 @@ import ColorTreeMap from "@/components/color/ColorTreeMap";
 import ColorBar from "@/components/color/ColorBar";
 import { Icon } from "@iconify/react";
 import SubTitleBox from "@/components/main/SubTitleBox";
+import QuestionTooltip from "@/components/common/QuestionTooltip";
 import BrandCompareModal from "@/components/filter/BrandCompareModal";
 import TrendColorBox, {
   type TrendColorData,
@@ -109,7 +110,7 @@ function NewColorAnalysis() {
 
   return (
     <div className="min-h-screen px-14">
-      {/* <div className="w-full px-3 py-2 bg-surface-base rounded-lg border border-surface-base flex items-center justify-between cursor-pointer">
+      {/* <div className="flex items-center justify-between w-full px-3 py-2 border rounded-lg cursor-pointer bg-surface-base border-surface-base">
         <div className="flex items-center gap-9">
           <span className="text-sm font-medium text-tx-alt">시즌선택</span>
           <span className="text-base font-semibold text-tx-neutral">
@@ -121,7 +122,7 @@ function NewColorAnalysis() {
       <div className="flex items-start justify-between mt-8 mb-5">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-7 h-7 bg-surface-base rounded-lg">
+            <div className="flex items-center justify-center rounded-lg w-7 h-7 bg-surface-base">
               <Icon
                 icon="mdi:shopping-outline"
                 className="w-4 h-4 text-tx-neutral"
@@ -130,14 +131,18 @@ function NewColorAnalysis() {
             <header className="text-xl font-semibold tracking-tight text-tx-neutral">
               색상 비중 비교
             </header>
+            <QuestionTooltip
+              label="브랜드별 인기 색상"
+              infoText="최대 2개 브랜드를 선택해 각 브랜드에서 가장 많이 출시한 상위 5개 색상의 비중과 관련 상품을 비교해 볼 수 있어요."
+            />
           </div>
-          <p className="text-icon-neutral leading-6 text-base font-medium pl-1">
+          <p className="pl-1 text-base font-medium leading-6 text-icon-neutral">
             세부 톤까지 확장된 색상 흐름을 브랜드 단위로 확인해보세요.
           </p>
         </div>
 
         {/* 뷰 전환 버튼 그룹 */}
-        <div className="flex items-center p-1 bg-surface-base rounded-xl border border-surface-base shrink-0">
+        <div className="flex items-center p-1 border bg-surface-base rounded-xl border-surface-base shrink-0">
           <button
             onClick={() => setViewMode("grid")}
             className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-white text-tx-neutral border border-line-alt shadow-sm" : "text-icon-alt"}`}
@@ -154,75 +159,75 @@ function NewColorAnalysis() {
       </div>
       {/* 그래프 영역: viewMode에 따라 TreeMap 또는 ColorBar를 보여줌 */}
       {brandList.length === 0 ? (
-        <div className="flex items-center justify-center w-full h-91 bg-surface-base border border-surface-base rounded-xl">
-          <p className="text-icon-neutral text-base font-medium">
+        <div className="flex items-center justify-center w-full border h-91 bg-surface-base border-surface-base rounded-xl">
+          <p className="text-base font-medium text-icon-neutral">
             브랜드를 선택해주세요
           </p>
         </div>
       ) : (
-      <div className="flex items-start w-full gap-5 transition-all duration-500">
-        {displayTreeMapBrands.map((block) => (
-          <div key={block.brand} className="flex-1 min-w-0">
-            {viewMode === "grid" ? (
-              <ColorTreeMap
-                title={block.brand}
-                data={block.data}
-                onClose={
-                  block.brand !== "전체"
-                    ? () => handleRemoveTreeMap(block.brand)
-                    : undefined
-                }
-              />
-            ) : (
-              <ColorBar
-                title={block.brand}
-                brand={block.brand === "전체" ? "ALL" : block.brand}
-                data={block.data}
-                onClose={
-                  block.brand !== "전체"
-                    ? () => handleRemoveTreeMap(block.brand)
-                    : undefined
-                }
-              />
-            )}
-          </div>
-        ))}
+        <div className="flex items-start w-full gap-5 transition-all duration-500">
+          {displayTreeMapBrands.map((block) => (
+            <div key={block.brand} className="flex-1 min-w-0">
+              {viewMode === "grid" ? (
+                <ColorTreeMap
+                  title={block.brand}
+                  data={block.data}
+                  onClose={
+                    block.brand !== "전체"
+                      ? () => handleRemoveTreeMap(block.brand)
+                      : undefined
+                  }
+                />
+              ) : (
+                <ColorBar
+                  title={block.brand}
+                  brand={block.brand === "전체" ? "ALL" : block.brand}
+                  data={block.data}
+                  onClose={
+                    block.brand !== "전체"
+                      ? () => handleRemoveTreeMap(block.brand)
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+          ))}
 
-        {/* 브랜드 추가하기 버튼 */}
-        {displayTreeMapBrands.length < 3 && (
-          <button
-            onClick={() => setCompareModalOpen(true)}
-            className={`
+          {/* 브랜드 추가하기 버튼 */}
+          {displayTreeMapBrands.length < 3 && (
+            <button
+              onClick={() => setCompareModalOpen(true)}
+              className={`
               flex flex-col items-center justify-center h-91
               bg-surface-base border-2 border-dashed border-line-divider rounded-xl
               hover:bg-surface-base transition-all group shrink-0
               ${displayTreeMapBrands.length === 1 ? "w-70" : "w-30"}
             `}
-          >
-            <div className="flex flex-col items-center justify-center gap-3">
-              <span className="text-tx-neutral text-sm font-semibold group-hover:text-tx-alt whitespace-nowrap">
-                브랜드 추가하기
-              </span>
+            >
+              <div className="flex flex-col items-center justify-center gap-3">
+                <span className="text-sm font-semibold text-tx-neutral group-hover:text-tx-alt whitespace-nowrap">
+                  브랜드 추가하기
+                </span>
 
-              <div className="w-6 h-6 flex items-center justify-center rounded-full border-1 border-[#6F7173] text-tx-alt group-hover:border-[#495057] group-hover:text-tx-alt">
-                <Icon
-                  icon="lucide:plus"
-                  width="16"
-                  height="16"
-                  className="stroke-[3]"
-                />
+                <div className="w-6 h-6 flex items-center justify-center rounded-full border-1 border-[#6F7173] text-tx-alt group-hover:border-[#495057] group-hover:text-tx-alt">
+                  <Icon
+                    icon="lucide:plus"
+                    width="16"
+                    height="16"
+                    className="stroke-[3]"
+                  />
+                </div>
               </div>
-            </div>
-          </button>
-        )}
-      </div>
+            </button>
+          )}
+        </div>
       )}
       <SubTitleBox
         title="신규 주목 색상"
-        label="트렌드 컬러"
-        infoText="매일 오전 10시, 무신사·W컨셉·네이버 등 주요 패션 플랫폼의 검색어 데이터를 자동 수집하며, 매거진·SNS 언급량 분석을 결합해 월별 종합 랭킹과 최근 주목도가 급상승한 패션 트렌드를 함께 제공합니다."
+        label="트렌드 색상"
+        infoText="선택한 경쟁사 브랜드의 최근 3개월 출시 증가율과 동시 채택 여부를 분석해 새롭게 주목받는 색상을 보여드려요. 분석 대상이 없으면 전체 브랜드를 기준으로 제공해요."
       />
-      <p className="text-icon-neutral leading-6 text-base font-medium mt-1 mb-4">
+      <p className="mt-1 mb-4 text-base font-medium leading-6 text-icon-neutral">
         모든 경쟁사가 소량으로 동시 출시 중인 유행 색상입니다.
       </p>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">

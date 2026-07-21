@@ -15,15 +15,35 @@ const hasDetail = (
   subBadges: { label: string; value: number | null }[],
   extraValues?: (string | null)[],
 ) =>
-  subBadges.some((badge, idx) => badge.value != null || extraValues?.[idx] != null);
+  subBadges.some(
+    (badge, idx) => badge.value != null || extraValues?.[idx] != null,
+  );
+
+const INFO_TEXT: Record<string, string> = {
+  "브랜드 지수": "브랜드의 검색 관심도와 SNS 영향력을 종합한 시장 영향력 지표",
+  "상품 지수": "핏, 소재, 패턴 등을 반영한 상품 유형별 트렌드 지표",
+  "구매 화력도": "조회수, 판매량 등 소비자 반응을 기반으로 한 시장성 지표",
+};
 
 function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
   const [trendData, setTrendData] = useState<TrendIndexResponse | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState<Set<string>>(new Set());
+
+  const showInfo = (title: string) => {
+    setInfoOpen((prev) => new Set(prev).add(title));
+    setTimeout(() => {
+      setInfoOpen((prev) => {
+        const next = new Set(prev);
+        next.delete(title);
+        return next;
+      });
+    }, 3000);
+  };
 
   useEffect(() => {
     if (!itemCode) return;
-    GetTrendIndex(itemCode).then(setTrendData).catch(console.error);
+    GetTrendIndex(itemCode).then(setTrendData).catch(() => {});
     setDetailsOpen(false);
   }, [itemCode]);
 
@@ -59,17 +79,12 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
   // 구매 화력도
   const purchaseBadges = [{ label: "판매수량", value: null }];
   const purchaseExtras = isPlatform
-    ? [`지난달 ${fmt(purchase.sales)}건`]
+    ? [
+        purchase.sales != null && purchase.sales <= 100
+          ? "지난달 100건 이하"
+          : `지난달 ${fmt(purchase.sales)}건`,
+      ]
     : ["지난달 - 건"];
-
-  // 세 카드 중 하나라도 상세 값이 있으면 전부 펼치고 화살표를 숨긴다.
-  // 셋 다 값이 없을 때만 화살표로 접었다 펼 수 있게 한다.
-  const anyHasDetail =
-    hasDetail(brandBadges) ||
-    hasDetail(productBadges, productExtras) ||
-    hasDetail(purchaseBadges, purchaseExtras);
-  const isOpen = anyHasDetail ? true : detailsOpen;
-  const showToggle = !anyHasDetail;
 
   const renderCard = (
     title: string,
@@ -79,6 +94,12 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
     extraValues?: (string | null)[],
     isPurchase?: boolean,
   ) => {
+    // 브랜드 지수만 토글로 접었다 펼 수 있고, 상품 지수/구매 화력도는 항상 한 줄로 표시한다.
+    const isBrand = title === "브랜드 지수";
+    const brandHasDetail = isBrand && hasDetail(subBadges, extraValues);
+    const isOpen = isBrand ? (brandHasDetail ? true : detailsOpen) : true;
+    const showToggle = isBrand && !brandHasDetail;
+
     const displayValue =
       scoreVal == null
         ? "-"
@@ -97,11 +118,39 @@ function TrendIndexBox({ itemCode }: TrendIndexBoxProps) {
     return (
       <div className="box-border w-full p-4 rounded-xl bg-fill-bg-strong">
         <div className="flex items-center gap-1 mb-2">
-          <span className="text-base font-semibold text-tx-neutral">{title}</span>
-          <Icon
-            icon="ph:question"
-            className="w-4 h-4 cursor-pointer text-icon-alt"
-          />
+          <span className="text-base font-semibold text-tx-neutral">
+            {title}
+          </span>
+          <div className="relative flex items-center">
+            <button
+              type="button"
+              onClick={() => showInfo(title)}
+              className="flex items-center justify-center w-4 h-4"
+            >
+              <Icon
+                icon="ph:question"
+                className="w-4 h-4 cursor-pointer text-icon-alt"
+              />
+            </button>
+            {infoOpen.has(title) && (
+              <>
+                <div
+                  className="absolute z-50 h-[6px] w-3 overflow-hidden"
+                  style={{ left: 4, top: 18 }}
+                >
+                  <div className="absolute left-1/2 top-[2px] h-2 w-2 -translate-x-1/2 rotate-45 bg-[rgba(0,0,0,0.75)]" />
+                </div>
+                <div
+                  className="absolute z-50 flex w-[200px] flex-col items-center justify-center gap-2.5 rounded-lg bg-[rgba(0,0,0,0.75)] px-2 py-1.5 shadow-[0_4px_16px_0_rgba(0,0,0,0.10)]"
+                  style={{ left: -10, top: 24 }}
+                >
+                  <span className="text-center type-body-xsmall break-keep text-tx-inverse">
+                    {INFO_TEXT[title]}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
           {showToggle && (
             <button
               type="button"

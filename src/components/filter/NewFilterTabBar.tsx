@@ -94,7 +94,7 @@ export function NewFilterTabPanels() {
       {selectedTab === "유형 분석" && <NewTypeAnalysis />}
       {selectedTab === "내 보드" && <BoardsPage />}
 
-      {isLocked && <ProUpgradeOverlay featureName={selectedTab} />}
+      {isLocked && <ProUpgradeOverlay key={selectedTab} featureName={selectedTab} />}
     </div>
   );
 }

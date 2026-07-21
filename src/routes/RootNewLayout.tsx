@@ -9,6 +9,8 @@ import SessionExpiredModal from "@/components/common/SessionExpiredModal";
 import AgentChat from "@/components/agent/AgentChat";
 import SettingsPage from "@/pages/SettingsPage";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
+import OnboardingTour from "@/components/onboarding/OnboardingTour";
+import { useFilterStore } from "@/stores/FilterStore";
 import { CaptureGuard } from "@/capture-guard";
 
 function RootNewLayout() {
@@ -17,8 +19,41 @@ function RootNewLayout() {
   const {
     settingsModalTab,
     isInterestBrandModalOpen,
+    openInterestBrandModal,
     closeInterestBrandModal,
+    openOnboardingTour,
   } = useUIStore();
+  const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
+
+  const handleCloseInterestBrandModal = () => {
+    closeInterestBrandModal();
+    setSelectedTab("상품 분석");
+    openOnboardingTour();
+  };
+
+  // 개발 중 결제 없이 모달을 확인하기 위한 디버그 트리거: /?showBrandModal=1
+  // 회원가입 직후 온보딩만 바로 확인하려면: /?showOnboarding=1
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("showBrandModal")) {
+      openInterestBrandModal();
+    }
+    if (params.get("showOnboarding")) {
+      setSelectedTab("상품 분석");
+      openOnboardingTour("signup");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 회원가입 직후 첫 로그인일 때만, 브랜드 선택 모달 없이 온보딩 투어 5단계만 바로 노출
+  useEffect(() => {
+    if (localStorage.getItem("isNewSignup") !== "true") return;
+    localStorage.removeItem("isNewSignup");
+    setSelectedTab("상품 분석");
+    openOnboardingTour("signup");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const guard = new CaptureGuard({
@@ -77,8 +112,10 @@ function RootNewLayout() {
 
       <InterestBrandModal
         isOpen={isInterestBrandModalOpen}
-        onClose={closeInterestBrandModal}
+        onClose={handleCloseInterestBrandModal}
       />
+
+      <OnboardingTour />
 
       {/* FEDI Agent 플로팅 버튼 & 채팅창 */}
       <div className="fixed z-50 flex flex-col items-end gap-3 bottom-6 right-6">

@@ -71,6 +71,7 @@ const NextSignupPage = () => {
         company_size: companySize,
         job_title: effectiveJob,
       });
+      localStorage.setItem("isNewSignup", "true");
       setShowSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (error: any) {

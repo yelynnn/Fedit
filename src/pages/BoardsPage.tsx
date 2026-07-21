@@ -40,7 +40,7 @@ export default function BoardsPage() {
   const loadBoards = () => {
     GetBoardList()
       .then(setBoards)
-      .catch(console.error);
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -78,9 +78,8 @@ export default function BoardsPage() {
         prev.map((b) => (b.boardId === editBoard.boardId ? { ...b, name: trimmedName } : b)),
       );
       setEditBoard(null);
-    } catch (error) {
-      console.error(error);
-    }
+    } catch {
+      }
   };
 
   const handleDeleteBoard = async () => {
@@ -90,9 +89,8 @@ export default function BoardsPage() {
       setBoards((prev) => prev.filter((b) => b.boardId !== editBoard.boardId));
       if (selectedBoardId === editBoard.boardId) setSelectedBoardId(null);
       setEditBoard(null);
-    } catch (error) {
-      console.error(error);
-    }
+    } catch {
+      }
   };
 
   const handleRemoveItem = async (itemcode: string) => {
@@ -105,9 +103,8 @@ export default function BoardsPage() {
           b.boardId === selectedBoardId ? { ...b, itemCount: Math.max(0, b.itemCount - 1) } : b,
         ),
       );
-    } catch (error) {
-      console.error(error);
-    }
+    } catch {
+      }
   };
 
   return (

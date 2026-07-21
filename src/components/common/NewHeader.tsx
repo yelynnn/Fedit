@@ -1,8 +1,8 @@
 import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
+import { useUIStore } from "@/stores/UIStore";
 import BrandFilterModal from "../filter/BrandFilterModal";
 import BrandTab from "../filter/BrandTab";
-import { useState } from "react";
 
 // 사이드바와 동일한 설정 (이 설정은 별도 파일로 분리해서 공통으로 쓰는 것이 가장 좋습니다)
 const TABS_CONFIG = [
@@ -34,7 +34,8 @@ const TABS_CONFIG = [
 ];
 
 export default function NewHeader() {
-  const [isBrandOpen, setBrandOpen] = useState(false);
+  const { isBrandFilterModalOpen, openBrandFilterModal, closeBrandFilterModal } =
+    useUIStore((s) => s);
   const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
   const brandList = useFilterStore((s) => s.brandList);
 
@@ -63,7 +64,8 @@ export default function NewHeader() {
         <div className="flex items-center gap-1">
           <div className="relative group/brand">
             <div
-              onClick={() => setBrandOpen((prev) => !prev)}
+              data-tour="brand-chip"
+              onClick={openBrandFilterModal}
               className="cursor-pointer flex items-center h-10 px-3 py-2 bg-surface-base rounded-l-2xl hover:bg-surface-base transition-colors"
             >
               <span className="text-[15px] font-semibold text-tx-alt mr-2">
@@ -82,6 +84,7 @@ export default function NewHeader() {
           </div>
 
           <div
+            data-tour="my-board-button"
             onClick={() => setSelectedTab("내 보드")}
             className="cursor-pointer flex items-center h-10 px-4 bg-surface-base rounded-r-2xl hover:bg-surface-base transition-colors"
           >
@@ -102,9 +105,9 @@ export default function NewHeader() {
       </div>
 
       <BrandFilterModal
-        isOpen={isBrandOpen}
-        onClose={() => setBrandOpen(false)}
-        onSubmit={() => setBrandOpen(false)}
+        isOpen={isBrandFilterModalOpen}
+        onClose={closeBrandFilterModal}
+        onSubmit={closeBrandFilterModal}
       />
     </header>
   );

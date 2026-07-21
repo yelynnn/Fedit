@@ -16,7 +16,6 @@ function MainColorBox() {
           products: res.products ?? [],
         });
       } catch (error) {
-        console.error("급상승 컬러 불러오기 실패:", error);
         setColorData({ colors: [], products: [] });
       }
     };

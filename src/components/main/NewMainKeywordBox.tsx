@@ -5,6 +5,10 @@ import naverIcon from "@/assets/brand/naverIcon.png";
 import musinsaIcon from "@/assets/brand/musinsaIcon.png";
 import wconceptIcon from "@/assets/brand/wconceptIcon.png";
 import MonthModal from "./modal/MonthModal";
+import infoFilledIcon from "@/assets/etc/info_filled.svg";
+import upIcon from "@/assets/etc/upIcon.svg";
+import downIcon from "@/assets/etc/downIcon.svg";
+import updownIcon from "@/assets/etc/updown.svg";
 
 function getImageByTitle(title: string) {
   switch (title) {
@@ -43,6 +47,12 @@ function NewMainKeywordBox({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { audienceType, selectedMonth, setSelectedMonth } = useTypeStore();
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [showNaverInfo, setShowNaverInfo] = useState(false);
+
+  const handleShowNaverInfo = () => {
+    setShowNaverInfo(true);
+    setTimeout(() => setShowNaverInfo(false), 3000);
+  };
   const [selectedCategory, setSelectedCategory] = useState(
     categories[0]?.category ?? "",
   );
@@ -70,18 +80,51 @@ function NewMainKeywordBox({
       } box-border`}
     >
       <header className="flex items-center justify-between px-1 pb-3">
-        <div className="flex items-center gap-3">
-          <img
-            src={getImageByTitle(title)}
-            alt={title}
-            className="object-contain w-6 h-6"
-          />
-          <h3 className="text-base font-semibold leading-6">{title} 키워드</h3>
+        <div className="relative flex items-center">
+          <div className="flex items-center gap-3">
+            <img
+              src={getImageByTitle(title)}
+              alt={title}
+              className="object-contain w-6 h-6"
+            />
+            <h3 className="text-base font-semibold leading-6">
+              {title} 키워드
+            </h3>
+          </div>
+          {title === "네이버" && (
+            <>
+              <button
+                type="button"
+                onClick={handleShowNaverInfo}
+                className="flex items-center justify-center flex-shrink-0 w-5 h-5 ml-2"
+              >
+                <img src={infoFilledIcon} alt="안내" className="w-5 h-5" />
+              </button>
+              {showNaverInfo && (
+                <>
+                  <div
+                    className="absolute z-50 w-3 h-2 overflow-hidden"
+                    style={{ left: 135, top: 19 }}
+                  >
+                    <div className="absolute left-1/2 top-1 h-2.5 w-2.5 -translate-x-1/2 rotate-45 bg-[rgba(0,0,0,0.75)]" />
+                  </div>
+                  <div
+                    className="absolute z-50 flex flex-col items-center justify-center gap-2.5 rounded-lg bg-[rgba(0,0,0,0.75)] px-2 py-1 shadow-[0_4px_16px_0_rgba(0,0,0,0.10)]"
+                    style={{ left: 8, top: 27 }}
+                  >
+                    <span className="text-center type-body-xsmall whitespace-nowrap text-tx-inverse">
+                      네이버는 상승률을 제공하지 않아 키워드만 표시돼요
+                    </span>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
 
         {isMonthly && (
           <div className="flex items-center gap-3">
-            <p className="text-sm text-tx-neutral font-semibold">
+            <p className="text-sm font-semibold text-tx-neutral">
               {title} 월간 랭킹
             </p>
             <div
@@ -106,9 +149,9 @@ function NewMainKeywordBox({
         )}
       </header>
 
-      <div className="bg-fill-bg-strong rounded-xl  pt-4 pb-2">
+      <div className="pt-4 pb-2 bg-fill-bg-strong rounded-xl">
         {isMonthly && (
-          <div className="flex pt-2 items-center gap-6 w-full border-b border-line-alt mb-5 px-5">
+          <div className="flex items-center w-full gap-6 px-5 pt-2 mb-5 border-b border-line-alt">
             {categories.map((cat) => (
               <button
                 key={cat.category}
@@ -127,7 +170,7 @@ function NewMainKeywordBox({
         )}
 
         {audienceType === "kids" && !isMonthly && (
-          <div className="flex text-tx-neutral text-sm font-semibold py-3 justify-center items-center gap-6 w-full border-b border-line-alt mb-5">
+          <div className="flex items-center justify-center w-full gap-6 py-3 mb-5 text-sm font-semibold border-b text-tx-neutral border-line-alt">
             출산육아 / 키즈 키워드
           </div>
         )}
@@ -167,26 +210,20 @@ function NewMainKeywordBox({
                             {brand}
                           </span>
                         )}
-                        <span className="text-base text-tx-neutral font-semibold line-clamp-1">
+                        <span className="text-base font-semibold text-tx-neutral line-clamp-1">
                           {keywordText}
                         </span>
                       </div>
                     </div>
                     <div className="pl-2">
                       {item.status === 1 && (
-                        <Icon
-                          icon="fe:drop-up"
-                          className="w-6 h-6 text-red-500"
-                        />
+                        <img src={upIcon} alt="상승" className="h-6 w-6" />
                       )}
                       {item.status === -1 && (
-                        <Icon
-                          icon="fe:drop-down"
-                          className="w-6 h-6 text-blue-500"
-                        />
+                        <img src={downIcon} alt="하락" className="h-6 w-6" />
                       )}
                       {item.status === 0 && title !== "네이버" && (
-                        <div className="w-[14px] h-[2px] bg-icon-alt" />
+                        <img src={updownIcon} alt="유지" className="h-6 w-6" />
                       )}
                     </div>
                   </div>

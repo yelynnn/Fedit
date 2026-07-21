@@ -7,6 +7,9 @@ import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
 import { useFilterStore } from "@/stores/FilterStore";
+import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import { useUIStore } from "@/stores/UIStore";
+import errorIcon from "@/assets/etc/error.svg";
 
 import { GetProductList } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
@@ -43,6 +46,15 @@ function NewProductAnalysis() {
     selectedSeasons,
   } = useFilteredData();
   const { brandList } = useFilterStore();
+  const { subscription } = useSubscriptionStore((s) => s);
+  const openBrandFilterModal = useUIStore((s) => s.openBrandFilterModal);
+  // 개발 중 실제 basic 플랜 없이도 배너를 확인하기 위한 디버그 강제 노출: /?showBrandModal=1
+  const isDevBannerForce =
+    import.meta.env.DEV &&
+    new URLSearchParams(window.location.search).get("showBrandModal") === "1";
+  const showBrandNotice =
+    (isDevBannerForce || subscription?.plan === "basic") &&
+    brandList.length === 0;
 
   const fetchData = useCallback(
     async (cursor: string | null = null) => {
@@ -72,7 +84,6 @@ function NewProductAnalysis() {
 
         setNextCursor(data?.nextCursor || null);
       } catch (err) {
-        console.error("데이터 로드 실패", err);
       } finally {
         isFetchingRef.current = false;
         setIsFetching(false);
@@ -151,52 +162,76 @@ function NewProductAnalysis() {
           setFilterOpen(true);
         }}
       />
-      <section
-        ref={sectionRef}
+      <div
         className={[
-          "h-full hide-scrollbar",
-          isDetailOpen
-            ? "w-[220px] shrink-0 overflow-y-auto"
-            : "flex-1 min-w-0 overflow-auto",
+          "flex h-full flex-col gap-3 overflow-hidden",
+          isDetailOpen ? "w-[220px] shrink-0" : "flex-1 min-w-0",
         ].join(" ")}
       >
+        {showBrandNotice && !isDetailOpen && (
+          <div
+            data-tour="brand-banner"
+            className="flex h-[50px] w-[calc(100%-20px)] flex-shrink-0 items-center justify-between gap-2 rounded-lg bg-data-blue-light px-2 py-2"
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <img src={errorIcon} alt="" className="h-5 w-5 flex-shrink-0" />
+              <span className="type-title-small truncate text-tx-neutral">
+                아직 브랜드를 고르지 않았어요. 지금은 무신사 기본 데이터를 보고
+                있어요. 관심 브랜드 10개를 고르면 분석이 더 정확해져요.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={openBrandFilterModal}
+              className="flex h-[34px] flex-shrink-0 items-center justify-center gap-1.5 rounded-md bg-fill-primary px-2 py-1 type-body-small text-tx-inverse"
+            >
+              브랜드 선택하기
+            </button>
+          </div>
+        )}
+        <section
+          ref={sectionRef}
+          className="h-full flex-1 min-h-0 overflow-auto hide-scrollbar"
+        >
         <div
           className={
             isDetailOpen
               ? "flex flex-col overflow-y-auto hide-scrollbar"
-              : "grid [grid-template-columns:repeat(auto-fill,minmax(200px,1fr))] overflow-y-auto hide-scrollbar"
+              : "flex flex-wrap overflow-y-auto hide-scrollbar"
           }
         >
-          {resultLists.map((product) => (
+          {resultLists.map((product, index) => (
             <button
               key={product.itemcode}
               ref={(el) => {
                 itemButtonRefs.current[product.itemcode] = el;
               }}
+              data-tour={index === 0 ? "first-product-card" : undefined}
               onClick={() => {
                 clickedItemRef.current = product.itemcode;
                 setSelectedProductId(product.itemcode);
                 setSelectedProduct(product);
               }}
-              className="w-full text-left"
+              className="text-left"
             >
               <ProductBox product={product} />
             </button>
           ))}
 
           {!isFetching && nextCursor && resultLists.length > 0 && (
-            <div ref={loadMoreRef} className="w-full h-10 col-span-full" />
+            <div ref={loadMoreRef} className="w-full h-10" />
           )}
 
           {isFetching && (
-            <div className="flex items-center justify-center w-full h-24 col-span-full">
+            <div className="flex items-center justify-center w-full h-24">
               <div className="text-sm font-medium text-gray-400 animate-pulse">
                 상품 목록을 불러오고 있습니다...
               </div>
             </div>
           )}
         </div>
-      </section>
+        </section>
+      </div>
 
       {isDetailOpen && (
         <aside className="flex-1 min-w-0 h-full px-5 py-8 overflow-y-auto bg-white hide-scrollbar rounded-xl shadow-[0_0_8px_0_rgba(0,0,0,0.15)]">

@@ -30,7 +30,6 @@ function MainItemTrendBox() {
         const list: TrendItem[] = Array.isArray(res) ? res : res?.items ?? [];
         setItemTrendList(list ?? []);
       } catch (error) {
-        console.error("아이템 트렌드 불러오기 실패:", error);
         setItemTrendList([]);
       }
     };

@@ -23,11 +23,12 @@ const TABS_CONFIG = [
 
 export default function Sidebar() {
   const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
-  const { openSettingsModal } = useUIStore();
+  const { openSettingsModal, sidebarCollapseOverride } = useUIStore();
 
-  const [isCollapsed, setIsCollapsed] = useState(
+  const [storedCollapsed, setStoredCollapsed] = useState(
     () => localStorage.getItem("sidebar-collapsed") === "true",
   );
+  const isCollapsed = sidebarCollapseOverride ?? storedCollapsed;
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
@@ -42,7 +43,7 @@ export default function Sidebar() {
   }, [fetchMe]);
 
   const toggleCollapsed = (value: boolean) => {
-    setIsCollapsed(value);
+    setStoredCollapsed(value);
     localStorage.setItem("sidebar-collapsed", String(value));
   };
 
@@ -81,6 +82,7 @@ export default function Sidebar() {
 
   return (
     <aside
+      data-tour="app-sidebar"
       className={`h-screen bg-white border-r border-line-divider flex flex-col transition-[width] duration-200 ease-out
         flex-shrink-0 z-40 ${isCollapsed ? "w-[72px]" : "w-55"}`}
     >

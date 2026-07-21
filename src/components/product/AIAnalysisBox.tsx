@@ -24,7 +24,13 @@ export default function AIAnalysisBox({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showAIInfo, setShowAIInfo] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
+
+  const handleShowAIInfo = () => {
+    setShowAIInfo(true);
+    setTimeout(() => setShowAIInfo(false), 3000);
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem(`ai-feedback-${itemcode}`);
@@ -44,9 +50,12 @@ export default function AIAnalysisBox({
     const next = feedback === "like" ? "none" : "like";
     saveFeedback(next);
     if (next === "like") {
-      PostJudge({ itemcode, column: "ai_description", judge: 1, feedback: null }).catch(
-        console.error,
-      );
+      PostJudge({
+        itemcode,
+        column: "ai_description",
+        judge: 1,
+        feedback: null,
+      }).catch(() => {});
     }
   };
 
@@ -65,7 +74,7 @@ export default function AIAnalysisBox({
       column: "ai_description",
       judge: -1,
       feedback: selectedFeedback,
-    }).catch(console.error);
+    }).catch(() => {});
   };
 
   useLayoutEffect(() => {
@@ -84,8 +93,34 @@ export default function AIAnalysisBox({
   return (
     <div className="bg-[#FBFAFF] rounded-xl p-3 mb-4 border border-surface-base">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 font-semibold text-gray-800 mb-3 text-sm">
-          AI 개요 <Icon icon="ph:question" className="w-4 h-4 text-gray-400" />
+        <div className="relative flex items-center gap-1.5 font-semibold text-gray-800 mb-3 text-sm">
+          AI 개요
+          <button
+            type="button"
+            onClick={handleShowAIInfo}
+            className="flex items-center justify-center w-4 h-4"
+          >
+            <Icon icon="ph:question" className="w-4 h-4 text-gray-400" />
+          </button>
+          {showAIInfo && (
+            <>
+              <div
+                className="absolute z-50 w-3 h-2 overflow-hidden"
+                style={{ left: 60, top: 19 }}
+              >
+                <div className="absolute left-1/2 top-1 h-2.5 w-2.5 -translate-x-1/2 rotate-45 bg-[rgba(0,0,0,0.75)]" />
+              </div>
+              <div
+                className="absolute z-50 flex flex-col items-center justify-center gap-2.5 w-[320px] rounded-lg bg-[rgba(0,0,0,0.75)] px-3 py-2 shadow-[0_4px_16px_0_rgba(0,0,0,0.10)]"
+                style={{ left: 0, top: 27 }}
+              >
+                <span className="text-center break-keep type-body-xsmall text-tx-inverse">
+                  AI가 상품의 디자인 특징과 트렌드 요소를 분석해 핵심 내용을
+                  한눈에 정리하고, 상품 기획에 필요한 인사이트를 제공해요.
+                </span>
+              </div>
+            </>
+          )}
         </div>
         {isRanking && (
           <button

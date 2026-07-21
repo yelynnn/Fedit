@@ -18,7 +18,7 @@ export default function DetailItem({ title, content, itemcode }: DetailItemProps
     setFeedback(next);
     if (next === "like") {
       PostJudge({ itemcode, column: title, judge: 1, feedback: null }).catch(
-        console.error,
+        () => {},
       );
     }
   };
@@ -28,7 +28,7 @@ export default function DetailItem({ title, content, itemcode }: DetailItemProps
     setFeedback(next);
     if (next === "dislike") {
       PostJudge({ itemcode, column: title, judge: -1, feedback: null }).catch(
-        console.error,
+        () => {},
       );
     }
   };

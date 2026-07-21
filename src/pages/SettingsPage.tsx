@@ -18,6 +18,7 @@ import GuideDetailView from "@/components/settings/guide/GuideDetailView";
 import GuideCard from "@/components/settings/GuideCard";
 import { GUIDE_CATEGORIES, type GuideCategory } from "@/types/guide";
 import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import cancelIcon from "@/assets/planCard/cancel.svg";
 
 const GUIDE_TABS: ("전체" | GuideCategory)[] = ["전체", ...GUIDE_CATEGORIES];
 
@@ -150,10 +151,10 @@ export default function SettingsPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [inquiryType, setInquiryType] = useState("요금제·결제 문의");
   const [inquiryContent, setInquiryContent] = useState("");
-  const [withdrawStep, setWithdrawStep] = useState<null | "reason" | "confirm">(
-    null,
-  );
-  const [withdrawReasons, setWithdrawReasons] = useState<string[]>([]);
+  const [withdrawStep, setWithdrawStep] = useState<
+    null | "stats" | "reason" | "interview" | "interview-confirmed" | "complete"
+  >(null);
+  const [withdrawReason, setWithdrawReason] = useState<string | null>(null);
   const [chatSearch, setChatSearch] = useState("");
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -242,10 +243,72 @@ export default function SettingsPage() {
     }
   };
 
-  const toggleReason = (r: string) =>
-    setWithdrawReasons((prev) =>
-      prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
-    );
+  const CALENDLY_URL = "https://calendly.com/team-mify/30min";
+
+  const loadCalendlyScript = () =>
+    new Promise<void>((resolve) => {
+      if (!document.getElementById("calendly-widget-style")) {
+        const link = document.createElement("link");
+        link.id = "calendly-widget-style";
+        link.rel = "stylesheet";
+        link.href = "https://assets.calendly.com/assets/external/widget.css";
+        document.head.appendChild(link);
+      }
+
+      if ((window as any).Calendly) {
+        resolve();
+        return;
+      }
+      const existing = document.getElementById("calendly-widget-script");
+      if (existing) {
+        existing.addEventListener("load", () => resolve());
+        return;
+      }
+      const script = document.createElement("script");
+      script.id = "calendly-widget-script";
+      script.src = "https://assets.calendly.com/assets/external/widget.js";
+      script.async = true;
+      script.onload = () => resolve();
+      document.body.appendChild(script);
+    });
+
+  const handleOpenInterviewScheduler = async () => {
+    await loadCalendlyScript();
+    const url = new URL(CALENDLY_URL);
+    if (userEmail) url.searchParams.set("email", userEmail);
+    (window as any).Calendly?.initPopupWidget({ url: url.toString() });
+  };
+
+  useEffect(() => {
+    if (withdrawStep !== "interview") return;
+    const handleMessage = (e: MessageEvent) => {
+      if (
+        e.origin.includes("calendly.com") &&
+        e.data?.event === "calendly.event_scheduled"
+      ) {
+        setWithdrawStep("interview-confirmed");
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [withdrawStep]);
+
+  const finalizeWithdraw = async () => {
+    if (isWithdrawing) return;
+    setIsWithdrawing(true);
+    try {
+      await DeleteWithdraw(withdrawReason ? [withdrawReason] : []);
+      setWithdrawStep("complete");
+    } catch (error: any) {
+      alert(error?.message || "회원 탈퇴에 실패했습니다.");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
+  const handleContinueAfterReason = () => {
+    setWithdrawStep("interview");
+  };
 
   const now = Date.now();
   const DAY = 86400000;
@@ -422,8 +485,8 @@ export default function SettingsPage() {
                   </div>
                   <button
                     onClick={() => {
-                      setWithdrawReasons([]);
-                      setWithdrawStep("reason");
+                      setWithdrawReason(null);
+                      setWithdrawStep("stats");
                     }}
                     className="flex h-[34px] px-2 py-1 justify-center items-center gap-1.5 rounded-lg bg-[#FEE4E2] text-status-error text-sm font-semibold hover:bg-red-100 transition-colors whitespace-nowrap"
                   >
@@ -612,13 +675,13 @@ export default function SettingsPage() {
               ) : (
                 <div className="max-w-[600px]">
                   <h1 className="text-2xl font-semibold text-[#0B0E0F]">
-                    AI 사용 가이드
+                    서비스 사용 가이드
                   </h1>
                   <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                     주제를 골라 FEDIT 활용법을 자세히 알아보세요
                   </p>
 
-                  <div className="flex items-center gap-5 overflow-x-auto hide-scrollbar border-b border-line-divider mb-8">
+                  <div className="flex items-center gap-5 mb-8 overflow-x-auto border-b hide-scrollbar border-line-divider">
                     {GUIDE_TABS.map((tab) => (
                       <button
                         key={tab}
@@ -980,119 +1043,281 @@ export default function SettingsPage() {
         >
           <div
             className="absolute inset-0 bg-black/30"
-            onClick={() => setWithdrawStep(null)}
+            onClick={() => {
+              if (withdrawStep !== "complete") setWithdrawStep(null);
+            }}
           />
 
-          {withdrawStep === "reason" && (
-            <div className="relative bg-white rounded-2xl p-8 w-full max-w-[440px] shadow-xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-tx-default">
-                  탈퇴 사유 선택
-                </h2>
-                <button onClick={() => setWithdrawStep(null)}>
-                  <Icon
-                    icon="material-symbols:close"
-                    className="w-6 h-6 transition-colors text-tx-assistive hover:text-black"
-                  />
+          {withdrawStep === "stats" && (
+            <div className="relative flex w-[420px] flex-col items-end gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
+              <div className="flex w-full items-center justify-between">
+                <span className="type-body-small text-tx-alt">지난 3개월</span>
+                <button
+                  type="button"
+                  onClick={() => setWithdrawStep(null)}
+                  className="flex h-7 w-7 items-center justify-center gap-2.5 rounded-pill border border-line-alt bg-fill-bg p-1 hover:bg-fill-bg-strong"
+                >
+                  <img src={cancelIcon} alt="닫기" className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="flex flex-col gap-3 mb-6">
+              <div className="flex w-full flex-col gap-2">
+                <h2 className="type-title-large break-keep text-tx-strong">
+                  FEDIT과 함께한
+                  <br />
+                  당신의 패션 기획 아카이브
+                </h2>
+                <p className="type-body-small break-keep text-tx-alt">
+                  떠나기 전에, 지금까지 발견한 스타일을 확인해보세요.
+                </p>
+              </div>
+
+              <div className="flex w-full items-center rounded-xl bg-fill-bg-strong">
                 {[
-                  "서비스 사용 빈도가 낮아요",
-                  "원하는 기능이 없어요",
-                  "요금이 부담돼요",
-                  "다른 서비스를 이용할 예정이에요",
-                  "기타",
-                ].map((r) => (
-                  <label
-                    key={r}
-                    className="flex items-center gap-3 cursor-pointer"
-                    onClick={() => toggleReason(r)}
-                  >
-                    <div
-                      className={`w-5 h-5 flex items-center justify-center border rounded transition-colors ${withdrawReasons.includes(r) ? "bg-tx-neutral border-tx-neutral" : "border-line-neutral"}`}
-                    >
-                      {withdrawReasons.includes(r) && (
-                        <Icon
-                          icon="lucide:check"
-                          className="w-4 h-4 text-white"
-                        />
-                      )}
+                  { value: "48", label: "저장한 아이템" },
+                  { value: "12", label: "발견한 키워드" },
+                  { value: "86%", label: "평균 매칭률" },
+                ].map((stat, i) => (
+                  <div key={stat.label} className="flex flex-1 items-center">
+                    {i > 0 && <div className="h-8 w-px bg-line-divider" />}
+                    <div className="flex flex-1 flex-col items-center gap-1 px-2 py-5">
+                      <span className="type-headline text-center text-tx-strong">
+                        {stat.value}
+                      </span>
+                      <span className="type-body-xsmall text-tx-alt">
+                        {stat.label}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-tx-default">
-                      {r}
-                    </span>
-                  </label>
+                  </div>
                 ))}
               </div>
 
-              <p className="mb-5 text-xs leading-relaxed text-tx-assistive">
-                인터뷰 참여 시 지난 구독 요금을 환불해 드립니다.
-                <a
-                  href="https://calendly.com/team-mify/30min"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#3E7EFF] underline ml-1"
+              <div className="flex w-full items-center justify-between">
+                <button
+                  onClick={() => setWithdrawStep("reason")}
+                  className="type-body-small text-tx-default"
                 >
-                  인터뷰 일정 예약하기 →
-                </a>
-              </p>
+                  탈퇴 계속하기
+                </button>
+                <button
+                  onClick={() => setWithdrawStep(null)}
+                  className="flex h-[34px] items-center justify-center gap-1.5 rounded-md bg-fill-primary px-2 py-1 type-body-small text-tx-inverse"
+                >
+                  계정 유지하기
+                </button>
+              </div>
+            </div>
+          )}
+
+          {withdrawStep === "reason" && (
+            <div className="relative flex w-[420px] flex-col items-end gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
+              <div className="flex w-full items-center justify-between">
+                <h2 className="type-title-large text-tx-strong">
+                  떠나시려는 이유를 알려주세요
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setWithdrawStep(null)}
+                  className="flex h-7 w-7 items-center justify-center gap-2.5 rounded-pill border border-line-alt bg-fill-bg p-1 hover:bg-fill-bg-strong"
+                >
+                  <img src={cancelIcon} alt="닫기" className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="flex w-full flex-col gap-4">
+                <p className="type-body-small text-tx-neutral">
+                  탈퇴하시는 주된 이유는 무엇인가요?
+                </p>
+                <div className="flex flex-col gap-3">
+                  {[
+                    ...(currentPlan === "free" ? [] : ["요금이 부담돼요"]),
+                    "AI 추천·기획 결과가 기대에 못 미쳐요",
+                    "원하는 브랜드·콘텐츠가 없어요",
+                    "생각보다 자주 안 쓰게 돼요",
+                    "잠시 쉬고 싶어요",
+                  ].map((r) => (
+                    <label
+                      key={r}
+                      className="flex cursor-pointer items-center gap-3"
+                      onClick={() => setWithdrawReason(r)}
+                    >
+                      <div
+                        className={[
+                          "flex h-[19px] w-[19px] flex-shrink-0 items-center justify-center rounded-full border-2",
+                          withdrawReason === r
+                            ? "border-tx-strong"
+                            : "border-icon-alt",
+                        ].join(" ")}
+                      >
+                        {withdrawReason === r && (
+                          <div className="h-2.5 w-2.5 rounded-full bg-tx-strong" />
+                        )}
+                      </div>
+                      <span className="type-body-small text-tx-neutral">
+                        {r}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex w-full items-center justify-between">
+                <button
+                  onClick={handleContinueAfterReason}
+                  className="type-body-small text-tx-default"
+                >
+                  건너뛰기
+                </button>
+                <button
+                  onClick={handleContinueAfterReason}
+                  disabled={!withdrawReason || isWithdrawing}
+                  className={[
+                    "flex h-[34px] items-center justify-center gap-1.5 rounded-md px-2 py-1 type-body-small transition-colors",
+                    withdrawReason
+                      ? "bg-fill-primary text-tx-inverse"
+                      : "cursor-not-allowed bg-[#F4F4F5] text-[#A1A3A5]",
+                  ].join(" ")}
+                >
+                  탈퇴 계속하기
+                </button>
+              </div>
+            </div>
+          )}
+
+          {withdrawStep === "interview" && (
+            <div className="relative flex w-[420px] flex-col items-end gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
+              <div className="flex w-full items-center justify-between">
+                <span className="type-body-small text-tx-alt">
+                  화상 인터뷰 제안
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setWithdrawStep(null)}
+                  className="flex h-7 w-7 items-center justify-center gap-2.5 rounded-pill border border-line-alt bg-fill-bg p-1 hover:bg-fill-bg-strong"
+                >
+                  <img src={cancelIcon} alt="닫기" className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="flex w-full flex-col gap-2">
+                <h2 className="type-title-large break-keep text-tx-strong">
+                  20분만 시간을
+                  <br />
+                  내주실 수 있나요?
+                </h2>
+                <p className="type-body-small break-keep text-tx-alt">
+                  추천이 왜 안맞았는지 들려주세요. FEDIT를 더 정교하게 만드는
+                  데 큰 힘이 돼요.
+                </p>
+              </div>
+
+              {currentPlan !== "free" && (
+                <div className="flex w-full flex-col gap-2 rounded-xl bg-[#EFFBF3] p-3">
+                  <span className="type-body-xsmall text-tx-alt">
+                    인터뷰 참여 리워드
+                  </span>
+                  <p className="type-title-medium text-tx-strong">
+                    최근 결제한 1개월권{" "}
+                    <span className="text-status-warning">
+                      {currentPlan === "pro" ? "59,000원" : "19,000원"}
+                    </span>{" "}
+                    페이백
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Icon
+                      icon="ph:info"
+                      className="h-3.5 w-3.5 flex-shrink-0 text-tx-assistive"
+                    />
+                    <span className="type-body-xsmall text-tx-alt">
+                      인터뷰(20분)를 완료 후 1개월권 페이백이 진행됩니다.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex w-full items-center justify-between">
+                <button
+                  onClick={finalizeWithdraw}
+                  disabled={isWithdrawing}
+                  className="type-body-small text-tx-default"
+                >
+                  괜찮아요, 탈퇴할게요
+                </button>
+                <button
+                  onClick={handleOpenInterviewScheduler}
+                  className="flex h-[34px] items-center justify-center gap-1.5 rounded-md bg-fill-primary px-2 py-1 type-body-small text-tx-inverse"
+                >
+                  인터뷰 일정 잡기
+                </button>
+              </div>
+            </div>
+          )}
+
+          {withdrawStep === "interview-confirmed" && (
+            <div className="relative flex w-[420px] flex-col items-center gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-fill-primary">
+                <Icon icon="ph:check-bold" className="h-5 w-5 text-white" />
+              </div>
+
+              <div className="flex flex-col items-center gap-2 text-center">
+                <h2 className="type-title-large text-tx-strong">
+                  예약이 확정됐어요
+                </h2>
+                <p className="type-body-small text-tx-alt">
+                  입력하신 메일로 참여 링크를 보내드렸어요.
+                </p>
+              </div>
+
+              <div className="flex w-full flex-col gap-3 rounded-xl bg-fill-bg-strong p-3">
+                <div className="flex items-center justify-between">
+                  <span className="type-body-small text-tx-alt">
+                    입력하신 이메일
+                  </span>
+                  <span className="type-body-small text-tx-strong">
+                    {userEmail}
+                  </span>
+                </div>
+                <div className="h-px w-full bg-line-divider" />
+                <p className="type-body-xsmall break-keep text-tx-alt">
+                  탈퇴하시면 인터뷰 일정은 그대로 유지되고, 인터뷰 후
+                  환급됩니다.
+                </p>
+              </div>
 
               <button
-                onClick={() => {
-                  if (withdrawReasons.length > 0) setWithdrawStep("confirm");
-                }}
-                disabled={withdrawReasons.length === 0}
-                className={`w-full py-3 rounded-xl font-semibold transition-colors ${
-                  withdrawReasons.length > 0
-                    ? "bg-status-error text-white hover:bg-red-600 cursor-pointer"
-                    : "bg-surface-base text-tx-assistive cursor-not-allowed"
-                }`}
+                onClick={finalizeWithdraw}
+                disabled={isWithdrawing}
+                className="flex h-[46px] w-full items-center justify-center gap-1 rounded-md bg-fill-primary type-title-medium text-tx-inverse"
               >
-                최종 탈퇴
+                {isWithdrawing ? "탈퇴 처리 중..." : "탈퇴하기"}
               </button>
             </div>
           )}
 
-          {withdrawStep === "confirm" && (
-            <div className="relative bg-white rounded-2xl p-8 w-full max-w-[380px] shadow-xl text-center">
-              <div className="flex items-center justify-center mx-auto mb-4 rounded-full w-14 h-14 bg-rising-bg">
-                <Icon icon="ph:warning" className="w-7 h-7 text-status-error" />
+          {withdrawStep === "complete" && (
+            <div className="relative flex w-[420px] flex-col items-start gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
+              <div className="flex flex-col gap-1">
+                <span className="type-body-small text-tx-assistive">
+                  탈퇴 완료
+                </span>
+                <h2 className="type-title-large text-tx-strong">
+                  언제든 다시 돌아오세요
+                </h2>
+                <p className="type-body-small break-keep text-tx-neutral">
+                  계정 탈퇴가 완료되었어요. 이용 데이터는 30일간 안전하게
+                  보관되며, 30일 내 재구독 시, 그대로 복구됩니다.
+                </p>
               </div>
-              <h2 className="mb-2 text-xl font-semibold text-tx-strong">
-                정말 탈퇴하시겠어요?
-              </h2>
-              <p className="mb-8 text-sm leading-relaxed text-tx-alt">
-                탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setWithdrawStep(null)}
-                  disabled={isWithdrawing}
-                  className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base disabled:cursor-not-allowed"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={async () => {
-                    if (isWithdrawing) return;
-                    setIsWithdrawing(true);
-                    try {
-                      await DeleteWithdraw(withdrawReasons);
-                      localStorage.clear();
-                      window.location.href = "/login";
-                    } catch (error: any) {
-                      alert(error?.message || "회원 탈퇴에 실패했습니다.");
-                      setIsWithdrawing(false);
-                    }
-                  }}
-                  disabled={isWithdrawing}
-                  className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-status-error rounded-xl hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isWithdrawing ? "탈퇴 처리 중..." : "탈퇴하기"}
-                </button>
-              </div>
+
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  window.location.href = "/login";
+                }}
+                className="flex h-[46px] w-full items-center justify-center gap-1 rounded-md bg-fill-primary type-title-medium text-tx-inverse"
+              >
+                확인했어요
+              </button>
             </div>
           )}
         </div>
