@@ -78,9 +78,7 @@ function DashBoardPage() {
 
         setKeywordList(merged);
         setCrawledDate(baseArray[0]?.date ?? null);
-      } catch (e: any) {
-        console.log("Fetch error:", e);
-
+      } catch {
         setKeywordList([]);
         setCrawledDate(null);
       }
@@ -92,7 +90,7 @@ function DashBoardPage() {
   return (
     <div className="w-full h-full px-14">
       <section>
-        <div className="flex items-stretch w-full mt-3 p-1 gap-1 rounded-lg border border-line-alt bg-fill-bg-strong">
+        <div className="flex items-stretch w-full gap-1 p-1 mt-3 border rounded-lg border-line-alt bg-fill-bg-strong">
           {["adult", "kids"].map((type) => {
             const isSelected = audienceType === type;
             return (
@@ -123,7 +121,7 @@ function DashBoardPage() {
           <SubTitleBox
             title="플랫폼 내 인기 키워드"
             label="플랫폼 검색어"
-            infoText="매일 오전 10시, 무신사·W컨셉·네이버 등 주요 패션 플랫폼의 검색어 데이터를 자동 수집하며, 매거진·SNS 언급량 분석을 결합해 월별 종합 랭킹과 최근 주목도가 급상승한 패션 트렌드를 함께 제공합니다."
+            infoText="무신사·W컨셉·네이버의 검색어 데이터에 매거진·SNS 언급량 분석을 더해, 주간 종합 랭킹과 최근 주목도가 급상승한 트렌드 키워드를 함께 보여드려요."
           />
         </div>
 
@@ -156,7 +154,7 @@ function DashBoardPage() {
               오늘({currentDate.format("YYYY.MM.DD")})
             </div>
 
-            <div className="flex items-center gap-4 text-sm font-medium pr-2 text-tx-neutral">
+            <div className="flex items-center gap-4 pr-2 text-sm font-medium text-tx-neutral">
               <button
                 onClick={() => {
                   const newDate = currentDate.subtract(1, "month");
@@ -213,7 +211,7 @@ function DashBoardPage() {
             <SubTitleBox
               title="플랫폼 내 인기 랭킹"
               label="플랫폼 랭킹"
-              infoText="매일 오전 10시, 무신사·W컨셉·네이버 등 주요 패션 플랫폼의 검색어 데이터를 자동 수집하며, 매거진·SNS 언급량 분석을 결합해 월별 종합 랭킹과 최근 주목도가 급상승한 패션 트렌드를 함께 제공합니다."
+              infoText="판매량과 소비자 관심 데이터를 바탕으로 FEDIT만의 자체 로직으로 분석해 현재 트렌드에 부합하는 상품을 매월 선정한 랭킹이에요."
             />
           </div>
           <div>

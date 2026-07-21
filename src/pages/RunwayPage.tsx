@@ -6,6 +6,7 @@ import FeedbackModal from "@/components/product/FeedbackModal";
 import { Icon } from "@iconify/react";
 import { GetFashionShow } from "@/apis/RunwayAPI";
 import { PostJudge } from "@/apis/AnalysisAPI";
+import QuestionTooltip from "@/components/common/QuestionTooltip";
 
 
 
@@ -47,7 +48,7 @@ function RunwayPage() {
     const next = feedback === "like" ? "none" : "like";
     saveFeedback(next);
     if (next === "like") {
-      PostJudge({ itemcode: seasonValue, column: "runway", judge: 1, feedback: null }).catch(console.error);
+      PostJudge({ itemcode: seasonValue, column: "runway", judge: 1, feedback: null }).catch(() => {});
     }
   };
 
@@ -58,7 +59,7 @@ function RunwayPage() {
 
   const handleModalSubmit = (selectedFeedback: string[]) => {
     saveFeedback("dislike");
-    PostJudge({ itemcode: seasonValue, column: "runway", judge: -1, feedback: selectedFeedback }).catch(console.error);
+    PostJudge({ itemcode: seasonValue, column: "runway", judge: -1, feedback: selectedFeedback }).catch(() => {});
   };
 
   useEffect(() => {
@@ -104,9 +105,15 @@ function RunwayPage() {
   return (
     <div className="relative min-h-screen px-16 mx-auto">
       <div className="mb-2">
-        <h1 className="text-[28px] font-semibold text-[#111] tracking-tight">
-          Fashion Week Runway Analysis
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-[28px] font-semibold text-[#111] tracking-tight">
+            Fashion Week Runway Analysis
+          </h1>
+          <QuestionTooltip
+            label="패션쇼 분석"
+            infoText="패션 트렌드의 시작점인 시즌별 주요 패션쇼 분석을 통해 앞으로 다가올 트렌드를 미리 예측하고 상품 기획에 반영해 보세요."
+          />
+        </div>
         <div className="flex items-center gap-3 mt-2">
           <p className="text-tx-alt text-base font-semibold">
             주요 브랜드 런웨이 비교 분석 & 시즌 트렌드 인사이트

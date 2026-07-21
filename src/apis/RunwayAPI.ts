@@ -45,7 +45,6 @@ const GetFashionShow = async (season: string): Promise<FashionShowResponse> => {
     });
     return response.data;
   } catch (error) {
-    console.error("런웨이 데이터 조회 실패", error);
     throw error;
   }
 };

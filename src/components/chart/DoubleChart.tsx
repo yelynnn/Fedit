@@ -64,9 +64,7 @@ export default function DoubleChart() {
         const res: TrendResp = await GetTrendGraph();
         setRows(Array.isArray(res?.data) ? res.data : []);
         // setCrawledDate(res?.crawled_date ?? null);
-        console.log("유형 그래프 API 응답:", res);
-      } catch (error) {
-        console.error("유형 그래프 불러오기 실패:", error);
+      } catch {
         setRows([]);
         // setCrawledDate(null);
       }

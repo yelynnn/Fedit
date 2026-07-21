@@ -66,7 +66,7 @@ export default function RankBox() {
     setIsDetailLoading(true);
     GetRankingItemDetail(activeItem.itemcode)
       .then(setItemDetail)
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setIsDetailLoading(false));
   }, [activeRank, rankingList]);
 
@@ -85,7 +85,7 @@ export default function RankBox() {
         setRankingList(result);
         setActiveRank(result[0]?.rank ?? 1);
       })
-      .catch(console.error);
+      .catch(() => {});
   }, [selectedPlatform, selectedCategory, currentDate]);
 
   const handleMonthSelect = (value: string) => {
@@ -319,18 +319,6 @@ export default function RankBox() {
                     <span className="overflow-hidden text-[14px] font-semibold leading-[143%] tracking-[-0.07px] text-[#3D3F41] text-ellipsis line-clamp-2">
                       {item.product_name}
                     </span>
-                    {item.details.length > 0 && (
-                      <div className="flex gap-1.5 flex-wrap mt-1">
-                        {item.details.map((detail, tIdx) => (
-                          <span
-                            key={tIdx}
-                            className="px-2 py-1 bg-falling-bg text-data-blue text-[11px] font-semibold rounded"
-                          >
-                            {detail}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}

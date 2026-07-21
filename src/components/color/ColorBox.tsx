@@ -26,8 +26,6 @@ function ColorBox({ brand }: ColorBoxProps) {
     });
 
     setSelectedColorLists(filtered);
-    console.log("선택된 브랜드:", brand);
-    console.log("선택된 색상:", selectedColor);
   }, [selectedColor, brand]);
 
   return (

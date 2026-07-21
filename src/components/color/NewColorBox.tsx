@@ -57,7 +57,6 @@ function NewColorBox({ block }: Props) {
         });
         setChildren(res?.children ?? []);
         setProducts(res?.products ?? []);
-        console.log(res?.products);
       } catch {
         setChildren([]);
         setProducts([]);

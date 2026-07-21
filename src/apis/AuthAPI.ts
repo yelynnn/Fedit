@@ -82,15 +82,12 @@ const PostLogin = async (email: string, password: string) => {
   }
 };
 
-const PostCorporateSignupConfirm = async (
-  email: string,
-  auth_code: string,
-) => {
+const PostCorporateSignupConfirm = async (email: string, auth_code: string) => {
   try {
-    const res = await axiosInstance.post(
-      "/auth/signup/corporate/confirm",
-      { email, auth_code },
-    );
+    const res = await axiosInstance.post("/auth/signup/corporate/confirm", {
+      email,
+      auth_code,
+    });
     return res.data as { message: string; ok: boolean };
   } catch (error: any) {
     if (error.response) {
@@ -155,7 +152,7 @@ const GetMe = async (): Promise<Me> => {
 
 const DeleteWithdraw = async (feedback: string[]) => {
   try {
-    const res = await axiosInstance.delete("/auth/withdraw", {
+    const res = await axiosInstance.delete("/my/withdraw", {
       data: { feedback },
     });
     return res.data;

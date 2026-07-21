@@ -5,7 +5,7 @@ import { useFilterStore } from "@/stores/FilterStore";
 import { GetBrandList } from "@/apis/AnalysisAPI";
 
 type ApiCategory = { label: string; brands: string[] };
-type TabKey = "selected" | "favorite" | string;
+type TabKey = "selected" | string;
 type Props = { isOpen: boolean; onClose: () => void; onSubmit?: () => void };
 
 export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
@@ -80,7 +80,6 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const tabItems = useMemo<{ key: TabKey; label: string }[]>(
     () => [
       { key: "selected", label: "선택된 브랜드" },
-      { key: "favorite", label: "즐겨찾기 (준비중)" },
       ...categories.map((c) => ({ key: c.label, label: `${c.label}` })),
     ],
     [categories],
@@ -88,7 +87,6 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
 
   const sourceBrands = useMemo<string[]>(() => {
     if (activeTab === "selected") return brandList;
-    if (activeTab === "favorite") return [];
     const cat = categories.find((c) => c.label === activeTab);
     return cat?.brands ?? [];
   }, [activeTab, brandList, categories]);
@@ -317,11 +315,9 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
             })}
             {visibleBrands.length === 0 && (
               <div className="text-sm text-icon-neutral py-8 text-center col-span-full">
-                {activeTab === "favorite"
-                  ? "즐겨찾기한 브랜드가 없어요."
-                  : activeTab === "selected"
-                    ? "선택된 브랜드가 없어요."
-                    : "검색 결과가 없어요."}
+                {activeTab === "selected"
+                  ? "선택된 브랜드가 없어요."
+                  : "검색 결과가 없어요."}
               </div>
             )}
           </div>

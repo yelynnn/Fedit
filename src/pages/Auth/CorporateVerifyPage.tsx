@@ -31,6 +31,7 @@ const CorporateVerifyPage = () => {
     try {
       const res = await PostCorporateSignupConfirm(email, code.trim());
       if (res.ok) {
+        localStorage.setItem("isNewSignup", "true");
         setSuccessMessage(res.message);
       } else {
         setErrorMessage(res.message || "인증에 실패했습니다.");
