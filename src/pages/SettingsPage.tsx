@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useChatStore } from "@/stores/ChatStore";
 import { useUIStore } from "@/stores/UIStore";
 import { useUserStore } from "@/stores/UserStore";
+import { useFilterStore } from "@/stores/FilterStore";
 import {
   GetCustomerKey,
   PostChangePlan,
@@ -19,10 +20,22 @@ import GuideCard from "@/components/settings/GuideCard";
 import { GUIDE_CATEGORIES, type GuideCategory } from "@/types/guide";
 import { useSubscriptionStore } from "@/stores/SubscriptionStore";
 import cancelIcon from "@/assets/planCard/cancel.svg";
+import kakaoPayIcon from "@/assets/etc/kakaoIcon.png";
+import tossIcon from "@/assets/etc/tossIcon.png";
+import { RequestUpgrade, GetUpgradeStatus } from "@/apis/KakaoAPI";
+import InterestBrandModal from "@/components/billing/InterestBrandModal";
+import { GetBrandList, GetBrandPicks } from "@/apis/AnalysisAPI";
 
 const GUIDE_TABS: ("전체" | GuideCategory)[] = ["전체", ...GUIDE_CATEGORIES];
 
-type Section = "내정보" | "알림" | "FEDI대화" | "사용가이드" | "FAQ" | "구독";
+type Section =
+  | "내정보"
+  | "알림"
+  | "FEDI대화"
+  | "사용가이드"
+  | "FAQ"
+  | "관심브랜드"
+  | "구독";
 
 const PLAN_DEFS: {
   key: "free" | PlanType;
@@ -41,7 +54,7 @@ const PLAN_DEFS: {
     originalPrice: null,
     discount: null,
     price: "0원",
-    sub: "7일 · Basic 기능 일부 (브랜드 제한)",
+    sub: "14일 · Basic 기능 일부 (브랜드 제한)",
     features: [
       { ok: true, text: "무신사 입점 브랜드 모니터링 제공" },
       { ok: true, text: "플랫폼별 키워드 분석 제공" },
@@ -57,7 +70,10 @@ const PLAN_DEFS: {
     price: "19,000원",
     sub: "/월",
     features: [
-      { ok: true, text: "기본 무신사 입점 브랜드 외 브랜드 10개 추가 모니터링" },
+      {
+        ok: true,
+        text: "기본 무신사 입점 브랜드 외 브랜드 10개 추가 모니터링",
+      },
       { ok: true, text: "플랫폼별 키워드 분석 제공" },
       { ok: true, text: "엑셀 다운로드 월 3회" },
       { ok: true, text: "추가 제안 브랜드 제안 문의 가능" },
@@ -83,10 +99,20 @@ const PLAN_DEFS: {
   },
 ];
 
-const PLAN_RANK: Record<"free" | PlanType, number> = { free: 0, basic: 1, pro: 2 };
+const PLAN_RANK: Record<"free" | PlanType, number> = {
+  free: 0,
+  basic: 1,
+  pro: 2,
+};
 
 // "Basic으로", "Pro로" — 플랜명 발음(받침 유무)에 맞춘 조사
 const PLAN_PARTICLE: Record<PlanType, string> = { basic: "으로", pro: "로" };
+
+const PLAN_AMOUNT: Record<PlanType, number> = { basic: 19000, pro: 59000 };
+
+// 카카오페이 코드송금 링크 — 개발자센터 대시보드에서 관리자가 1회 수동 발급한
+// 고정 링크라 요청마다 동적으로 내려오지 않는다. 링크가 재발급되면 이 값만 교체하면 된다.
+const KAKAO_PAY_LINK_URL = "https://link.kakaopay.com/__/WXeNpEp";
 
 const NAV_GROUPS: {
   title: string;
@@ -116,7 +142,10 @@ const NAV_GROUPS: {
   },
   {
     title: "사용 권한 및 청구",
-    items: [{ id: "구독", label: "구독 관리", icon: "ph:credit-card" }],
+    items: [
+      { id: "관심브랜드", label: "관심 브랜드 설정", icon: "ph:storefront" },
+      { id: "구독", label: "구독 관리", icon: "ph:credit-card" },
+    ],
   },
 ];
 
@@ -134,7 +163,8 @@ function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
 }
 
 export default function SettingsPage() {
-  const { settingsModalTab, closeSettingsModal } = useUIStore();
+  const { settingsModalTab, closeSettingsModal, openInterestBrandModal } =
+    useUIStore();
   const {
     conversations,
     activeConversationId,
@@ -164,6 +194,24 @@ export default function SettingsPage() {
   );
   const [agreedCancelTerms, setAgreedCancelTerms] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<PlanType | null>(null);
+  const [paymentStep, setPaymentStep] = useState<
+    "agree" | "method" | "pending" | "failed"
+  >("agree");
+  const [selectedMethod, setSelectedMethod] = useState<"toss" | "kakao" | null>(
+    null,
+  );
+  const [upgradeRequestId, setUpgradeRequestId] = useState<number | null>(null);
+  const [isRequestingUpgrade, setIsRequestingUpgrade] = useState(false);
+  const [depositorName, setDepositorName] = useState("");
+
+  const closePendingPlanModal = () => {
+    setPendingPlan(null);
+    setAgreedCancelTerms(false);
+    setPaymentStep("agree");
+    setSelectedMethod(null);
+    setUpgradeRequestId(null);
+    setDepositorName("");
+  };
 
   const {
     subscription,
@@ -186,6 +234,80 @@ export default function SettingsPage() {
 
   const currentPlan: "free" | PlanType = subscription?.plan ?? "free";
 
+  // ── 관심 브랜드 설정 ──
+  const [currentBrandPicks, setCurrentBrandPicks] = useState<string[]>([]);
+  const [brandPicksLoading, setBrandPicksLoading] = useState(false);
+  const [brandCategoryMap, setBrandCategoryMap] = useState<
+    Record<string, string>
+  >({});
+  const [isBrandChangeModalOpen, setIsBrandChangeModalOpen] = useState(false);
+
+  const fetchBrandPicks = async () => {
+    setBrandPicksLoading(true);
+    try {
+      const picks = await GetBrandPicks();
+      setCurrentBrandPicks(picks);
+    } catch {
+      setCurrentBrandPicks([]);
+    } finally {
+      setBrandPicksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (active !== "관심브랜드" || currentPlan !== "basic") return;
+    fetchBrandPicks();
+    GetBrandList()
+      .then((data) => {
+        const cats: { label: string; brands: string[] }[] = Array.isArray(
+          data?.categories,
+        )
+          ? data.categories
+          : [];
+        const map: Record<string, string> = {};
+        cats.forEach((cat) => {
+          cat.brands.forEach((b) => {
+            map[b] = cat.label;
+          });
+        });
+        setBrandCategoryMap(map);
+      })
+      .catch(() => {});
+  }, [active, currentPlan]);
+
+  const formatMonthDay = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  };
+
+  const currentPeriodStart = (() => {
+    if (!subscription?.nextBillingDate) return null;
+    const end = new Date(subscription.nextBillingDate);
+    if (Number.isNaN(end.getTime())) return null;
+    const start = new Date(end);
+    start.setMonth(start.getMonth() - 1);
+    return start;
+  })();
+
+  const currentPeriodLabel = (() => {
+    if (!subscription?.nextBillingDate || !currentPeriodStart) return null;
+    const end = new Date(subscription.nextBillingDate);
+    if (Number.isNaN(end.getTime())) return null;
+    const displayEnd = new Date(end);
+    displayEnd.setDate(displayEnd.getDate() - 1);
+    return `${formatMonthDay(currentPeriodStart.toISOString())} - ${formatMonthDay(displayEnd.toISOString())}`;
+  })();
+
+  // 백엔드에 "이번 주기에 이미 변경했는지" 필드가 없어서, 프론트에서 마지막
+  // 저장 시각과 이번 주기 시작일을 비교해 임시로 판단한다. 기기별로만
+  // 유효하므로, 백엔드가 이 값을 내려주게 되면 그쪽으로 교체해야 한다.
+  const lastBrandPicksSavedAt = useFilterStore((s) => s.lastBrandPicksSavedAt);
+  const hasChangedThisCycle =
+    !!lastBrandPicksSavedAt &&
+    !!currentPeriodStart &&
+    new Date(lastBrandPicksSavedAt) >= currentPeriodStart;
+
   const handleSelectPlan = async (plan: PlanType) => {
     if (plan === currentPlan || billingLoading) return;
     setBillingLoading(plan);
@@ -195,6 +317,10 @@ export default function SettingsPage() {
         setSubscription(updated);
         const label = PLAN_DEFS.find((p) => p.key === plan)?.label ?? plan;
         alert(`${label} 요금제로 변경되었습니다.`);
+        if (plan === "basic") {
+          closeSettingsModal();
+          openInterestBrandModal();
+        }
       } else {
         const customerKey = await GetCustomerKey();
         const tossPayments = await getTossPayments();
@@ -213,6 +339,67 @@ export default function SettingsPage() {
       setBillingLoading(null);
     }
   };
+
+  const handleStartKakaoPayment = async () => {
+    if (!pendingPlan || isRequestingUpgrade || !depositorName.trim()) return;
+    setIsRequestingUpgrade(true);
+    try {
+      // 링크는 고정 링크라 응답을 기다릴 필요 없이 바로 새 창으로 연다
+      // (팝업 차단을 피하려면 클릭 핸들러와 최대한 가깝게 호출해야 한다).
+      window.open(KAKAO_PAY_LINK_URL, "_blank");
+      const { request_id } = await RequestUpgrade(
+        pendingPlan,
+        PLAN_AMOUNT[pendingPlan],
+        depositorName.trim(),
+      );
+      setUpgradeRequestId(request_id);
+      setPaymentStep("pending");
+    } catch (error: any) {
+      alert(error?.message || "결제 요청에 실패했습니다.");
+    } finally {
+      setIsRequestingUpgrade(false);
+    }
+  };
+
+  // 카카오페이 입금 확인 폴링 — 자동 확인이 아니라 관리자가 입금 내역을 대조해
+  // 수동 승인하는 구조라 30초 간격으로 조회한다. status는 pending/completed 외에도
+  // expired·rejected 등으로 확장될 수 있어, pending/completed가 아니면 전부 실패
+  // 화면으로 처리한다 (백엔드 권장 방식).
+  useEffect(() => {
+    if (paymentStep !== "pending" || !upgradeRequestId) return;
+    const plan = pendingPlan;
+    let cancelled = false;
+
+    const interval = setInterval(async () => {
+      try {
+        const { status } = await GetUpgradeStatus(upgradeRequestId);
+        if (cancelled) return;
+        if (status === "completed") {
+          clearInterval(interval);
+          await fetchSubscription();
+          closePendingPlanModal();
+          if (plan === "basic") {
+            closeSettingsModal();
+            openInterestBrandModal();
+          }
+        } else if (status !== "pending") {
+          clearInterval(interval);
+          setPaymentStep("failed");
+        }
+      } catch {
+        if (!cancelled) {
+          clearInterval(interval);
+          setPaymentStep("failed");
+        }
+      }
+    }, 30000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentStep, upgradeRequestId]);
 
   const handleCancelSubscription = async () => {
     if (isCanceling) return;
@@ -358,20 +545,28 @@ export default function SettingsPage() {
                 <p className="text-[11px] font-semibold text-tx-assistive uppercase tracking-wider px-2 mb-1">
                   {group.title}
                 </p>
-                {group.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setActive(item.id)}
-                    className={`w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                      active === item.id
-                        ? "bg-[rgba(11,14,15,0.08)] text-tx-strong"
-                        : "text-tx-alt hover:bg-[rgba(11,14,15,0.08)]"
-                    }`}
-                  >
-                    <Icon icon={item.icon} className="flex-shrink-0 w-4 h-4" />
-                    {item.label}
-                  </button>
-                ))}
+                {group.items
+                  .filter(
+                    (item) =>
+                      item.id !== "관심브랜드" || currentPlan === "basic",
+                  )
+                  .map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setActive(item.id)}
+                      className={`w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        active === item.id
+                          ? "bg-[rgba(11,14,15,0.08)] text-tx-strong"
+                          : "text-tx-alt hover:bg-[rgba(11,14,15,0.08)]"
+                      }`}
+                    >
+                      <Icon
+                        icon={item.icon}
+                        className="flex-shrink-0 w-4 h-4"
+                      />
+                      {item.label}
+                    </button>
+                  ))}
               </div>
             ))}
           </div>
@@ -380,7 +575,9 @@ export default function SettingsPage() {
           {currentPlan !== "pro" && (
             <div className="w-full shrink-0">
               <div className="flex flex-col items-start self-stretch gap-3 p-3 rounded-xl border border-[#E4E4E4] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.06)]">
-                <p className="text-sm font-semibold text-tx-strong">FEDIT Pro</p>
+                <p className="text-sm font-semibold text-tx-strong">
+                  FEDIT Pro
+                </p>
                 <p className="text-xs leading-relaxed text-tx-alt">
                   무제한 분석과 트렌드 리포트를 확인
                 </p>
@@ -499,9 +696,7 @@ export default function SettingsPage() {
             {/* ── 알림 ── */}
             {active === "알림" && (
               <div className="max-w-[560px]">
-                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
-                  알림
-                </h1>
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">알림</h1>
                 <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                   알림을 받을 시점과 방법을 설정하세요
                 </p>
@@ -659,8 +854,8 @@ export default function SettingsPage() {
             )}
 
             {/* ── AI 사용 가이드 ── */}
-            {active === "사용가이드" && (
-              activeGuideId ? (
+            {active === "사용가이드" &&
+              (activeGuideId ? (
                 (() => {
                   const topic = AI_GUIDE_TOPICS.find(
                     (t) => t.id === activeGuideId,
@@ -726,8 +921,7 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
-              )
-            )}
+              ))}
 
             {/* ── FAQ ── */}
             {active === "FAQ" && (
@@ -848,6 +1042,112 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {/* ── 관심 브랜드 설정 ── */}
+            {active === "관심브랜드" && currentPlan === "basic" && (
+              <div className="max-w-[680px]">
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
+                  관심 브랜드 설정
+                </h1>
+                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
+                  분석에 사용할 브랜드를 관리하세요
+                </p>
+
+                <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-sm bg-[#EAF2FE]">
+                  <Icon
+                    icon="material-symbols-light:info-rounded"
+                    className="flex-shrink-0 w-5 h-5 text-[#1A75FF]"
+                  />
+                  <p className="text-xs font-medium text-[#1A75FF] leading-[133%]">
+                    브랜드는 결제일마다 1회 변경할 수 있어요.{" "}
+                    {subscription?.nextBillingDate && (
+                      <>
+                        다음 변경일은{" "}
+                        {formatMonthDay(subscription.nextBillingDate)}이에요.
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <div className="p-5 border border-line-divider rounded-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[18px] font-semibold text-[#3D3F41]">
+                        지금 적용 중인 브랜드
+                      </h3>
+                      {currentPeriodLabel && (
+                        <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-fill-bg-strong text-tx-alt">
+                          <Icon icon="ph:calendar" className="w-3.5 h-3.5" />
+                          {currentPeriodLabel} 분석에 반영 중
+                        </span>
+                      )}
+                    </div>
+                    {!brandPicksLoading &&
+                      currentBrandPicks.length > 0 &&
+                      (hasChangedThisCycle ? (
+                        <span className="text-xs text-tx-assistive">
+                          {subscription?.nextBillingDate
+                            ? `${formatMonthDay(subscription.nextBillingDate)}부터 다시 변경할 수 있어요`
+                            : "다음 결제일부터 다시 변경할 수 있어요"}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setIsBrandChangeModalOpen(true)}
+                          className="px-4 py-2 text-sm font-semibold transition-colors border rounded-lg border-line-divider text-tx-neutral hover:bg-surface-base"
+                        >
+                          변경하기
+                        </button>
+                      ))}
+                  </div>
+
+                  {brandPicksLoading ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="h-[68px] rounded-xl bg-fill-bg-strong animate-pulse"
+                        />
+                      ))}
+                    </div>
+                  ) : currentBrandPicks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                      <p className="text-sm text-tx-alt">
+                        아직 선택한 관심 브랜드가 없어요.
+                      </p>
+                      <button
+                        onClick={() => setIsBrandChangeModalOpen(true)}
+                        className="px-4 py-2 text-sm font-semibold text-white rounded-lg bg-fill-primary"
+                      >
+                        브랜드 선택하기
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {currentBrandPicks.map((brand) => (
+                        <div
+                          key={brand}
+                          className="flex items-center gap-3 p-4 border rounded-xl border-line-divider"
+                        >
+                          <span className="flex items-center justify-center flex-shrink-0 text-sm font-semibold rounded-lg w-9 h-9 bg-fill-bg-strong text-tx-neutral">
+                            {brand.trim().charAt(0)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate text-tx-strong">
+                              {brand}
+                            </p>
+                            {brandCategoryMap[brand] && (
+                              <p className="text-xs truncate text-tx-alt">
+                                {brandCategoryMap[brand]}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* ── 구독 관리 ── */}
             {active === "구독" && (
               <div className="max-w-[680px]">
@@ -880,11 +1180,15 @@ export default function SettingsPage() {
                         ) : subscription?.cancelAtPeriodEnd ? (
                           <p className="flex items-center gap-1 mt-0.5 text-sm text-tx-alt">
                             <Icon icon="ph:info" className="w-4 h-4" />
-                            해지 예약됨 · {subscription?.nextBillingDate ?? "-"}까지 이용 가능
+                            해지 예약됨 · {subscription?.nextBillingDate ?? "-"}
+                            까지 이용 가능
                           </p>
                         ) : subscription?.status === "past_due" ? (
                           <p className="flex items-center gap-1 mt-0.5 text-sm text-status-error">
-                            <Icon icon="ph:warning-circle" className="w-4 h-4" />
+                            <Icon
+                              icon="ph:warning-circle"
+                              className="w-4 h-4"
+                            />
                             결제에 실패했어요. 카드 정보를 확인해주세요.
                           </p>
                         ) : (
@@ -988,7 +1292,10 @@ export default function SettingsPage() {
                           }`}
                         >
                           {isLoading ? (
-                            <Icon icon="ph:spinner" className="w-4 h-4 animate-spin" />
+                            <Icon
+                              icon="ph:spinner"
+                              className="w-4 h-4 animate-spin"
+                            />
                           ) : (
                             btnLabel
                           )}
@@ -1011,10 +1318,12 @@ export default function SettingsPage() {
                           ))}
                         </ul>
 
-                        {isCurrent && plan.key !== "free" && (
-                          subscription?.cancelAtPeriodEnd ? (
+                        {isCurrent &&
+                          plan.key !== "free" &&
+                          (subscription?.cancelAtPeriodEnd ? (
                             <p className="pt-2 mt-auto text-xs font-medium text-tx-assistive">
-                              {subscription?.nextBillingDate ?? "-"}까지 이용 가능 · 해지 예약됨
+                              {subscription?.nextBillingDate ?? "-"}까지 이용
+                              가능 · 해지 예약됨
                             </p>
                           ) : (
                             <button
@@ -1023,8 +1332,7 @@ export default function SettingsPage() {
                             >
                               구독 해지
                             </button>
-                          )
-                        )}
+                          ))}
                       </div>
                     );
                   })}
@@ -1050,18 +1358,18 @@ export default function SettingsPage() {
 
           {withdrawStep === "stats" && (
             <div className="relative flex w-[420px] flex-col items-end gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
-              <div className="flex w-full items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <span className="type-body-small text-tx-alt">지난 3개월</span>
                 <button
                   type="button"
                   onClick={() => setWithdrawStep(null)}
                   className="flex h-7 w-7 items-center justify-center gap-2.5 rounded-pill border border-line-alt bg-fill-bg p-1 hover:bg-fill-bg-strong"
                 >
-                  <img src={cancelIcon} alt="닫기" className="h-4 w-4" />
+                  <img src={cancelIcon} alt="닫기" className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex w-full flex-col gap-2">
+              <div className="flex flex-col w-full gap-2">
                 <h2 className="type-title-large break-keep text-tx-strong">
                   FEDIT과 함께한
                   <br />
@@ -1072,16 +1380,16 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="flex w-full items-center rounded-xl bg-fill-bg-strong">
+              <div className="flex items-center w-full rounded-xl bg-fill-bg-strong">
                 {[
                   { value: "48", label: "저장한 아이템" },
                   { value: "12", label: "발견한 키워드" },
                   { value: "86%", label: "평균 매칭률" },
                 ].map((stat, i) => (
-                  <div key={stat.label} className="flex flex-1 items-center">
-                    {i > 0 && <div className="h-8 w-px bg-line-divider" />}
-                    <div className="flex flex-1 flex-col items-center gap-1 px-2 py-5">
-                      <span className="type-headline text-center text-tx-strong">
+                  <div key={stat.label} className="flex items-center flex-1">
+                    {i > 0 && <div className="w-px h-8 bg-line-divider" />}
+                    <div className="flex flex-col items-center flex-1 gap-1 px-2 py-5">
+                      <span className="text-center type-headline text-tx-strong">
                         {stat.value}
                       </span>
                       <span className="type-body-xsmall text-tx-alt">
@@ -1092,7 +1400,7 @@ export default function SettingsPage() {
                 ))}
               </div>
 
-              <div className="flex w-full items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <button
                   onClick={() => setWithdrawStep("reason")}
                   className="type-body-small text-tx-default"
@@ -1111,7 +1419,7 @@ export default function SettingsPage() {
 
           {withdrawStep === "reason" && (
             <div className="relative flex w-[420px] flex-col items-end gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
-              <div className="flex w-full items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <h2 className="type-title-large text-tx-strong">
                   떠나시려는 이유를 알려주세요
                 </h2>
@@ -1120,11 +1428,11 @@ export default function SettingsPage() {
                   onClick={() => setWithdrawStep(null)}
                   className="flex h-7 w-7 items-center justify-center gap-2.5 rounded-pill border border-line-alt bg-fill-bg p-1 hover:bg-fill-bg-strong"
                 >
-                  <img src={cancelIcon} alt="닫기" className="h-4 w-4" />
+                  <img src={cancelIcon} alt="닫기" className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex w-full flex-col gap-4">
+              <div className="flex flex-col w-full gap-4">
                 <p className="type-body-small text-tx-neutral">
                   탈퇴하시는 주된 이유는 무엇인가요?
                 </p>
@@ -1138,7 +1446,7 @@ export default function SettingsPage() {
                   ].map((r) => (
                     <label
                       key={r}
-                      className="flex cursor-pointer items-center gap-3"
+                      className="flex items-center gap-3 cursor-pointer"
                       onClick={() => setWithdrawReason(r)}
                     >
                       <div
@@ -1161,7 +1469,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="flex w-full items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <button
                   onClick={handleContinueAfterReason}
                   className="type-body-small text-tx-default"
@@ -1186,7 +1494,7 @@ export default function SettingsPage() {
 
           {withdrawStep === "interview" && (
             <div className="relative flex w-[420px] flex-col items-end gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
-              <div className="flex w-full items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <span className="type-body-small text-tx-alt">
                   화상 인터뷰 제안
                 </span>
@@ -1195,19 +1503,19 @@ export default function SettingsPage() {
                   onClick={() => setWithdrawStep(null)}
                   className="flex h-7 w-7 items-center justify-center gap-2.5 rounded-pill border border-line-alt bg-fill-bg p-1 hover:bg-fill-bg-strong"
                 >
-                  <img src={cancelIcon} alt="닫기" className="h-4 w-4" />
+                  <img src={cancelIcon} alt="닫기" className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex w-full flex-col gap-2">
+              <div className="flex flex-col w-full gap-2">
                 <h2 className="type-title-large break-keep text-tx-strong">
                   20분만 시간을
                   <br />
                   내주실 수 있나요?
                 </h2>
                 <p className="type-body-small break-keep text-tx-alt">
-                  추천이 왜 안맞았는지 들려주세요. FEDIT를 더 정교하게 만드는
-                  데 큰 힘이 돼요.
+                  추천이 왜 안맞았는지 들려주세요. FEDIT를 더 정교하게 만드는 데
+                  큰 힘이 돼요.
                 </p>
               </div>
 
@@ -1235,7 +1543,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              <div className="flex w-full items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <button
                   onClick={finalizeWithdraw}
                   disabled={isWithdrawing}
@@ -1255,8 +1563,8 @@ export default function SettingsPage() {
 
           {withdrawStep === "interview-confirmed" && (
             <div className="relative flex w-[420px] flex-col items-center gap-6 rounded-2xl bg-white p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-fill-primary">
-                <Icon icon="ph:check-bold" className="h-5 w-5 text-white" />
+              <div className="flex items-center justify-center rounded-full h-11 w-11 bg-fill-primary">
+                <Icon icon="ph:check-bold" className="w-5 h-5 text-white" />
               </div>
 
               <div className="flex flex-col items-center gap-2 text-center">
@@ -1268,7 +1576,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="flex w-full flex-col gap-3 rounded-xl bg-fill-bg-strong p-3">
+              <div className="flex flex-col w-full gap-3 p-3 rounded-xl bg-fill-bg-strong">
                 <div className="flex items-center justify-between">
                   <span className="type-body-small text-tx-alt">
                     입력하신 이메일
@@ -1277,7 +1585,7 @@ export default function SettingsPage() {
                     {userEmail}
                   </span>
                 </div>
-                <div className="h-px w-full bg-line-divider" />
+                <div className="w-full h-px bg-line-divider" />
                 <p className="type-body-xsmall break-keep text-tx-alt">
                   탈퇴하시면 인터뷰 일정은 그대로 유지되고, 인터뷰 후
                   환급됩니다.
@@ -1371,65 +1679,250 @@ export default function SettingsPage() {
         >
           <div
             className="absolute inset-0 bg-black/30"
-            onClick={() => {
-              setPendingPlan(null);
-              setAgreedCancelTerms(false);
-            }}
+            onClick={closePendingPlanModal}
           />
-          <div className="relative w-full max-w-[400px] p-8 bg-white shadow-xl rounded-2xl">
-            <h2 className="mb-2 text-xl font-semibold text-tx-strong">
-              {PLAN_DEFS.find((p) => p.key === pendingPlan)?.label} 요금제로
-              시작할게요
-            </h2>
-            <p className="mb-6 text-sm leading-relaxed text-tx-alt">
-              {PLAN_DEFS.find((p) => p.key === pendingPlan)?.price}
-              {PLAN_DEFS.find((p) => p.key === pendingPlan)?.sub}에 정기결제가
-              시작됩니다. 진행 전 아래 내용을 확인해주세요.
-            </p>
+          <div className="relative w-full max-w-[440px] p-8 bg-white shadow-xl rounded-2xl">
+            {paymentStep === "agree" ? (
+              <>
+                <h2 className="mb-2 text-xl font-semibold text-tx-strong">
+                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.label} 요금제로
+                  시작할게요
+                </h2>
+                <p className="mb-6 text-sm leading-relaxed text-tx-alt">
+                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.price}
+                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.sub}에
+                  정기결제가 시작됩니다. 진행 전 아래 내용을 확인해주세요.
+                </p>
 
-            <label className="flex items-start gap-2 p-4 mb-6 cursor-pointer select-none bg-surface-base rounded-xl">
-              <input
-                type="checkbox"
-                checked={agreedCancelTerms}
-                onChange={(e) => setAgreedCancelTerms(e.target.checked)}
-                className="w-4 h-4 mt-0.5 accent-tx-neutral flex-shrink-0"
-              />
-              <span className="text-sm text-tx-alt">
-                정기결제(자동 결제) 및 해지 방법, 환불 정책을 확인했으며 이에
-                동의합니다.{" "}
-                <Link
-                  to="/terms/cancellation"
-                  onClick={(e) => e.stopPropagation()}
-                  className="font-semibold underline text-tx-neutral hover:text-tx-strong"
+                <label className="flex items-start gap-2 p-4 mb-6 cursor-pointer select-none bg-surface-base rounded-xl">
+                  <input
+                    type="checkbox"
+                    checked={agreedCancelTerms}
+                    onChange={(e) => setAgreedCancelTerms(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 accent-tx-neutral flex-shrink-0"
+                  />
+                  <span className="text-sm text-tx-alt">
+                    정기결제(자동 결제) 및 해지 방법, 환불 정책을 확인했으며
+                    이에 동의합니다.{" "}
+                    <Link
+                      to="/terms/cancellation"
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold underline text-tx-neutral hover:text-tx-strong"
+                    >
+                      자세히 보기
+                    </Link>
+                  </span>
+                </label>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={closePendingPlanModal}
+                    className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={() => setPaymentStep("method")}
+                    disabled={!agreedCancelTerms}
+                    className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    결제 진행하기
+                  </button>
+                </div>
+              </>
+            ) : paymentStep === "method" ? (
+              <>
+                <button
+                  onClick={() => setPaymentStep("agree")}
+                  className="flex items-center gap-1 mb-2 text-sm font-medium text-tx-alt hover:text-tx-neutral"
                 >
-                  자세히 보기
-                </Link>
-              </span>
-            </label>
+                  <Icon icon="ph:arrow-left" className="w-4 h-4" />
+                  이전
+                </button>
+                <h2 className="mb-2 text-xl font-semibold text-tx-strong">
+                  결제 수단을 선택해주세요
+                </h2>
+                <p className="mb-6 text-sm leading-relaxed text-tx-alt">
+                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.label} 요금제
+                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.price}
+                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.sub}
+                </p>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setPendingPlan(null);
-                  setAgreedCancelTerms(false);
-                }}
-                className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
-              >
-                취소
-              </button>
-              <button
-                onClick={() => {
-                  const plan = pendingPlan;
-                  setPendingPlan(null);
-                  setAgreedCancelTerms(false);
-                  handleSelectPlan(plan);
-                }}
-                disabled={!agreedCancelTerms}
-                className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                결제 진행하기
-              </button>
-            </div>
+                <div className="flex flex-col gap-3 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMethod("kakao")}
+                    className={`flex items-center justify-between w-full p-4 border rounded-xl transition-colors ${
+                      selectedMethod === "kakao"
+                        ? "border-1 border-tx-neutral bg-surface-base"
+                        : "border-line-divider hover:border-tx-alt"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <img
+                        src={kakaoPayIcon}
+                        alt="카카오페이"
+                        className="object-contain w-auto h-6"
+                      />
+                      <span className="text-sm font-semibold text-tx-strong">
+                        카카오페이
+                      </span>
+                    </span>
+                    {selectedMethod === "kakao" && (
+                      <Icon
+                        icon="ph:check-circle-fill"
+                        className="w-5 h-5 text-tx-neutral"
+                      />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    disabled
+                    className="flex items-center justify-between w-full p-4 border cursor-not-allowed rounded-xl border-line-divider bg-surface-base opacity-60"
+                  >
+                    <span className="flex items-center gap-2">
+                      <img
+                        src={tossIcon}
+                        alt="토스페이먼츠"
+                        className="object-contain w-auto h-7"
+                      />
+                      <span className="text-sm font-semibold text-tx-alt">
+                        토스페이먼츠
+                      </span>
+                    </span>
+                    <span className="px-2 py-1 text-xs font-semibold rounded-full text-tx-alt bg-fill-bg-strong">
+                      추후 오픈 예정
+                    </span>
+                  </button>
+                </div>
+
+                {selectedMethod === "kakao" && (
+                  <div className="flex flex-col gap-3 mb-6">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-[#FFF6DD]">
+                      <Icon
+                        icon="ph:info"
+                        className="flex-shrink-0 w-4 h-4 mt-0.5 text-[#B8860B]"
+                      />
+                      <p className="text-xs leading-relaxed text-[#7A5C00]">
+                        결제하기를 누르면 카카오페이 송금 링크가 새 창으로
+                        열려요. 정확히{" "}
+                        <b>{PLAN_AMOUNT[pendingPlan].toLocaleString()}원</b>을
+                        아래 입금자명과 동일한 이름으로 송금해주세요.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block mb-1.5 text-sm font-semibold text-tx-strong">
+                        입금자명
+                      </label>
+                      <input
+                        type="text"
+                        value={depositorName}
+                        onChange={(e) => setDepositorName(e.target.value)}
+                        placeholder="카카오페이 송금 시 사용할 이름을 입력해주세요"
+                        className="w-full px-4 py-3 text-sm border rounded-xl border-line-divider text-tx-neutral placeholder-tx-assistive focus:outline-none focus:border-tx-neutral"
+                      />
+                      <p className="mt-1.5 text-xs text-tx-assistive">
+                        입력하신 이름과 실제 송금자명이 일치해야 확인이
+                        가능해요.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={closePendingPlanModal}
+                    className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (selectedMethod === "kakao") {
+                        handleStartKakaoPayment();
+                      } else if (selectedMethod === "toss") {
+                        const plan = pendingPlan;
+                        closePendingPlanModal();
+                        handleSelectPlan(plan);
+                      }
+                    }}
+                    disabled={
+                      !selectedMethod ||
+                      isRequestingUpgrade ||
+                      (selectedMethod === "kakao" && !depositorName.trim())
+                    }
+                    className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isRequestingUpgrade ? "연결 중..." : "결제하기"}
+                  </button>
+                </div>
+              </>
+            ) : paymentStep === "pending" ? (
+              <>
+                <div className="flex flex-col items-center py-6 text-center">
+                  <Icon
+                    icon="ph:spinner-gap"
+                    className="w-10 h-10 mb-4 animate-spin text-tx-neutral"
+                  />
+                  <h2 className="mb-2 text-xl font-semibold text-tx-strong">
+                    입금 확인 중이에요
+                  </h2>
+                  <p className="text-sm leading-relaxed text-tx-alt">
+                    새로 열린 카카오페이 창에서 송금을 완료해주세요.
+                    <br />
+                    담당자가 입금 내역을 확인한 후 반영되며, 영업시간 기준 다소
+                    시간이 걸릴 수 있어요.
+                  </p>
+                  <button
+                    onClick={() => window.open(KAKAO_PAY_LINK_URL, "_blank")}
+                    className="mt-4 text-sm font-semibold underline text-tx-neutral hover:text-tx-strong"
+                  >
+                    결제 링크 다시 열기
+                  </button>
+                </div>
+                <button
+                  onClick={closePendingPlanModal}
+                  className="w-full py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
+                >
+                  닫기
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col items-center py-6 text-center">
+                  <Icon
+                    icon="ph:x-circle"
+                    className="w-10 h-10 mb-4 text-status-error"
+                  />
+                  <h2 className="mb-2 text-xl font-semibold text-tx-strong">
+                    결제가 확인되지 않았어요
+                  </h2>
+                  <p className="text-sm leading-relaxed text-tx-alt">
+                    입금 확인이 되지 않았거나 요청이 만료되었습니다.
+                    <br />
+                    다시 시도해주세요.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={closePendingPlanModal}
+                    className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUpgradeRequestId(null);
+                      setPaymentStep("method");
+                    }}
+                    className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover"
+                  >
+                    다시 시도하기
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1437,6 +1930,13 @@ export default function SettingsPage() {
       <ChangePasswordModal
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
+      />
+
+      <InterestBrandModal
+        isOpen={isBrandChangeModalOpen}
+        mode="change"
+        onClose={() => setIsBrandChangeModalOpen(false)}
+        onComplete={fetchBrandPicks}
       />
     </div>
   );

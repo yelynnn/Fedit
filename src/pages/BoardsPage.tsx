@@ -79,7 +79,8 @@ export default function BoardsPage() {
       );
       setEditBoard(null);
     } catch {
-      }
+      // 무시
+    }
   };
 
   const handleDeleteBoard = async () => {
@@ -90,7 +91,8 @@ export default function BoardsPage() {
       if (selectedBoardId === editBoard.boardId) setSelectedBoardId(null);
       setEditBoard(null);
     } catch {
-      }
+      // 무시
+    }
   };
 
   const handleRemoveItem = async (itemcode: string) => {
@@ -104,7 +106,8 @@ export default function BoardsPage() {
         ),
       );
     } catch {
-      }
+      // 무시
+    }
   };
 
   return (

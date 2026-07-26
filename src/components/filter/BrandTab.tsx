@@ -1,7 +1,14 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
-import { useProductStore } from "@/stores/ProductStore";
+import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import {
+  useExcelDownloadStore,
+  getExcelDownloadRemaining,
+  EXCEL_MONTHLY_LIMIT,
+} from "@/stores/ExcelDownloadStore";
+import useFilteredData from "@/lib/filteredData";
+import { GetProductList } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
 
 type Props = { isProductTab: boolean };
@@ -43,7 +50,24 @@ const yymmdd = () => {
 
 function BrandTab({ isProductTab }: Props) {
   const { brandList } = useFilterStore((s) => s);
-  const { resultLists } = useProductStore((s) => s);
+  const currentPlan = useSubscriptionStore(
+    (s) => s.subscription?.plan ?? "free",
+  );
+  const excelDownloadState = useExcelDownloadStore((s) => s);
+  const excelRemaining = getExcelDownloadRemaining(excelDownloadState);
+  const {
+    selectedColors,
+    selectedGenders,
+    selectedCategories,
+    selectedDetails,
+    selectedPatterns,
+    selectedSeasons,
+  } = useFilteredData();
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
 
   useEffect(() => {
     const id = "brandtab-hide-scrollbar";
@@ -55,7 +79,7 @@ function BrandTab({ isProductTab }: Props) {
     }
   }, []);
 
-  async function downloadXlsxWithImages(rows: ApiDetail[]) {
+  async function downloadXlsxWithImages(rows: ApiDetail[], brandLabel?: string) {
     const ExcelJS = (await import("exceljs")).default;
     const { saveAs } = await import("file-saver");
     const wb = new ExcelJS.Workbook();
@@ -149,8 +173,75 @@ function BrandTab({ isProductTab }: Props) {
     const blob = new Blob([buf], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    saveAs(blob, `FEDIT_${yymmdd()}.xlsx`);
+    const namePart = brandLabel ? `_${brandLabel}` : "";
+    saveAs(blob, `FEDIT${namePart}_${yymmdd()}.xlsx`);
   }
+
+  // 브랜드 하나만 지정해 전체 페이지를 끝까지 순회하며 모은다. 화면에 이미
+  // 로드된 resultLists는 여러 브랜드가 섞여 있고 무한 스크롤로 일부만 불러온
+  // 상태일 수 있어, 엑셀에는 항상 해당 브랜드의 전체 데이터를 새로 받아 담는다.
+  async function fetchAllProductsForBrand(
+    brand: string | null,
+  ): Promise<ApiDetail[]> {
+    const items: ApiDetail[] = [];
+    let cursor: string | null = null;
+    do {
+      const data = await GetProductList({
+        brandList: brand ? [brand] : [],
+        selectedColors,
+        selectedGenders,
+        selectedCategories,
+        selectedDetails,
+        selectedPatterns,
+        selectedSeasons,
+        cursor,
+      });
+      const pageItems = Array.isArray(data?.items) ? data.items : [];
+      items.push(...pageItems);
+      cursor = data?.nextCursor || null;
+    } while (cursor);
+    return items;
+  }
+
+  const isFree = currentPlan === "free";
+  const isBasicLimitReached = currentPlan === "basic" && excelRemaining <= 0;
+  const isDownloadDisabled = isFree || isBasicLimitReached || isDownloading;
+
+  const handleDownloadClick = async () => {
+    if (isDownloadDisabled) {
+      if (isBasicLimitReached) {
+        alert(
+          `이번 달 엑셀 다운로드 횟수(월 ${EXCEL_MONTHLY_LIMIT}회)를 모두 사용했어요. 다음 달에 다시 이용해주세요.`,
+        );
+      }
+      return;
+    }
+
+    // 브랜드가 여러 개 선택돼 있어도 한 번에 한 브랜드씩만 요청해서 브랜드별로
+    // 파일을 나눠 받는다. 선택된 브랜드가 없으면(기본 무신사 데이터) 한 번만 받는다.
+    const targets = brandList.length > 0 ? brandList : [null];
+
+    setIsDownloading(true);
+    setDownloadProgress({ done: 0, total: targets.length });
+    try {
+      for (let i = 0; i < targets.length; i++) {
+        const brand = targets[i];
+        const rows = await fetchAllProductsForBrand(brand);
+        if (rows.length > 0) {
+          await downloadXlsxWithImages(rows, brand ?? undefined);
+        }
+        setDownloadProgress({ done: i + 1, total: targets.length });
+      }
+      if (currentPlan === "basic") {
+        useExcelDownloadStore.getState().commitDownload();
+      }
+    } catch {
+      alert("엑셀 다운로드에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsDownloading(false);
+      setDownloadProgress(null);
+    }
+  };
 
   return (
     <section className="flex justify-between h-14 bg-surface-base px-12 py-2 gap-2 relative pl-32">
@@ -179,11 +270,33 @@ function BrandTab({ isProductTab }: Props) {
 
       {isProductTab && (
         <button
-          onClick={() => downloadXlsxWithImages(resultLists as ApiDetail[])}
-          className="text-tx-neutral flex justify-center items-center h-10 gap-1 py-2 text-base font-semibold bg-white rounded-lg px-3 cursor-pointer select-none shrink-0 border border-line-alt"
+          onClick={handleDownloadClick}
+          disabled={isDownloadDisabled}
+          title={
+            isFree
+              ? "무료 요금제는 엑셀 다운로드를 이용할 수 없어요. 요금제를 업그레이드해주세요."
+              : isBasicLimitReached
+                ? `이번 달 엑셀 다운로드 횟수(월 ${EXCEL_MONTHLY_LIMIT}회)를 모두 사용했어요.`
+                : undefined
+          }
+          className={[
+            "flex h-10 shrink-0 select-none items-center justify-center gap-1 rounded-lg border border-line-alt bg-white px-3 py-2 text-base font-semibold text-tx-neutral",
+            isDownloadDisabled
+              ? "cursor-not-allowed opacity-40"
+              : "cursor-pointer",
+          ].join(" ")}
         >
-          <Icon icon="ci:download" className="w-5" />
-          <p>엑셀 다운로드</p>
+          <Icon
+            icon={isDownloading ? "svg-spinners:180-ring" : "ci:download"}
+            className="w-5"
+          />
+          <p>
+            {isDownloading
+              ? `다운로드 중… (${downloadProgress?.done ?? 0}/${downloadProgress?.total ?? 0})`
+              : currentPlan === "basic"
+                ? `엑셀 다운로드 (${excelRemaining}/${EXCEL_MONTHLY_LIMIT})`
+                : "엑셀 다운로드"}
+          </p>
         </button>
       )}
     </section>

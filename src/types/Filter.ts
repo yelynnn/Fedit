@@ -48,6 +48,20 @@ export type FilterStore = {
   addBrand: (brand: string) => void;
   removeBrand: (brand: string) => void;
   resetBrand: () => void;
+  setBrandList: (brands: string[]) => void;
+
+  // 서버에 저장된 "관심 브랜드 10개"(고정값). brandList는 지금 화면에서
+  // 필터링 중인 값이라 자유롭게 늘었다 줄었다 하지만, interestBrandPicks는
+  // 저장/변경 시에만 바뀐다 — "이 브랜드를 볼 수 있는지" 허용 여부 판단은
+  // brandList가 아니라 반드시 이 값을 기준으로 해야 한다.
+  interestBrandPicks: string[];
+  setInterestBrandPicks: (brands: string[]) => void;
+
+  // 관심 브랜드를 마지막으로 저장(변경)한 시각(ISO). 결제 주기당 1회 변경
+  // 제한을 프론트에서 판단하는 데 쓴다. 백엔드가 이 정보를 내려주게 되면
+  // 그쪽 값으로 교체하는 게 맞다 — 기기별로만 유효한 임시 방편이다.
+  lastBrandPicksSavedAt: string | null;
+  setLastBrandPicksSavedAt: (iso: string) => void;
 };
 
 export type SunburstData = {

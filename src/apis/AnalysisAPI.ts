@@ -9,57 +9,36 @@ const GetProductByItemCode = async (itemcode: string) => {
 };
 
 const GetDetailInfo = async ({ itemcode }: { itemcode: string }) => {
-  try {
-    const response = await axiosInstance.get(`/detail/${itemcode}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosInstance.get(`/detail/${itemcode}`);
+  return response.data;
 };
 
 const GetRelatedItemInfo = async ({ itemcode }: { itemcode: string }) => {
-  try {
-    const response = await axiosInstance.get(`/products/detail/${itemcode}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosInstance.get(`/products/detail/${itemcode}`);
+  return response.data;
 };
 
 const GetBrandList = async () => {
-  try {
-    const response = await axiosInstance.get(`/menu/brand`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosInstance.get(`/menu/brand`);
+  return response.data;
 };
 
 const GetColorGraph = async () => {
   const { brandList } = useFilterStore.getState();
-
-  try {
-    const query = brandList.join(",");
-    const response = await axiosInstance.get(
-      `/api/v1/color-analysis/graph?brand=${encodeURIComponent(query)}`,
-    );
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const query = brandList.join(",");
+  const response = await axiosInstance.get(
+    `/api/v1/color-analysis/graph?brand=${encodeURIComponent(query)}`,
+  );
+  return response.data;
 };
 
 const GetCategoryGraph = async () => {
   const { brandList } = useFilterStore.getState();
-  try {
-    const query = brandList.join(",");
-    const response = await axiosInstance.get(
-      `/category/graph?brand=${encodeURIComponent(query)}`,
-    );
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const query = brandList.join(",");
+  const response = await axiosInstance.get(
+    `/category/graph?brand=${encodeURIComponent(query)}`,
+  );
+  return response.data;
 };
 
 type GetColorProductParams = {
@@ -71,17 +50,13 @@ const GetColorProduct = async ({
   brand,
   parent_color_hex,
 }: GetColorProductParams) => {
-  try {
-    const response = await axiosInstance.get("/color/product", {
-      params: {
-        brand,
-        parent_color_hex,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosInstance.get("/color/product", {
+    params: {
+      brand,
+      parent_color_hex,
+    },
+  });
+  return response.data;
 };
 
 type ProductFilterPayload = {
@@ -141,7 +116,7 @@ const GetPatternList = async (): Promise<string[]> => {
   try {
     const res = await axiosInstance.get("/menu/pattern");
     return Array.isArray(res.data?.patterns) ? res.data.patterns : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -150,7 +125,7 @@ const GetDetailList = async (): Promise<string[]> => {
   try {
     const res = await axiosInstance.get("/menu/detail");
     return Array.isArray(res.data?.details) ? res.data.details : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -175,6 +150,11 @@ const PostJudge = async (payload: JudgePayload): Promise<void> => {
     }
     throw error;
   }
+};
+
+const GetBrandPicks = async (): Promise<string[]> => {
+  const res = await axiosInstance.get("/brand/picks");
+  return Array.isArray(res.data) ? res.data : [];
 };
 
 const PutBrandPicks = async (brandNames: string[]): Promise<void> => {
@@ -205,5 +185,6 @@ export {
   PostJudge,
   GetPatternList,
   GetDetailList,
+  GetBrandPicks,
   PutBrandPicks,
 };

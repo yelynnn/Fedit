@@ -46,10 +46,19 @@ export const useFilterStore = create<FilterStore>()(
       removeBrand: (brand: string) =>
         set((s) => ({ brandList: s.brandList.filter((b) => b !== brand) })),
       resetBrand: () => set({ brandList: [] }),
+      setBrandList: (brands: string[]) => set({ brandList: brands }),
+
+      interestBrandPicks: [],
+      setInterestBrandPicks: (brands: string[]) =>
+        set({ interestBrandPicks: brands }),
+
+      lastBrandPicksSavedAt: null,
+      setLastBrandPicksSavedAt: (iso: string) =>
+        set({ lastBrandPicksSavedAt: iso }),
     }),
     {
       name: "filter-storage",
-      version: 1,
+      version: 2,
       migrate: (persistedState) => {
         const state = persistedState as { selectedTab?: string } | undefined;
         if (state?.selectedTab === "대시보드") {
@@ -57,6 +66,13 @@ export const useFilterStore = create<FilterStore>()(
         }
         return state;
       },
+      // interestBrandPicks는 항상 서버 값(GetBrandPicks)을 따라야 한다.
+      // 로컬에 남아 있으면 Basic → Free 등으로 플랜이 바뀐 뒤에도 예전
+      // 관심 브랜드 10개가 계속 선택 가능한 상태로 남는 문제가 있어 제외한다.
+      partialize: (state) =>
+        Object.fromEntries(
+          Object.entries(state).filter(([key]) => key !== "interestBrandPicks"),
+        ) as typeof state,
     }
   )
 );

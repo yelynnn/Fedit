@@ -44,37 +44,24 @@ const GetTrendKeyword = async ({
 };
 
 const GetTrendGraph = async () => {
-  try {
-    const response = await axiosInstance.get(`/api/v1/home/trendgraph`);
-    // console.log("급상승 유형 그래프 가져오기 성공");
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosInstance.get(`/api/v1/home/trendgraph`);
+  return response.data;
 };
 
 const GetItemTrend = async ({ audienceType }: MainItemTrendBoxProps) => {
-  try {
-    const queryParams = new URLSearchParams();
-    queryParams.append("audience-type", audienceType);
+  const queryParams = new URLSearchParams();
+  queryParams.append("audience-type", audienceType);
 
-    const response = await axiosInstance.get(
-      `/api/v1/home/itemtrend?${queryParams.toString()}`,
-    );
+  const response = await axiosInstance.get(
+    `/api/v1/home/itemtrend?${queryParams.toString()}`,
+  );
 
-    return response.data.item_trends;
-  } catch (error) {
-    throw error;
-  }
+  return response.data.item_trends;
 };
 
 const GetTrendColor = async () => {
-  try {
-    const response = await axiosInstance.get(`/api/v1/home/colortrend`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosInstance.get(`/api/v1/home/colortrend`);
+  return response.data;
 };
 
 const GetDashboardRanking = async ({

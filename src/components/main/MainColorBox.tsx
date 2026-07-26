@@ -15,7 +15,7 @@ function MainColorBox() {
           colors: res.colors ?? [],
           products: res.products ?? [],
         });
-      } catch (error) {
+      } catch {
         setColorData({ colors: [], products: [] });
       }
     };

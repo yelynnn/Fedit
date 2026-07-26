@@ -150,7 +150,8 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
       });
       toastTimerRef.current = setTimeout(() => setToast(null), 3000);
     } catch {
-      }
+      // 무시
+    }
   };
 
   const handleUndoSave = async () => {
@@ -163,7 +164,8 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
         return next;
       });
     } catch {
-      }
+      // 무시
+    }
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(null);
   };

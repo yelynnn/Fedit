@@ -29,7 +29,7 @@ function MainItemTrendBox() {
         const res = await GetItemTrend({ audienceType });
         const list: TrendItem[] = Array.isArray(res) ? res : res?.items ?? [];
         setItemTrendList(list ?? []);
-      } catch (error) {
+      } catch {
         setItemTrendList([]);
       }
     };

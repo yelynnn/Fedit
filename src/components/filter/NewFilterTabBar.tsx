@@ -11,6 +11,8 @@ import RunwayPage from "@/pages/RunwayPage";
 import BoardsPage from "@/pages/BoardsPage";
 import { useSubscriptionStore } from "@/stores/SubscriptionStore";
 import ProUpgradeOverlay from "@/components/common/ProUpgradeOverlay";
+import { GetBrandPicks } from "@/apis/AnalysisAPI";
+import { useUIStore } from "@/stores/UIStore";
 
 // PRO 요금제에서만 이용 가능한 탭
 const PRO_ONLY_TABS = new Set(["색상 분석", "유형 분석", "패션쇼 분석"]);
@@ -76,11 +78,56 @@ export function NewFilterTabPanels() {
   const { subscription, loaded, fetchSubscription } = useSubscriptionStore(
     (s) => s,
   );
+  const setBrandList = useFilterStore((s) => s.setBrandList);
+  const setInterestBrandPicks = useFilterStore((s) => s.setInterestBrandPicks);
+  const isBrandPicksEditing = useUIStore((s) => s.isBrandPicksEditing);
 
   useEffect(() => {
     fetchSubscription();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Basic 플랜이 될 때마다 서버에 저장된 관심 브랜드 픽을 받아온다.
+  // (예: Basic→Pro→Basic처럼 플랜을 왔다갔다 해도, 다시 Basic이 될 때마다
+  // 로컬에 남아있던 값이 아니라 항상 서버 기준 최신 픽으로 맞춘다.)
+  // interestBrandPicks(허용된 고정 10개)는 항상 갱신하고, brandList(지금
+  // 화면에서 필터링 중인 값)는 이 시점에만 기본값으로 맞춰준다 — 이후
+  // 사용자가 10개 중 일부만 보려고 체크를 풀어도 이 값이 다시 덮어쓰지 않는다.
+  // 아직 백엔드 엔드포인트가 없으면 실패하고, 기존 로컬 값을 그대로 둔다.
+  // 관심 브랜드 선택 모달(온보딩/설정 어느 쪽이든)이 열려있는 동안에는
+  // 사용자가 칩을 고르는 중이라 brandList를 건드리면 안 되므로 건너뛴다.
+  //
+  // Basic이 아니게 되면(Free/Pro) interestBrandPicks를 비워서 예전 Basic
+  // 관심 브랜드 10개가 다른 플랜에서까지 "선택 가능"한 상태로 남지 않게
+  // 한다. Free는 무신사 탭 외 브랜드를 아예 쓸 수 없어야 하므로 brandList도
+  // 함께 비운다 (Pro는 브랜드 제한이 없는 플랜이라 brandList를 건드리지 않는다).
+  useEffect(() => {
+    if (!loaded || isBrandPicksEditing) return;
+
+    if (subscription?.plan !== "basic") {
+      setInterestBrandPicks([]);
+      if (subscription?.plan !== "pro") setBrandList([]);
+      return;
+    }
+
+    let ignore = false;
+    GetBrandPicks()
+      .then((picks) => {
+        if (ignore) return;
+        setInterestBrandPicks(picks);
+        setBrandList(picks);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [
+    subscription?.plan,
+    loaded,
+    isBrandPicksEditing,
+    setBrandList,
+    setInterestBrandPicks,
+  ]);
 
   const isLocked =
     loaded && subscription?.plan !== "pro" && PRO_ONLY_TABS.has(selectedTab);

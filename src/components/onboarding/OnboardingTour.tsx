@@ -87,7 +87,7 @@ export default function OnboardingTour() {
   const setSidebarCollapseOverride = useUIStore(
     (s) => s.setSidebarCollapseOverride,
   );
-  const brandList = useFilterStore((s) => s.brandList);
+  const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
 
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -96,7 +96,7 @@ export default function OnboardingTour() {
   const step1 =
     source === "signup"
       ? STEP_1_FREE_SIGNUP
-      : brandList.length > 0
+      : interestBrandPicks.length >= 10
         ? STEP_1_SELECTED
         : STEP_1_NOT_SELECTED;
   const steps: Step[] = [step1, ...REST_STEPS];

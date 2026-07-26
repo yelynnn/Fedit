@@ -46,15 +46,19 @@ function NewProductAnalysis() {
     selectedSeasons,
   } = useFilteredData();
   const { brandList } = useFilterStore();
+  const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
   const { subscription } = useSubscriptionStore((s) => s);
-  const openBrandFilterModal = useUIStore((s) => s.openBrandFilterModal);
+  const openSettingsModal = useUIStore((s) => s.openSettingsModal);
   // 개발 중 실제 basic 플랜 없이도 배너를 확인하기 위한 디버그 강제 노출: /?showBrandModal=1
   const isDevBannerForce =
     import.meta.env.DEV &&
     new URLSearchParams(window.location.search).get("showBrandModal") === "1";
+  // Basic 플랜인데 저장된 관심 브랜드 10개가 다 채워지지 않았으면 항상 노출.
+  // (지금 화면에서 필터링 중인 brandList가 아니라 저장된 픽 기준으로 판단 —
+  // 안 그러면 10개 중 일부만 보려고 체크를 풀었을 때도 배너가 다시 뜬다.)
   const showBrandNotice =
     (isDevBannerForce || subscription?.plan === "basic") &&
-    brandList.length === 0;
+    interestBrandPicks.length < 10;
 
   const fetchData = useCallback(
     async (cursor: string | null = null) => {
@@ -83,7 +87,8 @@ function NewProductAnalysis() {
         }
 
         setNextCursor(data?.nextCursor || null);
-      } catch (err) {
+      } catch {
+        // 무시: 목록은 비워두지 않고 이전 상태 유지
       } finally {
         isFetchingRef.current = false;
         setIsFetching(false);
@@ -182,7 +187,7 @@ function NewProductAnalysis() {
             </div>
             <button
               type="button"
-              onClick={openBrandFilterModal}
+              onClick={() => openSettingsModal("관심브랜드")}
               className="flex h-[34px] flex-shrink-0 items-center justify-center gap-1.5 rounded-md bg-fill-primary px-2 py-1 type-body-small text-tx-inverse"
             >
               브랜드 선택하기

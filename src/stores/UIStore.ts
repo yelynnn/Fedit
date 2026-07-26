@@ -9,6 +9,13 @@ type UIStore = {
   openInterestBrandModal: () => void;
   closeInterestBrandModal: () => void;
 
+  // InterestBrandModal은 온보딩(전역 인스턴스)과 설정 페이지의 "변경하기"
+  // (로컬 인스턴스) 두 군데에서 쓰이는데, 둘 중 어느 쪽이든 열려서 brandList를
+  // 편집 중이면 true. 다른 곳(예: 서버 픽 동기화)에서 편집 중 brandList를
+  // 덮어쓰지 않도록 참조하는 공용 플래그.
+  isBrandPicksEditing: boolean;
+  setBrandPicksEditing: (value: boolean) => void;
+
   isBrandFilterModalOpen: boolean;
   openBrandFilterModal: () => void;
   closeBrandFilterModal: () => void;
@@ -31,6 +38,9 @@ export const useUIStore = create<UIStore>((set) => ({
   isInterestBrandModalOpen: false,
   openInterestBrandModal: () => set({ isInterestBrandModalOpen: true }),
   closeInterestBrandModal: () => set({ isInterestBrandModalOpen: false }),
+
+  isBrandPicksEditing: false,
+  setBrandPicksEditing: (value) => set({ isBrandPicksEditing: value }),
 
   isBrandFilterModalOpen: false,
   openBrandFilterModal: () => set({ isBrandFilterModalOpen: true }),

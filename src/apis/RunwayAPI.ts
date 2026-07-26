@@ -39,14 +39,10 @@ export type FashionShowResponse = {
 };
 
 const GetFashionShow = async (season: string): Promise<FashionShowResponse> => {
-  try {
-    const response = await axiosInstance.get<FashionShowResponse>("/fashionshow", {
-      params: { season },
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await axiosInstance.get<FashionShowResponse>("/fashionshow", {
+    params: { season },
+  });
+  return response.data;
 };
 
 export { GetFashionShow };
