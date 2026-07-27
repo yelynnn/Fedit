@@ -7,7 +7,25 @@ import { useTypeStore } from "@/stores/TypeStore";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Icon } from "@iconify/react";
-// import MonthModal from "@/components/main/modal/MonthModal";
+import MonthModal from "@/components/main/modal/MonthModal";
+import DateNavNotice from "@/components/main/DateNavNotice";
+
+// 인기 키워드는 이제 플랫폼별로 한 번에 한 곳씩만 요청 가능해서(platform 필수),
+// 예전에 한 번의 응답에 다 같이 담겨 오던 플랫폼들을 프론트에서 하나씩 나눠 요청해
+// 합친다. 29CM은 원래도 화면에 노출하지 않던 플랫폼이라 요청 대상에서 제외했다.
+const PLATFORMS: { platform: string; title: string }[] = [
+  { platform: "naver", title: "네이버" },
+  { platform: "musinsa", title: "무신사" },
+  { platform: "wconcept", title: "W컨셉" },
+];
+
+const DATA_UNAVAILABLE_NOTICE = (
+  <>
+    아직 누적된 분석 데이터가 없어
+    <br />
+    8월부터 해당 분석 결과를 제공할 수 있어요
+  </>
+);
 
 function DashBoardPage() {
   const [keywordList, setKeywordList] = useState<any[]>([]);
@@ -16,68 +34,68 @@ function DashBoardPage() {
     useTypeStore();
 
   const [currentDate, setCurrentDate] = useState(dayjs());
-  // const isToday = currentDate.isSame(dayjs(), "day");
+  const isToday = currentDate.isSame(dayjs(), "day");
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
-  // const [isMonthModalOpen, setMonthModalOpen] = useState(false);
+  const [isMonthModalOpen, setMonthModalOpen] = useState(false);
 
-  const dateListOptions = [
-    "2025-10",
-    "2025-11",
-    "2025-12",
-    "2026-01",
-    "2026-02",
-  ];
+  // 아직 누적된 월간 분석 데이터가 없어서(8월부터 제공 예정) 이전달/날짜
+  // 선택은 잠시 막아두고, 누른 버튼 바로 아래에 안내 토스트만 3초간 보여준다.
+  const [dateNoticeTarget, setDateNoticeTarget] = useState<
+    "modal" | "prev" | "next" | null
+  >(null);
+  const handleDateNavBlocked = (target: "modal" | "prev" | "next") => {
+    setDateNoticeTarget(target);
+    setTimeout(
+      () => setDateNoticeTarget((t) => (t === target ? null : t)),
+      3000,
+    );
+  };
+
+  const dateListOptions = ["2026-07"];
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const baseParams =
+        // 달을 따로 고르지 않았으면(초기 진입) 오늘 날짜를 그대로 보내고,
+        // 이전달/다음달 화살표나 모달로 달을 고르면 그 달(YYYY-MM)을 보낸다.
+        const requestDate =
           selectedMonth && selectedMonth.trim() !== ""
-            ? { audienceType, date: selectedMonth }
-            : { audienceType };
+            ? selectedMonth
+            : dayjs().format("YYYY-MM-DD");
 
-        const baseRes = await GetTrendKeyword(baseParams);
+        const responses = await Promise.all(
+          PLATFORMS.map(({ platform, title }) =>
+            GetTrendKeyword({ date: requestDate, platform }).then((res) => ({
+              res,
+              title,
+            })),
+          ),
+        );
 
-        const baseArray = Array.isArray(baseRes)
-          ? baseRes
-          : (baseRes?.result ?? []);
+        // 새 응답은 플랫폼당 { items, sourceName, sourceUpdatedAt } 형태의
+        // 평평한 top-10 리스트라, 기존 카테고리별 랭킹 박스 UI(NewMainKeywordBox)가
+        // 기대하는 categories[].rankings 모양으로 감싸서 넣어준다.
+        // change로 순위 상승/하락을 판단: isNew거나 change>0이면 상승, change<0이면
+        // 하락, 그 외(0)는 유지로 표시한다(네이버는 컴포넌트에서 자체적으로 숨김).
+        const merged = responses.map(({ res, title }) => {
+          const sourceName = res?.sourceName || title;
+          const items = Array.isArray(res?.items) ? res.items : [];
+          const rankings = items.map((item) => ({
+            idx: item.rank,
+            keyword: item.keyword,
+            status: item.isNew || item.change > 0 ? 1 : item.change < 0 ? -1 : 0,
+          }));
 
-        let merged = baseArray.flatMap((result: any) => {
-          const brands = result.brands ?? [];
-          return brands
-            .filter((b: any) => b.brand !== "29CM")
-            .map((b: any) => ({
-              title: b.brand,
-              dateType: result.date_type,
-              categories: b.categories ?? [],
-              date: result.date,
-            }));
+          return {
+            title: sourceName,
+            dateType: undefined,
+            categories: [{ category: sourceName, rankings }],
+            date: res?.sourceUpdatedAt ?? null,
+          };
         });
 
-        if (audienceType === "kids") {
-          const naverParams = { audienceType: "kids", brand: "네이버" };
-
-          const naverRes = await GetTrendKeyword(naverParams);
-
-          const naverArray = Array.isArray(naverRes)
-            ? naverRes
-            : (naverRes?.result ?? []);
-
-          const parsedNaver = naverArray.flatMap((result: any) => {
-            const brands = result.brands ?? [];
-            return brands.map((b: any) => ({
-              title: b.brand,
-              dateType: result.date_type,
-              categories: b.categories ?? [],
-              date: result.date,
-            }));
-          });
-
-          merged = [...merged, ...parsedNaver];
-        }
-
         setKeywordList(merged);
-        setCrawledDate(baseArray[0]?.date ?? null);
+        setCrawledDate(merged[0]?.date ?? null);
       } catch {
         setKeywordList([]);
         setCrawledDate(null);
@@ -85,7 +103,7 @@ function DashBoardPage() {
     };
 
     fetchAll();
-  }, [audienceType, selectedMonth]);
+  }, [selectedMonth]);
 
   return (
     <div className="w-full h-full px-14">
@@ -127,9 +145,9 @@ function DashBoardPage() {
 
         {audienceType === "adult" && (
           <div className="flex items-center justify-between w-full pl-1 mb-4">
-            {/* <div className="relative">
+            <div className="relative">
               <button
-                onClick={() => setMonthModalOpen(true)}
+                onClick={() => handleDateNavBlocked("modal")}
                 className="flex items-center gap-1.5 text-base font-semibold text-tx-alt hover:opacity-80 transition-opacity"
               >
                 {isToday
@@ -148,41 +166,37 @@ function DashBoardPage() {
                 }}
                 dateList={dateListOptions}
               />
-            </div> */}
-            <div className="text-base font-semibold text-tx-alt">
-              {" "}
-              오늘({currentDate.format("YYYY.MM.DD")})
+
+              {dateNoticeTarget === "modal" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
             </div>
 
             <div className="flex items-center gap-4 pr-2 text-sm font-medium text-tx-neutral">
-              <button
-                onClick={() => {
-                  const newDate = currentDate.subtract(1, "month");
-                  setCurrentDate(newDate);
-                  setSelectedMonth(newDate.format("YYYY-MM"));
-                }}
-                className="flex items-center gap-1 transition-colors hover:text-[#151515]"
-              >
-                <Icon icon="ph:caret-left" className="w-4 h-4" /> 이전달
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => handleDateNavBlocked("prev")}
+                  className="flex items-center gap-1 transition-colors hover:text-[#151515]"
+                >
+                  <Icon icon="ph:caret-left" className="w-4 h-4" /> 이전달
+                </button>
+                {dateNoticeTarget === "prev" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
+              </div>
 
               <div className="w-[1px] h-3 bg-line-alt"></div>
 
-              <button
-                onClick={() => {
-                  const newDate = currentDate.add(1, "month");
-                  setCurrentDate(newDate);
-                  setSelectedMonth(newDate.format("YYYY-MM"));
-                }}
-                disabled={isCurrentMonth} // 💡 이번 달이면 버튼 기능 비활성화
-                className={`flex items-center gap-1 transition-colors ${
-                  isCurrentMonth
-                    ? "text-icon-alt cursor-not-allowed" // 💡 비활성화 시 회색 처리 및 마우스 커서 변경
-                    : "hover:text-[#151515]"
-                }`}
-              >
-                다음달 <Icon icon="ph:caret-right" className="w-4 h-4" />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => handleDateNavBlocked("next")}
+                  disabled={isCurrentMonth} // 💡 이번 달이면 버튼 기능 비활성화
+                  className={`flex items-center gap-1 transition-colors ${
+                    isCurrentMonth
+                      ? "text-icon-alt cursor-not-allowed" // 💡 비활성화 시 회색 처리 및 마우스 커서 변경
+                      : "hover:text-[#151515]"
+                  }`}
+                >
+                  다음달 <Icon icon="ph:caret-right" className="w-4 h-4" />
+                </button>
+                {dateNoticeTarget === "next" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
+              </div>
             </div>
           </div>
         )}

@@ -18,7 +18,11 @@ import { AI_GUIDE_TOPICS, getGuideTopicsByCategory } from "@/content/aiGuides";
 import GuideDetailView from "@/components/settings/guide/GuideDetailView";
 import GuideCard from "@/components/settings/GuideCard";
 import { GUIDE_CATEGORIES, type GuideCategory } from "@/types/guide";
-import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+} from "@/stores/SubscriptionStore";
 import cancelIcon from "@/assets/planCard/cancel.svg";
 import kakaoPayIcon from "@/assets/etc/kakaoIcon.png";
 import tossIcon from "@/assets/etc/tossIcon.png";
@@ -232,7 +236,11 @@ export default function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const currentPlan: "free" | PlanType = subscription?.plan ?? "free";
+  // effectivePlan은 "선택 안 함"(구독 레코드 자체가 없음)과 "명시적 무료"를
+  // 구분해서 보여줄 때만 쓰고, 그 외 요금제 비교/업그레이드 로직은 지금까지처럼
+  // currentPlan(둘 다 free로 취급)을 그대로 쓴다.
+  const effectivePlan = getEffectivePlan(subscription);
+  const currentPlan: "free" | PlanType = toBillingPlan(effectivePlan);
 
   // ── 관심 브랜드 설정 ──
   const [currentBrandPicks, setCurrentBrandPicks] = useState<string[]>([]);
@@ -1171,9 +1179,17 @@ export default function SettingsPage() {
                     ) : (
                       <>
                         <p className="text-base font-semibold text-tx-strong">
-                          {PLAN_DEFS.find((p) => p.key === currentPlan)?.label}
+                          {effectivePlan === "none"
+                            ? "요금제 미선택"
+                            : PLAN_DEFS.find((p) => p.key === currentPlan)
+                                ?.label}
                         </p>
-                        {currentPlan === "free" ? (
+                        {effectivePlan === "none" ? (
+                          <p className="text-sm text-tx-alt mt-0.5">
+                            아직 선택한 요금제가 없어요. 원하는 플랜을
+                            골라주세요.
+                          </p>
+                        ) : currentPlan === "free" ? (
                           <p className="text-sm text-tx-alt mt-0.5">
                             14일 동안 Basic 기능 일부 사용 가능한 요금제
                           </p>
@@ -1862,8 +1878,8 @@ export default function SettingsPage() {
               <>
                 <div className="flex flex-col items-center py-6 text-center">
                   <Icon
-                    icon="ph:spinner-gap"
-                    className="w-10 h-10 mb-4 animate-spin text-tx-neutral"
+                    icon="ph:hourglass-medium"
+                    className="w-10 h-10 mb-4 text-tx-neutral"
                   />
                   <h2 className="mb-2 text-xl font-semibold text-tx-strong">
                     입금 확인 중이에요
@@ -1871,8 +1887,8 @@ export default function SettingsPage() {
                   <p className="text-sm leading-relaxed text-tx-alt">
                     새로 열린 카카오페이 창에서 송금을 완료해주세요.
                     <br />
-                    담당자가 입금 내역을 확인한 후 반영되며, 영업시간 기준 다소
-                    시간이 걸릴 수 있어요.
+                    담당자가 입금 내역을 확인하는 대로, 영업시간 기준 빠르게
+                    확인 후 승인해드릴게요.
                   </p>
                   <button
                     onClick={() => window.open(KAKAO_PAY_LINK_URL, "_blank")}

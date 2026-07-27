@@ -1,7 +1,11 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEffect, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
-import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+} from "@/stores/SubscriptionStore";
 import {
   useExcelDownloadStore,
   getExcelDownloadRemaining,
@@ -9,6 +13,7 @@ import {
 } from "@/stores/ExcelDownloadStore";
 import useFilteredData from "@/lib/filteredData";
 import { GetProductList } from "@/apis/AnalysisAPI";
+import DateNavNotice from "@/components/main/DateNavNotice";
 import type { ApiDetail } from "@/types/Product";
 
 type Props = { isProductTab: boolean };
@@ -25,21 +30,66 @@ const xlsxCols = [
   { header: "할인율", key: "discount_rate", width: 10 },
   { header: "색상", key: "colors", width: 12 },
   { header: "소재", key: "material", width: 16 },
+  { header: "기장", key: "length", width: 12 },
+  { header: "소매 길이", key: "sleeve", width: 12 },
+  { header: "넥라인", key: "neckline", width: 12 },
+  { header: "핏", key: "fit", width: 12 },
+  { header: "패턴", key: "pattern", width: 14 },
   { header: "디테일", key: "details", width: 40 },
   { header: "AI BETA", key: "ai_description", width: 40 },
   { header: "평점", key: "rating", width: 8 },
   { header: "리뷰 수", key: "reviews", width: 10 },
+  { header: "누적 판매", key: "sales", width: 12 },
+  { header: "조회수", key: "views", width: 12 },
   { header: "상품 상세 주소", key: "product_detail_url", width: 50 },
 ];
 
+// ProductBox/ProductDetailContent와 동일한 규칙(₩ + 천단위 콤마)으로 맞춘다.
+const formatPrice = (price?: string | number | null) => {
+  if (price === null || price === undefined || price === "") return "";
+  if (typeof price === "string" && /[₩$€¥]/.test(price)) return price;
+  const n = typeof price === "string" ? parseFloat(price) : price;
+  if (!isFinite(n)) return String(price);
+  return `₩${Math.floor(n).toLocaleString("ko-KR")}`;
+};
+
 const colCharsToPx = (w?: number) => Math.floor((w ?? 8.43) * 7 + 5);
 const pxToPt = (px: number) => (px * 72) / 96;
-const getImgSize = (dataUrl: string) =>
-  new Promise<{ w: number; h: number }>((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.src = dataUrl;
-  });
+
+// 썸네일 CDN이 webp/gif 등 다양한 포맷으로 내려주는 경우가 많은데, 확장자만
+// 보고 무조건 png/jpeg로 단정해 심으면 엑셀이 실제 바이트와 라벨이 안 맞아
+// 이미지를 못 그리는 경우가 있었다. 캔버스로 한 번 그려서 항상 png로
+// 통일해 심으면 원본 포맷과 무관하게 엑셀에서 정상적으로 보인다.
+const toPngDataUrl = (dataUrl: string) =>
+  new Promise<{ pngDataUrl: string; w: number; h: number }>(
+    (resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        if (!w || !h) {
+          reject(new Error("이미지 크기를 읽지 못함"));
+          return;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("캔버스를 생성하지 못함"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        try {
+          resolve({ pngDataUrl: canvas.toDataURL("image/png"), w, h });
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.onerror = () => reject(new Error("이미지를 디코딩하지 못함"));
+      img.src = dataUrl;
+    },
+  );
 const yymmdd = () => {
   const d = new Date();
   const yy = String(d.getFullYear()).slice(-2);
@@ -50,8 +100,8 @@ const yymmdd = () => {
 
 function BrandTab({ isProductTab }: Props) {
   const { brandList } = useFilterStore((s) => s);
-  const currentPlan = useSubscriptionStore(
-    (s) => s.subscription?.plan ?? "free",
+  const currentPlan = useSubscriptionStore((s) =>
+    toBillingPlan(getEffectivePlan(s.subscription)),
   );
   const excelDownloadState = useExcelDownloadStore((s) => s);
   const excelRemaining = getExcelDownloadRemaining(excelDownloadState);
@@ -68,6 +118,7 @@ function BrandTab({ isProductTab }: Props) {
     done: number;
     total: number;
   } | null>(null);
+  const [isDownloadHovered, setIsDownloadHovered] = useState(false);
 
   useEffect(() => {
     const id = "brandtab-hide-scrollbar";
@@ -119,8 +170,22 @@ function BrandTab({ isProductTab }: Props) {
           r[k] = Array.isArray(p.vlm?.color) ? p.vlm.color.join("/") : "";
         else if (k === "material")
           r[k] = p.vlm?.material ?? "";
+        else if (k === "fit")
+          r[k] = p.vlm?.fit ?? "";
+        else if (k === "length")
+          r[k] = p.vlm?.length ?? "";
+        else if (k === "sleeve")
+          r[k] = p.vlm?.sleeve ?? "";
+        else if (k === "neckline")
+          r[k] = p.vlm?.neckline ?? "";
+        else if (k === "pattern")
+          r[k] = Array.isArray(p.vlm?.pattern)
+            ? p.vlm.pattern.join("/")
+            : (p.vlm?.pattern ?? "");
         else if (k === "details")
           r[k] = Array.isArray(p.vlm?.detail) ? p.vlm.detail.join(", ") : "";
+        else if (k === "current_price" || k === "regular_price")
+          r[k] = formatPrice((p as any)[k]);
         else r[k] = (p as any)[k] ?? "";
       });
       ws.addRow(r);
@@ -132,23 +197,28 @@ function BrandTab({ isProductTab }: Props) {
 
     for (let i = 0; i < rows.length; i++) {
       const url = rows[i].thumbnail || rows[i].front_image_url;
+      const rowIndex = i + 2;
+      // 이미지를 못 심으면(대부분 썸네일 서버가 CORS로 fetch 자체를 막는
+      // 경우) 칸을 비워두지 않고 최소한 원본 링크라도 클릭할 수 있게 남긴다.
       if (!url) continue;
       try {
-        const res = await fetch(url);
+        // 썸네일 서버가 CORS를 안 열어줘서 직접 fetch가 막히므로, CORS를
+        // 허용하는 공개 이미지 프록시(weserv)를 한 번 거쳐서 가져온다.
+        const res = await fetch(
+          `https://images.weserv.nl/?url=${encodeURIComponent(url)}`,
+        );
+        if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
         const blob = await res.blob();
         const dataUrl = await new Promise<string>((resolve) => {
           const fr = new FileReader();
           fr.onload = () => resolve(String(fr.result));
           fr.readAsDataURL(blob);
         });
-        const { w: iw, h: ih } = await getImgSize(dataUrl);
-        if (!iw || !ih) continue;
-        const base64 = (dataUrl.split(",")[1] || "").trim();
-        if (!base64) continue;
-        const ext: "png" | "jpeg" = /\.png(\?|$)/i.test(url) ? "png" : "jpeg";
-        const imgId = wb.addImage({ base64, extension: ext });
+        const { pngDataUrl, w: iw, h: ih } = await toPngDataUrl(dataUrl);
+        const base64 = (pngDataUrl.split(",")[1] || "").trim();
+        if (!base64) throw new Error("이미지 데이터가 비어 있음");
+        const imgId = wb.addImage({ base64, extension: "png" });
 
-        const rowIndex = i + 2;
         ws.getRow(rowIndex).height = pxToPt(baseCellHeightPx);
 
         const cellWpx = colCharsToPx(ws.getColumn(imgCol + 1).width);
@@ -165,6 +235,10 @@ function BrandTab({ isProductTab }: Props) {
           editAs: "oneCell",
         });
       } catch {
+        ws.getCell(rowIndex, imgCol + 1).value = {
+          text: "이미지 링크",
+          hyperlink: url,
+        };
         continue;
       }
     }
@@ -269,35 +343,51 @@ function BrandTab({ isProductTab }: Props) {
       </div>
 
       {isProductTab && (
-        <button
-          onClick={handleDownloadClick}
-          disabled={isDownloadDisabled}
-          title={
-            isFree
-              ? "무료 요금제는 엑셀 다운로드를 이용할 수 없어요. 요금제를 업그레이드해주세요."
-              : isBasicLimitReached
-                ? `이번 달 엑셀 다운로드 횟수(월 ${EXCEL_MONTHLY_LIMIT}회)를 모두 사용했어요.`
-                : undefined
-          }
-          className={[
-            "flex h-10 shrink-0 select-none items-center justify-center gap-1 rounded-lg border border-line-alt bg-white px-3 py-2 text-base font-semibold text-tx-neutral",
-            isDownloadDisabled
-              ? "cursor-not-allowed opacity-40"
-              : "cursor-pointer",
-          ].join(" ")}
-        >
-          <Icon
-            icon={isDownloading ? "svg-spinners:180-ring" : "ci:download"}
-            className="w-5"
-          />
-          <p>
-            {isDownloading
-              ? `다운로드 중… (${downloadProgress?.done ?? 0}/${downloadProgress?.total ?? 0})`
-              : currentPlan === "basic"
-                ? `엑셀 다운로드 (${excelRemaining}/${EXCEL_MONTHLY_LIMIT})`
-                : "엑셀 다운로드"}
-          </p>
-        </button>
+        <div className="relative">
+          <button
+            onClick={handleDownloadClick}
+            disabled={isDownloadDisabled}
+            onMouseEnter={() => setIsDownloadHovered(true)}
+            onMouseLeave={() => setIsDownloadHovered(false)}
+            title={
+              isFree
+                ? "무료 요금제는 엑셀 다운로드를 이용할 수 없어요. 요금제를 업그레이드해주세요."
+                : isBasicLimitReached
+                  ? `이번 달 엑셀 다운로드 횟수(월 ${EXCEL_MONTHLY_LIMIT}회)를 모두 사용했어요.`
+                  : undefined
+            }
+            className={[
+              "flex h-10 shrink-0 select-none items-center justify-center gap-1 rounded-lg border border-line-alt bg-white px-3 py-2 text-base font-semibold text-tx-neutral",
+              isDownloadDisabled
+                ? "cursor-not-allowed opacity-40"
+                : "cursor-pointer",
+            ].join(" ")}
+          >
+            <Icon
+              icon={isDownloading ? "svg-spinners:180-ring" : "ci:download"}
+              className="w-5"
+            />
+            <p>
+              {isDownloading
+                ? `다운로드 중… (${downloadProgress?.done ?? 0}/${downloadProgress?.total ?? 0})`
+                : currentPlan === "basic"
+                  ? `엑셀 다운로드 (${excelRemaining}/${EXCEL_MONTHLY_LIMIT})`
+                  : "엑셀 다운로드"}
+            </p>
+          </button>
+
+          {isDownloadHovered && !isFree && (
+            <DateNavNotice>
+              엑셀 파일 하나당 브랜드 1개만 다운로드돼요
+              {currentPlan === "basic" && (
+                <>
+                  <br />
+                  Basic 요금제는 월 3회까지 다운로드할 수 있어요
+                </>
+              )}
+            </DateNavNotice>
+          )}
+        </div>
       )}
     </section>
   );

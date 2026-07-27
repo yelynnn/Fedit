@@ -16,6 +16,7 @@ import CancellationTermsPage from "@/pages/Auth/CancellationTermsPage";
 import PrivacyPolicyPage from "@/pages/Auth/PrivacyPolicyPage";
 import BillingSuccessPage from "@/pages/BillingSuccessPage";
 import BillingFailPage from "@/pages/BillingFailPage";
+import KakaoUpgradeAdminPage from "@/pages/admin/KakaoUpgradeAdminPage";
 import ProtectedRoute from "./ProtectedRoute";
 
 const router = createBrowserRouter([
@@ -100,6 +101,10 @@ const router = createBrowserRouter([
           {
             path: "billing/fail",
             element: <BillingFailPage />,
+          },
+          {
+            path: "admin/kakao-upgrades",
+            element: <KakaoUpgradeAdminPage />,
           },
         ],
       },

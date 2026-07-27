@@ -5,30 +5,18 @@ import type {
   DashboardRankingResponse,
   RankingItemDetailResponse,
   TrendIndexResponse,
+  TrendKeywordResponse,
 } from "@/types/Main";
 import { axiosInstance } from "./AxiosInstance";
 
 const GetTrendKeyword = async ({
-  audienceType,
   date,
-  brand,
-}: GetTrendKeywordParams) => {
+  platform,
+}: GetTrendKeywordParams): Promise<TrendKeywordResponse> => {
   try {
-    const queryParams = new URLSearchParams();
-
-    queryParams.append("audience-type", audienceType);
-
-    if (date && date.trim() !== "") {
-      queryParams.append("date", date);
-    }
-
-    if (brand && brand.trim() !== "") {
-      queryParams.append("brand", brand);
-    }
-
-    const res = await axiosInstance.get(
-      `/api/v1/home/keyword?${queryParams.toString()}`,
-    );
+    const res = await axiosInstance.get(`/dashboard/keyword`, {
+      params: { date, platform },
+    });
 
     return res.data;
   } catch (error: any) {

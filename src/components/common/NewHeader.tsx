@@ -62,7 +62,10 @@ export default function NewHeader() {
 
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-1">
-          <div className="relative group/brand">
+          {/* h-15로 헤더 전체 높이(top-15 아래 패널이 시작하는 지점)까지
+              hover 감지 영역을 채운다. 칩(h-10)만 hover 영역이면 칩 아래
+              여백에서 마우스가 그룹을 벗어나 패널이 열리기 전에 닫혀버린다. */}
+          <div className="relative flex items-center h-15 group/brand">
             <div
               data-tour="brand-chip"
               onClick={openBrandFilterModal}

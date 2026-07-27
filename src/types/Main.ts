@@ -16,9 +16,21 @@ export interface MainItemTrendBoxProps {
 }
 
 export interface GetTrendKeywordParams {
-  audienceType: string;
-  date?: string;
-  brand?: string;
+  date: string;
+  platform: string;
+}
+
+export interface TrendKeywordItem {
+  rank: number;
+  isNew: boolean;
+  change: number;
+  keyword: string;
+}
+
+export interface TrendKeywordResponse {
+  items: TrendKeywordItem[];
+  sourceName: string;
+  sourceUpdatedAt: string | null;
 }
 
 export type KeywordBox = {

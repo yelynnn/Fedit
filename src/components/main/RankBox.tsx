@@ -4,6 +4,7 @@ import TrendIndexBox from "../product/TrendIndexBox";
 import dayjs from "dayjs";
 import AIAnalysisBox from "../product/AIAnalysisBox";
 import MonthModal from "./modal/MonthModal";
+import DateNavNotice from "./DateNavNotice";
 import { GetDashboardRanking, GetRankingItemDetail } from "@/apis/DashBoardAPI";
 import type { RankingProduct, RankingItemDetailResponse } from "@/types/Main";
 import { useProductStore } from "@/stores/ProductStore";
@@ -12,6 +13,14 @@ const PLATFORMS = ["무신사", "29CM", "W컨셉", "플랫폼 통합"];
 const CATEGORIES = ["상의", "아우터", "바지", "원피스/스커트"];
 
 const toApiDate = (date: dayjs.Dayjs) => date.format("YYYY-MM");
+
+const DATA_UNAVAILABLE_NOTICE = (
+  <>
+    아직 누적된 분석 데이터가 없어
+    <br />
+    8월부터 해당 분석 결과를 제공할 수 있어요
+  </>
+);
 
 export default function RankBox() {
   const { setModalProductId } = useProductStore((s) => s);
@@ -102,51 +111,57 @@ export default function RankBox() {
       setSimilarCurrentPage((prev) => prev + 1);
   };
 
-  const handlePrevMonth = () =>
-    setCurrentDate(currentDate.subtract(1, "month"));
-  const handleNextMonth = () => setCurrentDate(currentDate.add(1, "month"));
-
   const prevMonth = currentDate.subtract(1, "month");
   const nextMonth = currentDate.add(1, "month");
+
+  // 아직 누적된 월간 분석 데이터가 없어서(8월부터 제공 예정) 이전달 이동은
+  // 잠시 막아두고, 누른 버튼 바로 아래에 안내 토스트만 3초간 보여준다.
+  const [dateNoticeTarget, setDateNoticeTarget] = useState<
+    "prev" | "next" | null
+  >(null);
+  const handleDateNavBlocked = (target: "prev" | "next") => {
+    setDateNoticeTarget(target);
+    setTimeout(
+      () => setDateNoticeTarget((t) => (t === target ? null : t)),
+      3000,
+    );
+  };
 
   return (
     <div className="relative w-full min-h-screen mx-auto overflow-hidden">
       <div className="flex items-center mb-4">
-        {/* <button
-          onClick={() => setIsMonthModalOpen(true)}
-          className="flex items-center gap-1.5 text-base font-semibold text-tx-alt hover:text-tx-default transition-colors"
-        >
-          {isCurrentMonth
-            ? `이번 달(${currentDate.format("YYYY.MM")})`
-            : currentDate.format("YYYY년 M월")}
-          <Icon icon="ph:caret-down" className="w-4 h-4 text-gray-500" />
-        </button> */}
         <div className="text-base font-semibold text-tx-alt">
           {" "}
           이번 달({currentDate.format("YYYY.MM")})
         </div>
         <div className="flex items-center gap-4 ml-auto text-sm font-medium text-tx-neutral">
           {" "}
-          <button
-            onClick={handlePrevMonth}
-            className="flex items-center gap-1 transition-colors hover:text-[#151515]"
-          >
-            <Icon icon="ph:caret-left" />
-            {prevMonth.month() + 1}월
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => handleDateNavBlocked("prev")}
+              className="flex items-center gap-1 transition-colors hover:text-[#151515]"
+            >
+              <Icon icon="ph:caret-left" />
+              {prevMonth.month() + 1}월
+            </button>
+            {dateNoticeTarget === "prev" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
+          </div>
           <div className="w-[1px] h-3 bg-gray-300"></div>
-          <button
-            onClick={handleNextMonth}
-            disabled={isCurrentMonth}
-            className={`flex items-center gap-1 transition-colors ${
-              isCurrentMonth
-                ? "text-icon-alt cursor-not-allowed"
-                : "hover:text-[#151515]"
-            }`}
-          >
-            {nextMonth.month() + 1}월
-            <Icon icon="ph:caret-right" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => handleDateNavBlocked("next")}
+              disabled={isCurrentMonth}
+              className={`flex items-center gap-1 transition-colors ${
+                isCurrentMonth
+                  ? "text-icon-alt cursor-not-allowed"
+                  : "hover:text-[#151515]"
+              }`}
+            >
+              {nextMonth.month() + 1}월
+              <Icon icon="ph:caret-right" />
+            </button>
+            {dateNoticeTarget === "next" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
+          </div>
         </div>
       </div>
 

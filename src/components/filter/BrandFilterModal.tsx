@@ -2,7 +2,11 @@ import { Icon } from "@iconify/react";
 import Modal from "react-modal";
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
-import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+} from "@/stores/SubscriptionStore";
 import { GetBrandList } from "@/apis/AnalysisAPI";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 import cancelIcon from "@/assets/etc/cancel.svg";
@@ -18,8 +22,9 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const resetBrand = useFilterStore((s) => s.resetBrand);
   const removeBrand = useFilterStore((s) => s.removeBrand);
   const { subscription } = useSubscriptionStore((s) => s);
-  const isBasic = subscription?.plan === "basic";
-  const isFree = (subscription?.plan ?? "free") === "free";
+  const currentPlan = toBillingPlan(getEffectivePlan(subscription));
+  const isBasic = currentPlan === "basic";
+  const isFree = currentPlan === "free";
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("selected");
   const [keyword, setKeyword] = useState("");
