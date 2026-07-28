@@ -4,6 +4,11 @@ import AgentMessage from './AgentMessage';
 import type { Message } from '@/types/chat';
 import { useChatStore } from '@/stores/ChatStore';
 import { axiosInstance } from '@/apis/AxiosInstance';
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+} from '@/stores/SubscriptionStore';
 
 const DEFAULT_SUGGESTIONS = [
   '이번 시즌 여성복 트렌드 키워드',
@@ -32,6 +37,8 @@ interface Props {
 export default function AgentChat({ conversationId, onClose }: Props) {
   const { conversations, saveMessages, updateTitle } = useChatStore((s) => s);
   const conv = conversations.find((c) => c.id === conversationId);
+  const subscription = useSubscriptionStore((s) => s.subscription);
+  const isPro = toBillingPlan(getEffectivePlan(subscription)) === 'pro';
 
   const [messages, setMessages] = useState<Message[]>(conv?.messages ?? []);
   const [input, setInput] = useState('');
@@ -63,6 +70,7 @@ export default function AgentChat({ conversationId, onClose }: Props) {
   };
 
   const handleSend = async (text?: string) => {
+    if (!isPro) return;
     const query = (text ?? input).trim();
     if (!query || isLoading) return;
 
@@ -204,7 +212,7 @@ export default function AgentChat({ conversationId, onClose }: Props) {
             <button
               key={s}
               onClick={() => handleSend(s)}
-              disabled={isLoading}
+              disabled={isLoading || !isPro}
               className="flex-shrink-0 text-xs bg-white/80 border border-white/60 rounded-full px-3 py-1.5 text-gray-600 hover:bg-white transition-colors whitespace-nowrap disabled:opacity-50"
             >
               {s}
@@ -221,12 +229,15 @@ export default function AgentChat({ conversationId, onClose }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="어떤 것을 도와드릴까요?"
-            className="flex-1 text-sm outline-none bg-transparent text-gray-700 placeholder-gray-400"
+            disabled={!isPro}
+            placeholder={
+              isPro ? '어떤 것을 도와드릴까요?' : 'PRO 요금제에서만 이용할 수 있어요'
+            }
+            className="flex-1 text-sm outline-none bg-transparent text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
           />
           <button
             onClick={() => handleSend()}
-            disabled={!input.trim() || isLoading}
+            disabled={!isPro || !input.trim() || isLoading}
             className="w-7 h-7 bg-gray-800 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Icon icon="mdi:arrow-up" width={14} className="text-white" />

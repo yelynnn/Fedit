@@ -7,9 +7,15 @@ import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
 import { useFilterStore } from "@/stores/FilterStore";
-import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import {
+  useSubscriptionStore,
+  isBasicPlan,
+  getEffectivePlan,
+  isLockedPlan,
+} from "@/stores/SubscriptionStore";
 import { useUIStore } from "@/stores/UIStore";
 import errorIcon from "@/assets/etc/error.svg";
+import SubscriptionLockOverlay from "@/components/common/SubscriptionLockOverlay";
 
 import { GetProductList } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
@@ -47,7 +53,11 @@ function NewProductAnalysis() {
   } = useFilteredData();
   const { brandList } = useFilterStore();
   const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
-  const { subscription } = useSubscriptionStore((s) => s);
+  const { subscription, loaded: subscriptionLoaded } = useSubscriptionStore(
+    (s) => s,
+  );
+  const isLocked =
+    subscriptionLoaded && isLockedPlan(getEffectivePlan(subscription));
   const openSettingsModal = useUIStore((s) => s.openSettingsModal);
   // 개발 중 실제 basic 플랜 없이도 배너를 확인하기 위한 디버그 강제 노출: /?showBrandModal=1
   const isDevBannerForce =
@@ -57,7 +67,7 @@ function NewProductAnalysis() {
   // (지금 화면에서 필터링 중인 brandList가 아니라 저장된 픽 기준으로 판단 —
   // 안 그러면 10개 중 일부만 보려고 체크를 풀었을 때도 배너가 다시 뜬다.)
   const showBrandNotice =
-    (isDevBannerForce || subscription?.plan === "basic") &&
+    (isDevBannerForce || isBasicPlan(subscription?.plan)) &&
     interestBrandPicks.length < 10;
 
   const fetchData = useCallback(
@@ -117,10 +127,13 @@ function NewProductAnalysis() {
     el?.scrollIntoView({ block: "center", behavior: "instant" });
   }, [isDetailOpen]);
 
-  useEffect(() => {
-    setNextCursor(null);
-    fetchData(null);
-  }, [
+  // brandList 등은 상위(구독/관심 브랜드 로딩, 상세 필터 목록 로딩)가 끝날
+  // 때마다 내용은 그대로인데 배열 참조만 새로 만들어지는 경우가 있다(예:
+  // GetDetailList/GetPatternList 응답이 늦게 도착해 selectedDetails/
+  // selectedPatterns가 빈 배열인 채로 참조만 바뀌는 경우). 참조가 아니라
+  // 실제 값이 바뀌었을 때만 다시 불러오도록 내용 기준 키로 한 번 걸러서
+  // 같은 조건으로 상품 목록 API가 중복 호출되지 않게 한다.
+  const fetchKey = JSON.stringify([
     brandList,
     selectedColors,
     selectedGenders,
@@ -128,8 +141,15 @@ function NewProductAnalysis() {
     selectedDetails,
     selectedPatterns,
     selectedSeasons,
-    fetchData,
   ]);
+  const lastFetchKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (lastFetchKeyRef.current === fetchKey) return;
+    lastFetchKeyRef.current = fetchKey;
+    setNextCursor(null);
+    fetchData(null);
+  }, [fetchKey, fetchData]);
 
   useEffect(() => {
     if (!nextCursor) return;
@@ -196,14 +216,17 @@ function NewProductAnalysis() {
         )}
         <section
           ref={sectionRef}
-          className="h-full flex-1 min-h-0 overflow-auto hide-scrollbar"
+          className={`relative h-full flex-1 min-h-0 hide-scrollbar ${isLocked ? "overflow-hidden" : "overflow-auto"}`}
         >
+        {isLocked && <SubscriptionLockOverlay />}
         <div
-          className={
+          className={[
             isDetailOpen
               ? "flex flex-col overflow-y-auto hide-scrollbar"
-              : "flex flex-wrap overflow-y-auto hide-scrollbar"
-          }
+              : "flex flex-wrap overflow-y-auto hide-scrollbar",
+            isLocked ? "pointer-events-none select-none" : "",
+          ].join(" ")}
+          style={isLocked ? { opacity: 0.5, filter: "blur(1.75px)" } : undefined}
         >
           {resultLists.map((product, index) => (
             <button

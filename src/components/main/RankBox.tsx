@@ -8,9 +8,18 @@ import DateNavNotice from "./DateNavNotice";
 import { GetDashboardRanking, GetRankingItemDetail } from "@/apis/DashBoardAPI";
 import type { RankingProduct, RankingItemDetailResponse } from "@/types/Main";
 import { useProductStore } from "@/stores/ProductStore";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  isLockedPlan,
+} from "@/stores/SubscriptionStore";
+import SubscriptionLockOverlay from "@/components/common/SubscriptionLockOverlay";
 
 const PLATFORMS = ["무신사", "29CM", "W컨셉", "플랫폼 통합"];
 const CATEGORIES = ["상의", "아우터", "바지", "원피스/스커트"];
+
+// 잠금 상태(무료체험 미시작/만료)에서는 트렌드 항목 상위 3개까지만 보여준다.
+const LOCK_VISIBLE_COUNT = 3;
 
 const toApiDate = (date: dayjs.Dayjs) => date.format("YYYY-MM");
 
@@ -39,6 +48,10 @@ export default function RankBox() {
   const [thumbTop, setThumbTop] = useState(0);
   const [showThumb, setShowThumb] = useState(false);
   const TREND_THUMB_HEIGHT = 100;
+  const subscription = useSubscriptionStore((s) => s.subscription);
+  const subscriptionLoaded = useSubscriptionStore((s) => s.loaded);
+  const isLocked =
+    subscriptionLoaded && isLockedPlan(getEffectivePlan(subscription));
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
   const ITEMS_PER_PAGE = 6;
   const relatedItems = itemDetail?.related_items ?? [];
@@ -212,19 +225,21 @@ export default function RankBox() {
             <ul
               ref={trendListRef}
               onScroll={updateTrendThumb}
-              className="h-full overflow-y-auto hide-scrollbar"
+              className={`h-full hide-scrollbar ${isLocked ? "overflow-hidden" : "overflow-y-auto"}`}
             >
               {rankingList.map((item, index) => {
                 const isActive = activeRank === item.rank;
+                const isHidden = isLocked && index >= LOCK_VISIBLE_COUNT;
                 return (
                   <li
                     key={item.itemcode}
-                    onClick={() => setActiveRank(item.rank)}
+                    onClick={() => !isHidden && setActiveRank(item.rank)}
                     className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
                       isActive
                         ? "border-b border-[#E4E4E4] bg-[#F4FFEE]"
                         : "border-b border-gray-100 hover:bg-gray-50"
-                    }`}
+                    } ${isHidden ? "pointer-events-none select-none" : ""}`}
+                    style={isHidden ? { opacity: 0.5, filter: "blur(1.75px)" } : undefined}
                   >
                     <div className="relative flex-shrink-0 w-18 h-18">
                       <img
@@ -249,7 +264,7 @@ export default function RankBox() {
                 );
               })}
             </ul>
-            {showThumb && (
+            {showThumb && !isLocked && (
               <div
                 className="absolute pointer-events-none right-1 rounded-xl"
                 style={{
@@ -265,7 +280,7 @@ export default function RankBox() {
 
         <div
           ref={detailPanelRef}
-          className="relative flex-1 py-3 px-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className={`relative flex-1 py-3 px-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${isLocked ? "overflow-hidden" : "overflow-y-auto"}`}
         >
           {isDetailLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/70 backdrop-blur-[2px]">
@@ -274,6 +289,12 @@ export default function RankBox() {
             </div>
           )}
 
+          {isLocked && <SubscriptionLockOverlay />}
+
+          <div
+            className={isLocked ? "pointer-events-none select-none" : ""}
+            style={isLocked ? { opacity: 0.5, filter: "blur(1.75px)" } : undefined}
+          >
           <div className="px-8 mb-4 -mx-8">
             <TrendIndexBox
               itemCode={
@@ -365,6 +386,7 @@ export default function RankBox() {
                 </button>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

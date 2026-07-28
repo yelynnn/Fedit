@@ -42,6 +42,14 @@ const STEP_1_FREE_SIGNUP: Step = {
     "무료 플랜에서는 무신사 기본 데이터만 제공돼요. 관심 브랜드를 선택하면 이 화면이 내 브랜드 기준으로 바뀌어요.",
 };
 
+const STEP_1_PRO: Step = {
+  anchor: "brand-chip",
+  placement: "bottom",
+  title: "분석할 브랜드 범위예요",
+  description:
+    "PRO 플랜은 브랜드 제한 없이 원하는 브랜드를 모두 선택해서 분석할 수 있어요.",
+};
+
 const REST_STEPS: Step[] = [
   {
     anchor: "app-sidebar",
@@ -96,9 +104,11 @@ export default function OnboardingTour() {
   const step1 =
     source === "signup"
       ? STEP_1_FREE_SIGNUP
-      : interestBrandPicks.length >= 10
-        ? STEP_1_SELECTED
-        : STEP_1_NOT_SELECTED;
+      : source === "pro"
+        ? STEP_1_PRO
+        : interestBrandPicks.length >= 10
+          ? STEP_1_SELECTED
+          : STEP_1_NOT_SELECTED;
   const steps: Step[] = [step1, ...REST_STEPS];
   const current = steps[step];
 

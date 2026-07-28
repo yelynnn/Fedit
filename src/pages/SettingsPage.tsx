@@ -9,6 +9,7 @@ import {
   GetCustomerKey,
   PostChangePlan,
   PostCancelSubscription,
+  PostStartTrial,
   type PlanType,
 } from "@/apis/BillingAPI";
 import { getTossPayments } from "@/lib/toss";
@@ -41,8 +42,9 @@ type Section =
   | "관심브랜드"
   | "구독";
 
+// basic_secret은 비밀 링크 전용 플랜이라 일반 요금제 비교표에는 노출하지 않는다.
 const PLAN_DEFS: {
-  key: "free" | PlanType;
+  key: "free" | "basic" | "pro";
   label: string;
   badge: string | null;
   originalPrice: string | null;
@@ -103,16 +105,26 @@ const PLAN_DEFS: {
   },
 ];
 
+// basic_secret은 Basic과 랭크가 같다(가격만 다른 동일 기능 플랜).
 const PLAN_RANK: Record<"free" | PlanType, number> = {
   free: 0,
   basic: 1,
+  basic_secret: 1,
   pro: 2,
 };
 
 // "Basic으로", "Pro로" — 플랜명 발음(받침 유무)에 맞춘 조사
-const PLAN_PARTICLE: Record<PlanType, string> = { basic: "으로", pro: "로" };
+const PLAN_PARTICLE: Record<PlanType, string> = {
+  basic: "으로",
+  pro: "로",
+  basic_secret: "으로",
+};
 
-const PLAN_AMOUNT: Record<PlanType, number> = { basic: 19000, pro: 59000 };
+const PLAN_AMOUNT: Record<PlanType, number> = {
+  basic: 19000,
+  pro: 59000,
+  basic_secret: 9900,
+};
 
 // 카카오페이 코드송금 링크 — 개발자센터 대시보드에서 관리자가 1회 수동 발급한
 // 고정 링크라 요청마다 동적으로 내려오지 않는다. 링크가 재발급되면 이 값만 교체하면 된다.
@@ -167,8 +179,13 @@ function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
 }
 
 export default function SettingsPage() {
-  const { settingsModalTab, closeSettingsModal, openInterestBrandModal } =
-    useUIStore();
+  const {
+    settingsModalTab,
+    closeSettingsModal,
+    openInterestBrandModal,
+    openOnboardingTour,
+  } = useUIStore();
+  const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
   const {
     conversations,
     activeConversationId,
@@ -185,6 +202,8 @@ export default function SettingsPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [inquiryType, setInquiryType] = useState("요금제·결제 문의");
   const [inquiryContent, setInquiryContent] = useState("");
+  const [inquiryEmail, setInquiryEmail] = useState("");
+  const [isSendingInquiry, setIsSendingInquiry] = useState(false);
   const [withdrawStep, setWithdrawStep] = useState<
     null | "stats" | "reason" | "interview" | "interview-confirmed" | "complete"
   >(null);
@@ -197,7 +216,9 @@ export default function SettingsPage() {
     "전체",
   );
   const [agreedCancelTerms, setAgreedCancelTerms] = useState(false);
-  const [pendingPlan, setPendingPlan] = useState<PlanType | null>(null);
+  // basic_secret은 설정 화면의 일반 결제 플로우로는 선택할 수 없는 플랜(비밀
+  // 링크 전용)이라 여기서 다루는 대상에서 제외한다.
+  const [pendingPlan, setPendingPlan] = useState<"basic" | "pro" | null>(null);
   const [paymentStep, setPaymentStep] = useState<
     "agree" | "method" | "pending" | "failed"
   >("agree");
@@ -228,6 +249,7 @@ export default function SettingsPage() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isStartingTrial, setIsStartingTrial] = useState(false);
 
   const userEmail = useUserStore((s) => s.email);
 
@@ -328,6 +350,10 @@ export default function SettingsPage() {
         if (plan === "basic") {
           closeSettingsModal();
           openInterestBrandModal();
+        } else if (plan === "pro") {
+          closeSettingsModal();
+          setSelectedTab("상품 분석");
+          openOnboardingTour("pro");
         }
       } else {
         const customerKey = await GetCustomerKey();
@@ -389,6 +415,10 @@ export default function SettingsPage() {
           if (plan === "basic") {
             closeSettingsModal();
             openInterestBrandModal();
+          } else if (plan === "pro") {
+            closeSettingsModal();
+            setSelectedTab("상품 분석");
+            openOnboardingTour("pro");
           }
         } else if (status !== "pending") {
           clearInterval(interval);
@@ -420,6 +450,62 @@ export default function SettingsPage() {
       alert(error?.message || "구독 해지에 실패했습니다.");
     } finally {
       setIsCanceling(false);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    if (isStartingTrial) return;
+    setIsStartingTrial(true);
+    try {
+      await PostStartTrial();
+      await fetchSubscription();
+      closeSettingsModal();
+      setSelectedTab("상품 분석");
+      openOnboardingTour("signup");
+    } catch (error: any) {
+      alert(error?.message || "무료체험 시작에 실패했습니다.");
+    } finally {
+      setIsStartingTrial(false);
+    }
+  };
+
+  // 1:1 문의는 백엔드 없이, Zapier 웹훅(VITE_INQUIRY_WEBHOOK_URL)으로 보내
+  // Confluence에 문서로 쌓는 방식으로 연결한다. Zapier의 Webhooks 트리거는
+  // 항상 200을 즉시 반환하고 뒤에서 비동기로 처리하므로, 여기서의 성공은
+  // "Zapier가 요청을 받았다"는 뜻이지 Confluence 문서화까지 끝났다는 보장은
+  // 아니다.
+  const handleSendInquiry = async () => {
+    if (isSendingInquiry || !inquiryContent.trim()) return;
+    const webhookUrl = import.meta.env.VITE_INQUIRY_WEBHOOK_URL as
+      | string
+      | undefined;
+    if (!webhookUrl) {
+      alert("문의 접수 연결이 아직 설정되지 않았습니다.");
+      return;
+    }
+    setIsSendingInquiry(true);
+    try {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date,
+          email: inquiryEmail.trim() || userEmail,
+          type: inquiryType,
+          content: inquiryContent,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      alert("문의가 접수되었습니다.");
+      setInquiryContent("");
+    } catch {
+      alert("문의 접수에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsSendingInquiry(false);
     }
   };
 
@@ -1033,7 +1119,8 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="email"
-                      defaultValue={userEmail}
+                      value={inquiryEmail || userEmail}
+                      onChange={(e) => setInquiryEmail(e.target.value)}
                       className="w-full border border-line-divider rounded-xl px-4 py-3 text-sm text-tx-neutral bg-white focus:outline-none focus:border-[#111827]"
                     />
                   </div>
@@ -1042,8 +1129,12 @@ export default function SettingsPage() {
                     <p className="text-xs text-tx-assistive">
                       보통 1영업일 이내에 답변드려요 · 평일 10:00–18:00
                     </p>
-                    <button className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-semibold hover:bg-black transition-colors whitespace-nowrap">
-                      문의 보내기
+                    <button
+                      onClick={handleSendInquiry}
+                      disabled={isSendingInquiry || !inquiryContent.trim()}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-semibold hover:bg-black transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {isSendingInquiry ? "전송 중..." : "문의 보내기"}
                     </button>
                   </div>
                 </div>
@@ -1181,13 +1272,24 @@ export default function SettingsPage() {
                         <p className="text-base font-semibold text-tx-strong">
                           {effectivePlan === "none"
                             ? "요금제 미선택"
-                            : PLAN_DEFS.find((p) => p.key === currentPlan)
-                                ?.label}
+                            : effectivePlan === "expired"
+                              ? "이용 만료"
+                              : PLAN_DEFS.find((p) => p.key === currentPlan)
+                                  ?.label}
                         </p>
                         {effectivePlan === "none" ? (
                           <p className="text-sm text-tx-alt mt-0.5">
                             아직 선택한 요금제가 없어요. 원하는 플랜을
                             골라주세요.
+                          </p>
+                        ) : effectivePlan === "expired" ? (
+                          <p className="flex items-center gap-1 mt-0.5 text-sm text-status-error">
+                            <Icon
+                              icon="ph:warning-circle"
+                              className="w-4 h-4"
+                            />
+                            이용 기간이 만료됐어요. 요금제를 다시
+                            선택해주세요.
                           </p>
                         ) : currentPlan === "free" ? (
                           <p className="text-sm text-tx-alt mt-0.5">
@@ -1236,15 +1338,28 @@ export default function SettingsPage() {
                   className="flex overflow-hidden border-t border-line-divider"
                 >
                   {PLAN_DEFS.map((plan, index, arr) => {
-                    const isCurrent = plan.key === currentPlan;
+                    // Free는 currentPlan(무료체험 미시작도 "free"로 뭉개진 값)이
+                    // 아니라 effectivePlan으로 실제 무료체험 이용 중인지를 봐야
+                    // "요금제 미선택" 상태에서 현재 플랜으로 잘못 표시되지 않는다.
+                    const isCurrent =
+                      plan.key === "free"
+                        ? effectivePlan === "free"
+                        : plan.key === currentPlan;
                     const isDowngrade =
                       PLAN_RANK[plan.key] < PLAN_RANK[currentPlan];
+                    const isTrialAvailable = effectivePlan === "none";
                     const btnLabel = isCurrent
                       ? "현재 플랜"
                       : plan.key === "free"
-                        ? "무료 체험"
+                        ? isTrialAvailable
+                          ? "무료체험 시작하기"
+                          : "무료 체험"
                         : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
-                    const isLoading = billingLoading === plan.key;
+                    const isLoading =
+                      billingLoading === plan.key ||
+                      (plan.key === "free" && isStartingTrial);
+                    const isFreeDisabled =
+                      plan.key === "free" && !isTrialAvailable;
                     return (
                       <div
                         key={plan.label}
@@ -1296,13 +1411,20 @@ export default function SettingsPage() {
                         {/* 버튼 */}
                         <button
                           disabled={
-                            isCurrent || plan.key === "free" || !!billingLoading
+                            isCurrent ||
+                            isFreeDisabled ||
+                            !!billingLoading ||
+                            isStartingTrial
                           }
-                          onClick={() =>
-                            plan.key !== "free" && setPendingPlan(plan.key)
-                          }
+                          onClick={() => {
+                            if (plan.key === "free") {
+                              if (isTrialAvailable) handleStartTrial();
+                              return;
+                            }
+                            setPendingPlan(plan.key);
+                          }}
                           className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
-                            isCurrent || plan.key === "free"
+                            isCurrent || isFreeDisabled
                               ? "border border-[#E4E4E4] bg-[#E4E4E4] text-[#A1A3A5] cursor-default"
                               : "border border-line-divider bg-white text-[#3D3F41] hover:bg-surface-base cursor-pointer disabled:opacity-60 disabled:cursor-default"
                           }`}

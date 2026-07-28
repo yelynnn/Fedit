@@ -3,11 +3,11 @@ import { useState, useEffect } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import {
   GenderCategories,
-  TypeCategories,
   ColorCategories,
   MoodCategories,
 } from "@/data/FilterCategories";
 import { GetPatternList, GetDetailList } from "@/apis/AnalysisAPI";
+import TypeFilterPanel from "./TypeFilterPanel";
 
 type Props = { title: "성별" | "유형" | "색상" | "디테일" | "패턴" | "무드" };
 
@@ -54,86 +54,7 @@ export default function FilterCheckList({ title }: Props) {
   }
 
   if (title === "유형") {
-    const gridCls = "ml-2 grid grid-cols-2 gap-y-3 text-sm text-tx-neutral";
-
-    const isAllSubChecked = (subs: string[]) =>
-      subs.every((s) => filterList.includes(s));
-
-    const toggle = (value: string) => {
-      if (filterList.includes(value)) removeFilter(value);
-      else addFilter(value);
-    };
-
-    return (
-      <div className="flex flex-col gap-6">
-        {TypeCategories.map(({ category, subcategories }) => {
-          const isCategoryInList = filterList.includes(category);
-          const isCategoryChecked =
-            isCategoryInList || isAllSubChecked(subcategories);
-
-          return (
-            <div key={category}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="ml-2 text-sm font-semibold text-tx-neutral">
-                  {category}
-                </div>
-
-                <label
-                  htmlFor={`type-cat-${category}`}
-                  className="flex items-center gap-2 cursor-pointer text-xs text-tx-alt"
-                >
-                  <input
-                    id={`type-cat-${category}`}
-                    type="checkbox"
-                    className="h-3 w-3 accent-data-violet"
-                    checked={isCategoryChecked}
-                    onChange={() => {
-                      if (isCategoryChecked) {
-                        removeFilter(category);
-                        subcategories.forEach(removeFilter);
-                      } else {
-                        addFilter(category);
-                        subcategories.forEach(removeFilter);
-                      }
-                    }}
-                  />
-                  <span>{category} 전체 선택하기</span>
-                </label>
-              </div>
-
-              <ul className={gridCls}>
-                {subcategories.map((s) => {
-                  const checked = isCategoryInList || filterList.includes(s);
-                  return (
-                    <li key={s} className="flex items-center gap-2">
-                      <input
-                        id={`type-${s}`}
-                        type="checkbox"
-                        className="h-3 w-3 accent-data-violet"
-                        checked={checked}
-                        onChange={() => {
-                          if (isCategoryInList) {
-                            removeFilter(category);
-                            subcategories.forEach((sub) => {
-                              if (sub !== s) addFilter(sub);
-                            });
-                            return;
-                          }
-                          toggle(s);
-                        }}
-                      />
-                      <label htmlFor={`type-${s}`} className="cursor-pointer">
-                        {s}
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
-    );
+    return <TypeFilterPanel />;
   }
 
   if (title === "색상") {

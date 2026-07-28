@@ -130,6 +130,17 @@ const GetDetailList = async (): Promise<string[]> => {
   }
 };
 
+export type CategoryGroup = { label: string; items: string[] };
+
+const GetCategoryList = async (): Promise<CategoryGroup[]> => {
+  try {
+    const res = await axiosInstance.get("/menu/category");
+    return Array.isArray(res.data?.categories) ? res.data.categories : [];
+  } catch {
+    return [];
+  }
+};
+
 type JudgePayload = {
   itemcode: string;
   column: string;
@@ -185,6 +196,7 @@ export {
   PostJudge,
   GetPatternList,
   GetDetailList,
+  GetCategoryList,
   GetBrandPicks,
   PutBrandPicks,
 };

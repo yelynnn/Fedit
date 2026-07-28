@@ -1,7 +1,15 @@
 import { axiosInstance } from "./AxiosInstance";
 
-export type PlanType = "basic" | "pro";
-export type SubscriptionStatus = "active" | "past_due" | "canceled";
+// basic_secret은 비밀 링크로 유입된 Basic — 가격만 9,900원으로 다를 뿐
+// 기능은 Basic과 완전히 동일하다. 화면 표시/기능 게이팅은 SubscriptionStore의
+// toBillingPlan/isBasicPlan을 거쳐 항상 "basic"으로 취급해야 한다.
+export type PlanType = "basic" | "pro" | "basic_secret";
+export type SubscriptionStatus =
+  | "not_started"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "expired";
 
 export interface Subscription {
   plan: "free" | PlanType;
@@ -10,6 +18,7 @@ export interface Subscription {
   hasBillingKey: boolean;
   nextBillingDate: string | null;
   cancelAtPeriodEnd?: boolean;
+  downgradePending?: boolean;
 }
 
 const handleError = (error: any, fallbackMessage: string): never => {
@@ -70,10 +79,21 @@ const PostCancelSubscription = async (): Promise<Subscription> => {
   }
 };
 
+// 204 No Content로 응답 — 성공 여부만 확인하고, 실제 상태는 이후
+// GetSubscription을 다시 호출해서 반영한다.
+const PostStartTrial = async (): Promise<void> => {
+  try {
+    await axiosInstance.post("/my/subscription/trial");
+  } catch (error: any) {
+    return handleError(error, "무료체험 시작에 실패했습니다.");
+  }
+};
+
 export {
   GetCustomerKey,
   GetSubscription,
   PostConfirmBilling,
   PostChangePlan,
   PostCancelSubscription,
+  PostStartTrial,
 };

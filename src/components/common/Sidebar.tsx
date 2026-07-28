@@ -182,7 +182,10 @@ export default function Sidebar() {
               가이드
             </button>
             <div className="flex-shrink-0 w-px h-4 bg-line-divider" />
-            <button className="flex-1 py-3 text-center text-[12px] font-semibold leading-[133%] text-[#6F7173] hover:text-tx-default transition-colors">
+            <button
+              onClick={() => openSettingsModal("FAQ")}
+              className="flex-1 py-3 text-center text-[12px] font-semibold leading-[133%] text-[#6F7173] hover:text-tx-default transition-colors"
+            >
               의견보내기
             </button>
           </div>

@@ -5,21 +5,39 @@ import {
   type Subscription,
 } from "@/apis/BillingAPI";
 
-// 백엔드에 구독 레코드 자체가 없으면(신규 가입 직후 등) GetSubscription이
-// null을 준다 — 이건 "무료 플랜을 쓰는 중"이 아니라 "아직 아무 플랜도
-// 선택한 적 없음"이라 구분해야 한다. 반대로 subscription.plan === "free"는
-// 백엔드가 실제로 free로 명시한 상태(예: 유료 플랜 해지 후)다.
-export type EffectivePlan = "none" | "free" | PlanType;
+// status: "not_started"는 회원가입 직후 무료체험조차 시작하지 않은 상태,
+// "expired"는 무료체험/유료 플랜 기간이 끝나고 갱신하지 않은 상태다. 이
+// 둘은 subscription.plan 값과 무관하게 상태 자체로 구분해야 한다.
+export type EffectivePlan = "none" | "expired" | "free" | PlanType;
 
 export const getEffectivePlan = (
   subscription: Subscription | null,
-): EffectivePlan => (subscription ? subscription.plan : "none");
+): EffectivePlan => {
+  if (!subscription || subscription.status === "not_started") return "none";
+  if (subscription.status === "expired") return "expired";
+  return subscription.plan;
+};
 
-// "미선택"과 "무료"를 구분할 필요 없이 그냥 무료 등급으로 취급해도 되는
-// 곳(브랜드 제한, 결제 랭크 비교 등)에서 쓰는 정규화 헬퍼.
+// "미선택"/"만료"/"무료"를 구분할 필요 없이 그냥 무료 등급으로 취급해도 되는
+// 곳(브랜드 제한, 결제 랭크 비교 등)에서 쓰는 정규화 헬퍼. basic_secret은
+// Basic과 기능이 완전히 동일하므로 항상 "basic"으로 합친다.
 export const toBillingPlan = (
   effective: EffectivePlan,
-): "free" | PlanType => (effective === "none" ? "free" : effective);
+): "free" | "basic" | "pro" => {
+  if (effective === "none" || effective === "expired") return "free";
+  if (effective === "basic_secret") return "basic";
+  return effective;
+};
+
+// subscription.plan을 직접 비교하는 곳(예: 원본 plan 값이 필요한 필터/게이팅
+// 로직)에서 basic_secret을 basic과 동일하게 취급하기 위한 헬퍼.
+export const isBasicPlan = (plan: Subscription["plan"] | undefined): boolean =>
+  plan === "basic" || plan === "basic_secret";
+
+// 무료체험 미시작/만료 상태 — 실시간 랭킹·상품 분석 등 잠금이 필요한
+// 화면에서 공통으로 쓰는 판정 헬퍼.
+export const isLockedPlan = (effective: EffectivePlan): boolean =>
+  effective === "none" || effective === "expired";
 
 type SubscriptionStore = {
   subscription: Subscription | null;

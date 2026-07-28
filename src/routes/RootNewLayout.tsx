@@ -32,7 +32,7 @@ function RootNewLayout() {
   };
 
   // 개발 중 결제 없이 모달을 확인하기 위한 디버그 트리거: /?showBrandModal=1
-  // 회원가입 직후 온보딩만 바로 확인하려면: /?showOnboarding=1
+  // 온보딩 투어만 바로 확인하려면: /?showOnboarding=signup (또는 pro, brand-modal)
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const params = new URLSearchParams(window.location.search);
@@ -41,17 +41,11 @@ function RootNewLayout() {
     }
     if (params.get("showOnboarding")) {
       setSelectedTab("상품 분석");
-      openOnboardingTour("signup");
+      openOnboardingTour(
+        (params.get("showOnboarding") as "signup" | "pro" | "brand-modal") ||
+          "signup",
+      );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 회원가입 직후 첫 로그인일 때만, 브랜드 선택 모달 없이 온보딩 투어 5단계만 바로 노출
-  useEffect(() => {
-    if (localStorage.getItem("isNewSignup") !== "true") return;
-    localStorage.removeItem("isNewSignup");
-    setSelectedTab("상품 분석");
-    openOnboardingTour("signup");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

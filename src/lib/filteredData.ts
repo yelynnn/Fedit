@@ -1,12 +1,13 @@
 import { useMemo, useState, useEffect } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { brandData } from "@/data/BrandCategories";
+import { GenderCategories, ColorCategories } from "@/data/FilterCategories";
 import {
-  GenderCategories,
-  ColorCategories,
-  TypeCategories,
-} from "@/data/FilterCategories";
-import { GetDetailList, GetPatternList } from "@/apis/AnalysisAPI";
+  GetDetailList,
+  GetPatternList,
+  GetCategoryList,
+  type CategoryGroup,
+} from "@/apis/AnalysisAPI";
 
 export default function useFilteredData() {
   const { filterList, selectedYear, selectedSeason } = useFilterStore(
@@ -14,10 +15,12 @@ export default function useFilteredData() {
   );
   const [apiDetails, setApiDetails] = useState<string[]>([]);
   const [apiPatterns, setApiPatterns] = useState<string[]>([]);
+  const [apiCategories, setApiCategories] = useState<CategoryGroup[]>([]);
 
   useEffect(() => {
     GetDetailList().then(setApiDetails);
     GetPatternList().then(setApiPatterns);
+    GetCategoryList().then(setApiCategories);
   }, []);
 
   const allBrands = useMemo(() => Object.values(brandData).flat(), []);
@@ -27,8 +30,8 @@ export default function useFilteredData() {
   const allPatterns = useMemo(() => apiPatterns, [apiPatterns]);
   // const allMoods = useMemo(() => MoodCategories, []);
   const allTypes = useMemo(
-    () => TypeCategories.flatMap((t) => [t.category, ...t.subcategories]),
-    []
+    () => apiCategories.flatMap((c) => [c.label, ...c.items]),
+    [apiCategories]
   );
 
   const selectedBrands = useMemo(
@@ -55,19 +58,10 @@ export default function useFilteredData() {
   //   () => filterList.filter((item) => allMoods.includes(item)),
   //   [filterList, allMoods]
   // );
-  const selectedCategories = useMemo(() => {
-    const selected = filterList.filter((item) => allTypes.includes(item));
-
-    const expanded = selected.flatMap((item) => {
-      const match = TypeCategories.find((t) => t.category === item);
-      if (match) {
-        return [item];
-      }
-      return [item];
-    });
-
-    return [...new Set(expanded)];
-  }, [filterList, allTypes]);
+  const selectedCategories = useMemo(
+    () => filterList.filter((item) => allTypes.includes(item)),
+    [filterList, allTypes]
+  );
 
   const selectedSeasons = useMemo(() => {
     if (!selectedYear || !selectedSeason) return [];

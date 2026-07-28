@@ -4,15 +4,22 @@ import { Icon } from "@iconify/react";
 import { PostConfirmBilling, type PlanType } from "@/apis/BillingAPI";
 import { useUIStore } from "@/stores/UIStore";
 import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import { useFilterStore } from "@/stores/FilterStore";
 
-const PLAN_LABELS: Record<PlanType, string> = { basic: "Basic", pro: "Pro" };
+const PLAN_LABELS: Record<PlanType, string> = {
+  basic: "Basic",
+  pro: "Pro",
+  basic_secret: "Basic",
+};
 
 function BillingSuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const openSettingsModal = useUIStore((s) => s.openSettingsModal);
   const openInterestBrandModal = useUIStore((s) => s.openInterestBrandModal);
+  const openOnboardingTour = useUIStore((s) => s.openOnboardingTour);
   const setSubscription = useSubscriptionStore((s) => s.setSubscription);
+  const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
   const [status, setStatus] = useState<"loading" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const requested = useRef(false);
@@ -36,6 +43,9 @@ function BillingSuccessPage() {
         setSubscription(subscription);
         if (plan === "basic") {
           openInterestBrandModal();
+        } else if (plan === "pro") {
+          setSelectedTab("상품 분석");
+          openOnboardingTour("pro");
         } else {
           openSettingsModal("구독");
         }
@@ -50,7 +60,9 @@ function BillingSuccessPage() {
     navigate,
     openSettingsModal,
     openInterestBrandModal,
+    openOnboardingTour,
     setSubscription,
+    setSelectedTab,
   ]);
 
   return (

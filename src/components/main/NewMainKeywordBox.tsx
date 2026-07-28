@@ -9,6 +9,15 @@ import infoFilledIcon from "@/assets/etc/info_filled.svg";
 import upIcon from "@/assets/etc/upIcon.svg";
 import downIcon from "@/assets/etc/downIcon.svg";
 import updownIcon from "@/assets/etc/updown.svg";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  isLockedPlan,
+} from "@/stores/SubscriptionStore";
+import { useUIStore } from "@/stores/UIStore";
+
+// 잠금 상태(무료체험 미시작/만료)에서는 순위 4위까지만 보여주고 그 아래는 블러 처리한다.
+const LOCK_VISIBLE_RANK = 4;
 
 function getImageByTitle(title: string) {
   switch (title) {
@@ -56,6 +65,12 @@ function NewMainKeywordBox({
   const [selectedCategory, setSelectedCategory] = useState(
     categories[0]?.category ?? "",
   );
+
+  const subscription = useSubscriptionStore((s) => s.subscription);
+  const subscriptionLoaded = useSubscriptionStore((s) => s.loaded);
+  const openSettingsModal = useUIStore((s) => s.openSettingsModal);
+  const isLocked =
+    subscriptionLoaded && isLockedPlan(getEffectivePlan(subscription));
 
   const isMonthly = dateType === "monthly";
   const currentCategory =
@@ -178,59 +193,96 @@ function NewMainKeywordBox({
         <div
           className={`px-5 flex ${isMonthly ? "flex-row gap-5 justify-between" : "flex-col"}`}
         >
-          {chunkedRankings.map((column, colIdx) => (
-            <div key={colIdx} className="flex flex-col w-full ">
-              {column.map((item) => {
-                const match = item.keyword.match(/^\[(.*?)\]\s*(.*)$/);
-                const brand = match ? match[1] : "";
-                const keywordText = match ? match[2] : item.keyword;
+          {chunkedRankings.map((column, colIdx) => {
+            const visibleItems = isLocked
+              ? column.filter((item) => item.idx <= LOCK_VISIBLE_RANK)
+              : column;
+            const hiddenItems = isLocked
+              ? column.filter((item) => item.idx > LOCK_VISIBLE_RANK)
+              : [];
 
-                return (
-                  <div
-                    key={item.idx}
-                    onMouseEnter={() => setHoveredIdx(item.idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                    className={`relative flex items-center justify-center px-2 rounded-lg ${isMonthly ? "h-14 mb-1" : "py-2"}`}
-                  >
-                    {isMonthly && hoveredIdx === item.idx && (
-                      <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 bg-fill-primary text-white px-3 py-[6px] rounded-lg shadow-lg min-w-max max-w-50 whitespace-normal break-words z-50">
-                        <span className="text-sm leading-5">{keywordText}</span>
-                        <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-6 border-b-6 border-r-6 border-t-transparent border-b-transparent border-r-[#2E2E2E]"></div>
-                      </div>
-                    )}
-                    <div className="flex items-center w-full gap-4">
-                      <span
-                        className={`font-semibold text-[18px] ${item.idx <= 3 ? "text-data-blue" : "text-tx-alt"}`}
-                      >
-                        {item.idx}
-                      </span>
-                      <div className="flex flex-col w-full ">
-                        {brand && (
-                          <span className="text-sm text-tx-alt font-semibold mb-[2px]">
-                            {brand}
-                          </span>
-                        )}
-                        <span className="text-base font-semibold text-tx-neutral line-clamp-1">
-                          {keywordText}
-                        </span>
-                      </div>
+            const renderItem = (item: (typeof column)[number]) => {
+              const match = item.keyword.match(/^\[(.*?)\]\s*(.*)$/);
+              const brand = match ? match[1] : "";
+              const keywordText = match ? match[2] : item.keyword;
+
+              return (
+                <div
+                  key={item.idx}
+                  onMouseEnter={() => setHoveredIdx(item.idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                  className={`relative flex items-center justify-center px-2 rounded-lg ${isMonthly ? "h-14 mb-1" : "py-2"}`}
+                >
+                  {isMonthly && hoveredIdx === item.idx && (
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 bg-fill-primary text-white px-3 py-[6px] rounded-lg shadow-lg min-w-max max-w-50 whitespace-normal break-words z-50">
+                      <span className="text-sm leading-5">{keywordText}</span>
+                      <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-6 border-b-6 border-r-6 border-t-transparent border-b-transparent border-r-[#2E2E2E]"></div>
                     </div>
-                    <div className="pl-2">
-                      {item.status === 1 && (
-                        <img src={upIcon} alt="상승" className="h-6 w-6" />
+                  )}
+                  <div className="flex items-center w-full gap-4">
+                    <span
+                      className={`font-semibold text-[18px] ${item.idx <= 3 ? "text-data-blue" : "text-tx-alt"}`}
+                    >
+                      {item.idx}
+                    </span>
+                    <div className="flex flex-col w-full ">
+                      {brand && (
+                        <span className="text-sm text-tx-alt font-semibold mb-[2px]">
+                          {brand}
+                        </span>
                       )}
-                      {item.status === -1 && (
-                        <img src={downIcon} alt="하락" className="h-6 w-6" />
-                      )}
-                      {item.status === 0 && title !== "네이버" && (
-                        <img src={updownIcon} alt="유지" className="h-6 w-6" />
-                      )}
+                      <span className="text-base font-semibold text-tx-neutral line-clamp-1">
+                        {keywordText}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          ))}
+                  <div className="pl-2">
+                    {item.status === 1 && (
+                      <img src={upIcon} alt="상승" className="h-6 w-6" />
+                    )}
+                    {item.status === -1 && (
+                      <img src={downIcon} alt="하락" className="h-6 w-6" />
+                    )}
+                    {item.status === 0 && title !== "네이버" && (
+                      <img src={updownIcon} alt="유지" className="h-6 w-6" />
+                    )}
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+              <div key={colIdx} className="flex flex-col w-full ">
+                {visibleItems.map(renderItem)}
+                {hiddenItems.length > 0 && (
+                  <div className="relative">
+                    <div
+                      className="pointer-events-none select-none"
+                      style={{ opacity: 0.5, filter: "blur(1.75px)" }}
+                    >
+                      {hiddenItems.map(renderItem)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openSettingsModal("구독")}
+                      className="type-title-small absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-pill text-tx-inverse"
+                      style={{
+                        display: "flex",
+                        padding: "8px 12px",
+                        alignItems: "center",
+                        gap: 8,
+                        background: "#111214",
+                        boxShadow: "0 6px 18px 0 rgba(0, 0, 0, 0.22)",
+                      }}
+                    >
+                      <Icon icon="ph:lock-simple-fill" className="w-[15px] h-[15px]" />
+                      전체 순위 보기
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
