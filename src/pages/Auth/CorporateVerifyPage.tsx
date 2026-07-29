@@ -3,6 +3,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import LoginHeader from "@/components/common/LoginHeader";
 import Footer from "@/components/common/Footer";
 import { PostCorporateSignupConfirm } from "@/apis/AuthAPI";
+import {
+  isLandingEntry,
+  clearLandingEntry,
+  SHOW_PRICING_AFTER_SIGNUP_KEY,
+} from "@/lib/secretEntry";
 
 const CorporateVerifyPage = () => {
   const navigate = useNavigate();
@@ -31,6 +36,10 @@ const CorporateVerifyPage = () => {
     try {
       const res = await PostCorporateSignupConfirm(email, code.trim());
       if (res.ok) {
+        if (isLandingEntry()) {
+          clearLandingEntry();
+          localStorage.setItem(SHOW_PRICING_AFTER_SIGNUP_KEY, "true");
+        }
         setSuccessMessage(res.message);
       } else {
         setErrorMessage(res.message || "인증에 실패했습니다.");

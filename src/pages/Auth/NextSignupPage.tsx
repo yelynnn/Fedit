@@ -4,6 +4,11 @@ import { CheckCircle, ChevronDown, ChevronRight } from "lucide-react";
 import LoginHeader from "@/components/common/LoginHeader";
 import Footer from "@/components/common/Footer";
 import { PostPersonalSignup } from "@/apis/AuthAPI";
+import {
+  isLandingEntry,
+  clearLandingEntry,
+  SHOW_PRICING_AFTER_SIGNUP_KEY,
+} from "@/lib/secretEntry";
 
 const jobOptions = ["MD", "디자이너", "마케팅", "대표", "기타"];
 
@@ -71,6 +76,10 @@ const NextSignupPage = () => {
         company_size: companySize,
         job_title: effectiveJob,
       });
+      if (isLandingEntry()) {
+        clearLandingEntry();
+        localStorage.setItem(SHOW_PRICING_AFTER_SIGNUP_KEY, "true");
+      }
       setShowSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (error: any) {

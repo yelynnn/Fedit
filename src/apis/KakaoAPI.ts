@@ -22,7 +22,7 @@ const handleError = (error: any, fallbackMessage: string): never => {
 // 프론트에서 상수로 들고 있는다 (KAKAO_PAY_LINK_URL, SettingsPage 참고).
 // 이 요청은 입금 대사를 위한 요청 건 등록이며, 승인은 관리자가 수동으로 한다.
 const RequestUpgrade = async (
-  planCode: "basic" | "pro",
+  planCode: "basic" | "pro" | "basic_secret",
   amount: number,
   depositorName: string,
 ): Promise<RequestUpgradeResponse> => {

@@ -30,6 +30,7 @@ import tossIcon from "@/assets/etc/tossIcon.png";
 import { RequestUpgrade, GetUpgradeStatus } from "@/apis/KakaoAPI";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import { GetBrandList, GetBrandPicks } from "@/apis/AnalysisAPI";
+import { isSecretEntry as checkSecretEntry, clearSecretEntry } from "@/lib/secretEntry";
 
 const GUIDE_TABS: ("전체" | GuideCategory)[] = ["전체", ...GUIDE_CATEGORIES];
 
@@ -216,6 +217,9 @@ export default function SettingsPage() {
     "전체",
   );
   const [agreedCancelTerms, setAgreedCancelTerms] = useState(false);
+  // 비밀 링크(?ref=vip)로 들어왔던 사용자인지 — 로그인 페이지에서 심어둔
+  // 플래그를 읽어서 Basic 카드를 "비밀 특가(9,900원 첫 달)"로 보여준다.
+  const [isSecretEntry] = useState(checkSecretEntry);
   // basic_secret은 설정 화면의 일반 결제 플로우로는 선택할 수 없는 플랜(비밀
   // 링크 전용)이라 여기서 다루는 대상에서 제외한다.
   const [pendingPlan, setPendingPlan] = useState<"basic" | "pro" | null>(null);
@@ -263,6 +267,29 @@ export default function SettingsPage() {
   // currentPlan(둘 다 free로 취급)을 그대로 쓴다.
   const effectivePlan = getEffectivePlan(subscription);
   const currentPlan: "free" | PlanType = toBillingPlan(effectivePlan);
+
+  // 비밀 링크로 들어온 경우, Basic 카드만 "첫 달 9,900원" 특가로 바꿔서
+  // 보여준다. 실제 결제 요청에 보낼 plan_code(및 그 금액)는 이거랑 별개로
+  // handleStartKakaoPayment 안에서 pendingPlan === "basic"일 때만
+  // "basic_secret"으로 바꿔서 보낸다 — Pro는 비밀 링크로 들어와도 정가
+  // 그대로다.
+  const planDefs = isSecretEntry
+    ? PLAN_DEFS.map((plan) =>
+        plan.key === "basic"
+          ? {
+              ...plan,
+              badge: "비밀 링크 한정",
+              discount: "→ 9,900원 · 첫 1달",
+              price: "9,900원",
+            }
+          : plan,
+      )
+    : PLAN_DEFS;
+
+  // 카카오페이 결제 요청에 실제로 실어 보낼 plan_code — Pro는 비밀 링크로
+  // 들어와도 정가(pro/59,000원) 그대로 요청한다.
+  const kakaoPlanCode: PlanType | null =
+    pendingPlan === "basic" && isSecretEntry ? "basic_secret" : pendingPlan;
 
   // ── 관심 브랜드 설정 ──
   const [currentBrandPicks, setCurrentBrandPicks] = useState<string[]>([]);
@@ -375,15 +402,15 @@ export default function SettingsPage() {
   };
 
   const handleStartKakaoPayment = async () => {
-    if (!pendingPlan || isRequestingUpgrade || !depositorName.trim()) return;
+    if (!kakaoPlanCode || isRequestingUpgrade || !depositorName.trim()) return;
     setIsRequestingUpgrade(true);
     try {
       // 링크는 고정 링크라 응답을 기다릴 필요 없이 바로 새 창으로 연다
       // (팝업 차단을 피하려면 클릭 핸들러와 최대한 가깝게 호출해야 한다).
       window.open(KAKAO_PAY_LINK_URL, "_blank");
       const { request_id } = await RequestUpgrade(
-        pendingPlan,
-        PLAN_AMOUNT[pendingPlan],
+        kakaoPlanCode,
+        PLAN_AMOUNT[kakaoPlanCode],
         depositorName.trim(),
       );
       setUpgradeRequestId(request_id);
@@ -412,6 +439,7 @@ export default function SettingsPage() {
           clearInterval(interval);
           await fetchSubscription();
           closePendingPlanModal();
+          clearSecretEntry();
           if (plan === "basic") {
             closeSettingsModal();
             openInterestBrandModal();
@@ -1337,7 +1365,7 @@ export default function SettingsPage() {
                   id="plan-comparison"
                   className="flex overflow-hidden border-t border-line-divider"
                 >
-                  {PLAN_DEFS.map((plan, index, arr) => {
+                  {planDefs.map((plan, index, arr) => {
                     // Free는 currentPlan(무료체험 미시작도 "free"로 뭉개진 값)이
                     // 아니라 effectivePlan으로 실제 무료체험 이용 중인지를 봐야
                     // "요금제 미선택" 상태에서 현재 플랜으로 잘못 표시되지 않는다.
@@ -1354,7 +1382,9 @@ export default function SettingsPage() {
                         ? isTrialAvailable
                           ? "무료체험 시작하기"
                           : "무료 체험"
-                        : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
+                        : isSecretEntry
+                          ? "비밀 특가로 시작하기"
+                          : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
                     const isLoading =
                       billingLoading === plan.key ||
                       (plan.key === "free" && isStartingTrial);
@@ -1371,14 +1401,23 @@ export default function SettingsPage() {
                           <p className="text-[16px] font-semibold leading-[150%] tracking-[-0.08px] text-[#242628]">
                             {plan.label}
                           </p>
-                          {plan.badge && (
-                            <span
-                              className="px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#1A75FF]"
-                              style={{ borderRadius: 4, background: "#EAF2FE" }}
-                            >
-                              {plan.badge}
-                            </span>
-                          )}
+                          {plan.badge &&
+                            (plan.key === "basic" && isSecretEntry ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#7A5C00]"
+                                style={{ borderRadius: 4, background: "#FFF6DD" }}
+                              >
+                                <Icon icon="ph:lock-simple-fill" className="w-3 h-3" />
+                                {plan.badge}
+                              </span>
+                            ) : (
+                              <span
+                                className="px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#1A75FF]"
+                                style={{ borderRadius: 4, background: "#EAF2FE" }}
+                              >
+                                {plan.badge}
+                              </span>
+                            ))}
                         </div>
 
                         {/* 가격 영역 */}
@@ -1823,12 +1862,12 @@ export default function SettingsPage() {
             {paymentStep === "agree" ? (
               <>
                 <h2 className="mb-2 text-xl font-semibold text-tx-strong">
-                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.label} 요금제로
+                  {planDefs.find((p) => p.key === pendingPlan)?.label} 요금제로
                   시작할게요
                 </h2>
                 <p className="mb-6 text-sm leading-relaxed text-tx-alt">
-                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.price}
-                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.sub}에
+                  {planDefs.find((p) => p.key === pendingPlan)?.price}
+                  {planDefs.find((p) => p.key === pendingPlan)?.sub}에
                   정기결제가 시작됩니다. 진행 전 아래 내용을 확인해주세요.
                 </p>
 
@@ -1881,9 +1920,9 @@ export default function SettingsPage() {
                   결제 수단을 선택해주세요
                 </h2>
                 <p className="mb-6 text-sm leading-relaxed text-tx-alt">
-                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.label} 요금제
-                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.price}
-                  {PLAN_DEFS.find((p) => p.key === pendingPlan)?.sub}
+                  {planDefs.find((p) => p.key === pendingPlan)?.label} 요금제
+                  {planDefs.find((p) => p.key === pendingPlan)?.price}
+                  {planDefs.find((p) => p.key === pendingPlan)?.sub}
                 </p>
 
                 <div className="flex flex-col gap-3 mb-6">
@@ -1944,7 +1983,7 @@ export default function SettingsPage() {
                       <p className="text-xs leading-relaxed text-[#7A5C00]">
                         결제하기를 누르면 카카오페이 송금 링크가 새 창으로
                         열려요. 정확히{" "}
-                        <b>{PLAN_AMOUNT[pendingPlan].toLocaleString()}원</b>을
+                        <b>{PLAN_AMOUNT[kakaoPlanCode ?? "basic"].toLocaleString()}원</b>을
                         아래 입금자명과 동일한 이름으로 송금해주세요.
                       </p>
                     </div>

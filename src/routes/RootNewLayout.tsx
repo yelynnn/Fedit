@@ -12,6 +12,7 @@ import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { useFilterStore } from "@/stores/FilterStore";
 import { CaptureGuard } from "@/capture-guard";
+import { SHOW_PRICING_AFTER_SIGNUP_KEY } from "@/lib/secretEntry";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -22,6 +23,7 @@ function RootNewLayout() {
     openInterestBrandModal,
     closeInterestBrandModal,
     openOnboardingTour,
+    openSettingsModal,
   } = useUIStore();
   const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
 
@@ -30,6 +32,15 @@ function RootNewLayout() {
     setSelectedTab("상품 분석");
     openOnboardingTour();
   };
+
+  // 마케팅 랜딩페이지(?ref=vip 또는 ?ref=landing)를 거쳐 방금 회원가입을
+  // 마친 경우, 첫 로그인 직후 바로 요금제 화면으로 보내 결제로 이어지게 한다.
+  useEffect(() => {
+    if (localStorage.getItem(SHOW_PRICING_AFTER_SIGNUP_KEY) !== "true") return;
+    localStorage.removeItem(SHOW_PRICING_AFTER_SIGNUP_KEY);
+    openSettingsModal("구독");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 개발 중 결제 없이 모달을 확인하기 위한 디버그 트리거: /?showBrandModal=1
   // 온보딩 투어만 바로 확인하려면: /?showOnboarding=signup (또는 pro, brand-modal)

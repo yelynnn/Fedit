@@ -58,10 +58,16 @@ function DashBoardPage() {
       try {
         // 달을 따로 고르지 않았으면(초기 진입) 오늘 날짜를 그대로 보내고,
         // 이전달/다음달 화살표나 모달로 달을 고르면 그 달(YYYY-MM)을 보낸다.
+        // 단, 당일 데이터 크롤링이 오전 8시 35분에 끝나서 그 전에는 아직
+        // 당일 데이터가 없다 — 자정~8시 35분 사이에는 전날 날짜로 요청한다.
+        const now = dayjs();
+        const isBeforeCrawlDone =
+          now.hour() < 8 || (now.hour() === 8 && now.minute() < 35);
+        const today = (isBeforeCrawlDone ? now.subtract(1, "day") : now).format(
+          "YYYY-MM-DD",
+        );
         const requestDate =
-          selectedMonth && selectedMonth.trim() !== ""
-            ? selectedMonth
-            : dayjs().format("YYYY-MM-DD");
+          selectedMonth && selectedMonth.trim() !== "" ? selectedMonth : today;
 
         const responses = await Promise.all(
           PLATFORMS.map(({ platform, title }) =>

@@ -1,16 +1,36 @@
 import { Building2, User } from "lucide-react";
 import Footer from "@/components/common/Footer";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoginHeader from "@/components/common/LoginHeader";
 import { useNavigate } from "react-router-dom";
 import { PostLogin } from "@/apis/AuthAPI";
 import { useFilterStore } from "@/stores/FilterStore";
+import {
+  SECRET_ENTRY_STORAGE_KEY,
+  LANDING_ENTRY_STORAGE_KEY,
+} from "@/lib/secretEntry";
 
 type LoginType = "personal" | "company";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
+
+  // 마케팅 랜딩페이지(fedit.framer.website, .../fedit-vip-x7k2q9)의 CTA가
+  // 이 로그인 페이지로 ?ref=vip 또는 ?ref=landing을 붙여서 보내주면, 이후
+  // 회원가입/로그인을 마치고 설정 화면에 도착했을 때까지 이어서 알 수
+  // 있도록 로컬에 남겨둔다.
+  // - ref=vip: 비밀 특가(Basic 9,900원) 대상 + 가입 직후 요금제 화면 노출
+  // - ref=landing: 가입 직후 요금제 화면 노출만 (특가 없음)
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref === "vip") {
+      localStorage.setItem(SECRET_ENTRY_STORAGE_KEY, "true");
+      localStorage.setItem(LANDING_ENTRY_STORAGE_KEY, "true");
+    } else if (ref === "landing") {
+      localStorage.setItem(LANDING_ENTRY_STORAGE_KEY, "true");
+    }
+  }, []);
   const [loginType, setLoginType] = useState<LoginType>("personal");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
