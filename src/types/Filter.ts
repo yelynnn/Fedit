@@ -50,6 +50,13 @@ export type FilterStore = {
   resetBrand: () => void;
   setBrandList: (brands: string[]) => void;
 
+  // 무신사/29cm처럼 입점 브랜드가 100개 넘는 플랫폼을 통째로 선택할 때, 그
+  // 브랜드를 하나하나 selectedBrands로 보내면 요청 헤더가 너무 커진다.
+  // 이런 경우엔 개별 브랜드명 대신 platformList(selectedPlatforms)로 보낸다.
+  platformList: string[];
+  setPlatformList: (platforms: string[]) => void;
+  resetPlatform: () => void;
+
   // 서버에 저장된 "관심 브랜드 10개"(고정값). brandList는 지금 화면에서
   // 필터링 중인 값이라 자유롭게 늘었다 줄었다 하지만, interestBrandPicks는
   // 저장/변경 시에만 바뀐다 — "이 브랜드를 볼 수 있는지" 허용 여부 판단은

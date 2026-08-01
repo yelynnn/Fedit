@@ -61,6 +61,10 @@ const GetColorProduct = async ({
 
 type ProductFilterPayload = {
   brandList: string[];
+  // 무신사/29cm처럼 입점 브랜드가 100개 넘는 플랫폼을 통째로 선택했을 때,
+  // 개별 브랜드명(selectedBrands) 대신 플랫폼 코드(selectedPlatforms, 예:
+  // "musinsa")로 보낸다 — 헤더가 브랜드 100개 넘게 나열되는 걸 피하기 위함.
+  platformList?: string[];
   selectedColors: string[];
   selectedGenders: string[];
   selectedCategories: string[];
@@ -74,6 +78,7 @@ const GetProductList = async (
 ) => {
   const {
     brandList,
+    platformList,
     selectedColors,
     selectedGenders,
     selectedCategories,
@@ -85,6 +90,7 @@ const GetProductList = async (
 
   const params = {
     selectedBrands: brandList,
+    selectedPlatforms: platformList ?? [],
     selectedColors,
     selectedGenders,
     selectedCategories,

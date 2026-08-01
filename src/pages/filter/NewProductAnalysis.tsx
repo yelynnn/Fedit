@@ -51,7 +51,7 @@ function NewProductAnalysis() {
     selectedPatterns,
     selectedSeasons,
   } = useFilteredData();
-  const { brandList } = useFilterStore();
+  const { brandList, platformList } = useFilterStore();
   const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
   const { subscription, loaded: subscriptionLoaded } = useSubscriptionStore(
     (s) => s,
@@ -79,6 +79,7 @@ function NewProductAnalysis() {
         setIsFetching(true);
         const data = await GetProductList({
           brandList,
+          platformList,
           selectedColors,
           selectedGenders,
           selectedCategories,
@@ -106,6 +107,7 @@ function NewProductAnalysis() {
     },
     [
       brandList,
+      platformList,
       selectedColors,
       selectedGenders,
       selectedCategories,
@@ -135,6 +137,7 @@ function NewProductAnalysis() {
   // 같은 조건으로 상품 목록 API가 중복 호출되지 않게 한다.
   const fetchKey = JSON.stringify([
     brandList,
+    platformList,
     selectedColors,
     selectedGenders,
     selectedCategories,

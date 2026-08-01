@@ -15,8 +15,19 @@ type ApiCategory = { label: string; brands: string[] };
 type TabKey = "selected" | string;
 type Props = { isOpen: boolean; onClose: () => void; onSubmit?: () => void };
 
+// 무신사/29cm는 입점 브랜드가 100개 넘어서, 이 탭에서 "전체 선택"하면
+// 브랜드명을 하나하나 담는 대신 플랫폼 코드 하나(selectedPlatforms)로
+// 보낸다 — 개별 브랜드명을 다 나열하면 상품 목록 요청 헤더가 너무 커진다.
+const PLATFORM_LABEL_TO_CODE: Record<string, string> = {
+  무신사: "musinsa",
+  "29cm": "29cm",
+};
+
 export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const brandList = useFilterStore((s) => s.brandList);
+  const platformList = useFilterStore((s) => s.platformList);
+  const setPlatformList = useFilterStore((s) => s.setPlatformList);
+  const resetPlatform = useFilterStore((s) => s.resetPlatform);
   const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
   const addBrand = useFilterStore((s) => s.addBrand);
   const resetBrand = useFilterStore((s) => s.resetBrand);
@@ -103,6 +114,16 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     return cat?.brands ?? [];
   }, [activeTab, brandList, categories]);
 
+  const activePlatformCode = PLATFORM_LABEL_TO_CODE[activeTab];
+  const isPlatformFullySelected =
+    !!activePlatformCode && platformList.includes(activePlatformCode);
+  const platformBrandCount = (code: string) =>
+    categories.find((c) => PLATFORM_LABEL_TO_CODE[c.label] === code)?.brands
+      .length ?? 0;
+  const totalSelectedCount =
+    brandList.length +
+    platformList.reduce((sum, code) => sum + platformBrandCount(code), 0);
+
   // Basic 플랜은 관심 브랜드 10개 + 무신사 입점 브랜드만, 무료 플랜은 무신사
   // 입점 브랜드만 이용 가능하므로, 그 외 카테고리 탭에서는 이미 선택된(=관심
   // 브랜드로 고른) 것 외에는 새로 추가하지 못하도록 막는다. 무료 플랜은
@@ -186,14 +207,27 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const isBrandDisabled = (brand: string) =>
     isRestrictedTab && !interestBrandPicks.includes(brand);
 
-  const allVisibleChecked = useMemo(
-    () =>
+  const allVisibleChecked = useMemo(() => {
+    if (isPlatformFullySelected) return true;
+    return (
       visibleBrands.length > 0 &&
-      visibleBrands.every((b) => brandList.includes(b)),
-    [visibleBrands, brandList],
-  );
+      visibleBrands.every((b) => brandList.includes(b))
+    );
+  }, [visibleBrands, brandList, isPlatformFullySelected]);
 
   const toggleAllVisible = () => {
+    // 무신사/29cm 탭에서 검색 중이 아니면 "전체 선택"을 플랫폼 단위로
+    // 처리한다 — 브랜드 100개 넘게 개별로 담으면 상품 목록 요청 헤더가
+    // 너무 커진다.
+    if (activePlatformCode && keyword.trim() === "") {
+      if (isPlatformFullySelected) {
+        setPlatformList(platformList.filter((p) => p !== activePlatformCode));
+      } else {
+        sourceBrands.forEach((b) => brandList.includes(b) && removeBrand(b));
+        setPlatformList([...platformList, activePlatformCode]);
+      }
+      return;
+    }
     if (allVisibleChecked) {
       visibleBrands.forEach((b) => brandList.includes(b) && removeBrand(b));
     } else {
@@ -205,6 +239,15 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
 
   const toggleOne = (brand: string) => {
     if (isBrandDisabled(brand)) return;
+    if (isPlatformFullySelected && activePlatformCode) {
+      // 플랫폼 통째로 선택된 상태에서 하나만 해제 — 플랫폼 선택을 풀고
+      // 나머지 브랜드들은 개별로 다시 채워 넣는다.
+      setPlatformList(platformList.filter((p) => p !== activePlatformCode));
+      sourceBrands.forEach((b) => {
+        if (b !== brand) addBrand(b);
+      });
+      return;
+    }
     if (brandList.includes(brand)) removeBrand(brand);
     else addBrand(brand);
   };
@@ -385,7 +428,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
 
       <div className="flex items-center justify-between text-sm">
         <div className="font-semibold text-icon-neutral">
-          {brandList.length}개
+          {totalSelectedCount}개
         </div>
         <label className="inline-flex items-center gap-2 cursor-pointer select-none">
           <input
@@ -414,8 +457,28 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
               className="h-full pr-8 overflow-y-auto"
             >
               <div className="flex flex-wrap gap-2">
+                {activeTab === "selected" &&
+                  platformList.map((code) => {
+                    const label = Object.keys(PLATFORM_LABEL_TO_CODE).find(
+                      (l) => PLATFORM_LABEL_TO_CODE[l] === code,
+                    );
+                    return (
+                      <button
+                        key={`platform-${code}`}
+                        type="button"
+                        onClick={() =>
+                          setPlatformList(
+                            platformList.filter((p) => p !== code),
+                          )
+                        }
+                        className="inline-flex items-center justify-center gap-2 rounded-md bg-fill-primary-hover px-4 py-2 type-body-medium text-tx-inverse"
+                      >
+                        {label} 전체 ({platformBrandCount(code)})
+                      </button>
+                    );
+                  })}
                 {visibleBrands.map((brand) => {
-                  const checked = brandList.includes(brand);
+                  const checked = isPlatformFullySelected || brandList.includes(brand);
                   return (
                     <Chip
                       key={brand}
@@ -427,7 +490,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
                     />
                   );
                 })}
-                {visibleBrands.length === 0 && (
+                {visibleBrands.length === 0 && platformList.length === 0 && (
                   <div className="w-full py-8 text-sm text-center text-icon-neutral">
                     {activeTab === "selected"
                       ? "선택된 브랜드가 없어요."
@@ -468,18 +531,19 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
 
       <button
         onClick={onSubmit}
-        disabled={brandList.length === 0}
+        disabled={totalSelectedCount === 0}
         className={
-          brandList.length === 0
+          totalSelectedCount === 0
             ? "h-[46px] w-full rounded-md border border-line-alt bg-white type-title-medium text-[#A1A3A5] cursor-not-allowed"
             : "h-[46px] w-full rounded-md bg-fill-primary type-title-medium text-tx-inverse hover:opacity-90"
         }
       >
-        {brandList.length}개의 브랜드 확인
+        {totalSelectedCount}개의 브랜드 확인
       </button>
       <button
         onClick={() => {
           resetBrand();
+          resetPlatform();
         }}
         className="flex h-[46px] w-full items-center justify-center gap-1 px-3 py-2 type-title-medium text-center text-[#56585A] hover:text-tx-neutral"
       >

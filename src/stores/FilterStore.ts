@@ -48,6 +48,11 @@ export const useFilterStore = create<FilterStore>()(
       resetBrand: () => set({ brandList: [] }),
       setBrandList: (brands: string[]) => set({ brandList: brands }),
 
+      platformList: [],
+      setPlatformList: (platforms: string[]) =>
+        set({ platformList: platforms }),
+      resetPlatform: () => set({ platformList: [] }),
+
       interestBrandPicks: [],
       setInterestBrandPicks: (brands: string[]) =>
         set({ interestBrandPicks: brands }),

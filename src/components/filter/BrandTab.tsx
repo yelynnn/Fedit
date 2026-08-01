@@ -98,8 +98,15 @@ const yymmdd = () => {
   return `${yy}${mm}${dd}`;
 };
 
+// 무신사/29cm 플랫폼 코드 -> 화면에 보여줄 라벨 (BrandFilterModal의
+// PLATFORM_LABEL_TO_CODE와 반대 방향 매핑).
+const PLATFORM_LABELS: Record<string, string> = {
+  musinsa: "무신사",
+  "29cm": "29cm",
+};
+
 function BrandTab({ isProductTab }: Props) {
-  const { brandList } = useFilterStore((s) => s);
+  const { brandList, platformList } = useFilterStore((s) => s);
   const currentPlan = useSubscriptionStore((s) =>
     toBillingPlan(getEffectivePlan(s.subscription)),
   );
@@ -251,17 +258,19 @@ function BrandTab({ isProductTab }: Props) {
     saveAs(blob, `FEDIT${namePart}_${yymmdd()}.xlsx`);
   }
 
-  // 브랜드 하나만 지정해 전체 페이지를 끝까지 순회하며 모은다. 화면에 이미
-  // 로드된 resultLists는 여러 브랜드가 섞여 있고 무한 스크롤로 일부만 불러온
-  // 상태일 수 있어, 엑셀에는 항상 해당 브랜드의 전체 데이터를 새로 받아 담는다.
-  async function fetchAllProductsForBrand(
-    brand: string | null,
-  ): Promise<ApiDetail[]> {
+  // 브랜드(또는 플랫폼) 하나만 지정해 전체 페이지를 끝까지 순회하며 모은다.
+  // 화면에 이미 로드된 resultLists는 여러 브랜드가 섞여 있고 무한 스크롤로
+  // 일부만 불러온 상태일 수 있어, 엑셀에는 항상 전체 데이터를 새로 받아 담는다.
+  async function fetchAllProductsForTarget(target: {
+    brand: string | null;
+    platform: string | null;
+  }): Promise<ApiDetail[]> {
     const items: ApiDetail[] = [];
     let cursor: string | null = null;
     do {
       const data = await GetProductList({
-        brandList: brand ? [brand] : [],
+        brandList: target.brand ? [target.brand] : [],
+        platformList: target.platform ? [target.platform] : [],
         selectedColors,
         selectedGenders,
         selectedCategories,
@@ -291,20 +300,29 @@ function BrandTab({ isProductTab }: Props) {
       return;
     }
 
-    // 브랜드가 여러 개 선택돼 있어도 한 번에 한 브랜드씩만 요청해서 브랜드별로
-    // 파일을 나눠 받는다. 선택된 브랜드가 없으면(기본 무신사 데이터) 한 번만 받는다.
-    const targets = brandList.length > 0 ? brandList : [null];
+    // 브랜드/플랫폼이 여러 개 선택돼 있어도 한 번에 하나씩만 요청해서
+    // 파일을 나눠 받는다. 아무것도 선택 안 돼 있으면(기본 무신사 데이터)
+    // 한 번만 받는다.
+    const targets = [
+      ...brandList.map((brand) => ({ brand, platform: null })),
+      ...platformList.map((platform) => ({ brand: null, platform })),
+    ];
+    const finalTargets =
+      targets.length > 0 ? targets : [{ brand: null, platform: null }];
 
     setIsDownloading(true);
-    setDownloadProgress({ done: 0, total: targets.length });
+    setDownloadProgress({ done: 0, total: finalTargets.length });
     try {
-      for (let i = 0; i < targets.length; i++) {
-        const brand = targets[i];
-        const rows = await fetchAllProductsForBrand(brand);
+      for (let i = 0; i < finalTargets.length; i++) {
+        const target = finalTargets[i];
+        const rows = await fetchAllProductsForTarget(target);
         if (rows.length > 0) {
-          await downloadXlsxWithImages(rows, brand ?? undefined);
+          const label =
+            target.brand ??
+            (target.platform ? PLATFORM_LABELS[target.platform] : undefined);
+          await downloadXlsxWithImages(rows, label);
         }
-        setDownloadProgress({ done: i + 1, total: targets.length });
+        setDownloadProgress({ done: i + 1, total: finalTargets.length });
       }
       if (currentPlan === "basic") {
         useExcelDownloadStore.getState().commitDownload();
@@ -329,6 +347,15 @@ function BrandTab({ isProductTab }: Props) {
           }}
         >
           <div className="flex gap-2">
+            {platformList.map((platform) => (
+              <button
+                key={`platform-${platform}`}
+                type="button"
+                className="font-semibold inline-flex px-3 h-10 rounded-lg  bg-fill-primary text-white items-center justify-center text-sm shrink-0"
+              >
+                {PLATFORM_LABELS[platform] ?? platform} 전체
+              </button>
+            ))}
             {brandList.map((brand) => (
               <button
                 key={brand}

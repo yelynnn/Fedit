@@ -1,8 +1,10 @@
 import { Icon } from "@iconify/react";
+import { useEffect, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useUIStore } from "@/stores/UIStore";
 import BrandFilterModal from "../filter/BrandFilterModal";
 import BrandTab from "../filter/BrandTab";
+import { getPlatformBrandCounts } from "@/lib/platformBrandCounts";
 
 // 사이드바와 동일한 설정 (이 설정은 별도 파일로 분리해서 공통으로 쓰는 것이 가장 좋습니다)
 const TABS_CONFIG = [
@@ -38,6 +40,19 @@ export default function NewHeader() {
     useUIStore((s) => s);
   const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
   const brandList = useFilterStore((s) => s.brandList);
+  const platformList = useFilterStore((s) => s.platformList);
+
+  // platformList에는 플랫폼 코드만 담겨 있어서(예: "musinsa" 1개), 실제로
+  // 몇 개 브랜드를 뜻하는지는 카테고리별 브랜드 개수를 따로 조회해야 안다.
+  const [platformBrandCounts, setPlatformBrandCounts] = useState<
+    Record<string, number>
+  >({});
+  useEffect(() => {
+    getPlatformBrandCounts().then(setPlatformBrandCounts).catch(() => {});
+  }, []);
+  const selectedBrandCount =
+    brandList.length +
+    platformList.reduce((sum, code) => sum + (platformBrandCounts[code] ?? 0), 0);
 
   // 1. 현재 선택된 탭의 아이콘 정보를 찾습니다.
   // 찾지 못할 경우(초기값 등)를 대비해 대시보드 아이콘을 기본값으로 설정합니다.
@@ -75,7 +90,7 @@ export default function NewHeader() {
                 브랜드
               </span>
               <span className="flex items-center justify-center min-w-[42px] h-7 px-2 bg-tx-neutral text-white text-[13px] font-semibold rounded-full">
-                {brandList.length}
+                {selectedBrandCount}
               </span>
             </div>
 
