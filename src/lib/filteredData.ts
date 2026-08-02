@@ -64,8 +64,12 @@ export default function useFilteredData() {
   );
 
   const selectedSeasons = useMemo(() => {
-    if (!selectedYear || !selectedSeason) return [];
-    return [`${selectedYear.slice(-2)}${selectedSeason}`];
+    if (selectedYear && selectedSeason) {
+      return [`${selectedYear.slice(-2)}${selectedSeason}`];
+    }
+    if (selectedYear) return [selectedYear.slice(-2)];
+    if (selectedSeason) return [selectedSeason];
+    return [];
   }, [selectedYear, selectedSeason]);
 
   return {

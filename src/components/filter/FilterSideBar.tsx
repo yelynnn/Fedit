@@ -36,7 +36,6 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void 
           </SelectTrigger>
           <SelectContent className="rounded-xl border-line-divider">
             <SelectItem value="all">전체</SelectItem>
-            <SelectItem value="2025">2025년</SelectItem>
             <SelectItem value="2026">2026년</SelectItem>
           </SelectContent>
         </Select>
