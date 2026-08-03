@@ -1,7 +1,8 @@
 import Footer from "@/components/common/Footer";
 import LoginHeader from "@/components/common/LoginHeader";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { captureLandingRef } from "@/lib/secretEntry";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^01[0-9]-\d{3,4}-\d{4}$/;
@@ -16,6 +17,12 @@ const formatPhone = (digits: string) => {
 
 const PersonalSignupPage = () => {
   const navigate = useNavigate();
+
+  // 랜딩페이지 CTA가 여기로 바로 연결될 수도 있어서 여기서도 잡아둔다 —
+  // 자세한 내용은 LoginPage.tsx 쪽 주석 참고.
+  useEffect(() => {
+    captureLandingRef();
+  }, []);
 
   const [form, setForm] = useState({
     name: "",

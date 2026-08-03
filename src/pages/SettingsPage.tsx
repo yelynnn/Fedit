@@ -268,11 +268,12 @@ export default function SettingsPage() {
   const effectivePlan = getEffectivePlan(subscription);
   const currentPlan: "free" | PlanType = toBillingPlan(effectivePlan);
 
-  // 비밀 링크로 들어온 경우, Basic 카드만 "첫 달 9,900원" 특가로 바꿔서
-  // 보여준다. 실제 결제 요청에 보낼 plan_code(및 그 금액)는 이거랑 별개로
-  // handleStartKakaoPayment 안에서 pendingPlan === "basic"일 때만
-  // "basic_secret"으로 바꿔서 보낸다 — Pro는 비밀 링크로 들어와도 정가
-  // 그대로다.
+  // 비밀 링크로 들어온 경우, Basic 카드는 "첫 달 9,900원" 특가로 바꿔서
+  // 보여준다. Pro는 가격은 그대로지만(정가 그대로 결제) 배지만 "비밀 링크
+  // 한정"으로 같이 표시한다. 실제 결제 요청에 보낼 plan_code(및 그 금액)는
+  // 이거랑 별개로 handleStartKakaoPayment 안에서 pendingPlan === "basic"일
+  // 때만 "basic_secret"으로 바꿔서 보낸다 — Pro는 비밀 링크로 들어와도
+  // 정가 그대로다.
   const planDefs = isSecretEntry
     ? PLAN_DEFS.map((plan) =>
         plan.key === "basic"
@@ -282,7 +283,9 @@ export default function SettingsPage() {
               discount: "→ 9,900원 · 첫 1달",
               price: "9,900원",
             }
-          : plan,
+          : plan.key === "pro"
+            ? { ...plan, badge: "비밀 링크 한정" }
+            : plan,
       )
     : PLAN_DEFS;
 
@@ -1402,7 +1405,8 @@ export default function SettingsPage() {
                             {plan.label}
                           </p>
                           {plan.badge &&
-                            (plan.key === "basic" && isSecretEntry ? (
+                            ((plan.key === "basic" || plan.key === "pro") &&
+                            isSecretEntry ? (
                               <span
                                 className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#7A5C00]"
                                 style={{ borderRadius: 4, background: "#FFF6DD" }}

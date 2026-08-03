@@ -5,10 +5,7 @@ import LoginHeader from "@/components/common/LoginHeader";
 import { useNavigate } from "react-router-dom";
 import { PostLogin } from "@/apis/AuthAPI";
 import { useFilterStore } from "@/stores/FilterStore";
-import {
-  SECRET_ENTRY_STORAGE_KEY,
-  LANDING_ENTRY_STORAGE_KEY,
-} from "@/lib/secretEntry";
+import { captureLandingRef } from "@/lib/secretEntry";
 
 type LoginType = "personal" | "company";
 
@@ -23,13 +20,7 @@ const LoginPage = () => {
   // - ref=vip: 비밀 특가(Basic 9,900원) 대상 + 가입 직후 요금제 화면 노출
   // - ref=landing: 가입 직후 요금제 화면 노출만 (특가 없음)
   useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get("ref");
-    if (ref === "vip") {
-      localStorage.setItem(SECRET_ENTRY_STORAGE_KEY, "true");
-      localStorage.setItem(LANDING_ENTRY_STORAGE_KEY, "true");
-    } else if (ref === "landing") {
-      localStorage.setItem(LANDING_ENTRY_STORAGE_KEY, "true");
-    }
+    captureLandingRef();
   }, []);
   const [loginType, setLoginType] = useState<LoginType>("personal");
   const [id, setId] = useState("");

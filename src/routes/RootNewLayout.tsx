@@ -12,7 +12,10 @@ import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { useFilterStore } from "@/stores/FilterStore";
 import { CaptureGuard } from "@/capture-guard";
-import { SHOW_PRICING_AFTER_SIGNUP_KEY } from "@/lib/secretEntry";
+import {
+  SHOW_PRICING_AFTER_SIGNUP_KEY,
+  SECRET_ENTRY_STORAGE_KEY,
+} from "@/lib/secretEntry";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -44,11 +47,19 @@ function RootNewLayout() {
 
   // 개발 중 결제 없이 모달을 확인하기 위한 디버그 트리거: /?showBrandModal=1
   // 온보딩 투어만 바로 확인하려면: /?showOnboarding=signup (또는 pro, brand-modal)
+  // 비밀 링크로 들어와서 방금 회원가입을 마친 상황을 실제 가입 없이
+  // 흉내내려면: /?simulateSecretSignup=1 (로그인은 돼 있어야 함 — 기존
+  // 계정으로 로그인한 상태에서 이 주소로 들어오면 됨)
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("showBrandModal")) {
       openInterestBrandModal();
+    }
+    if (params.get("simulateSecretSignup")) {
+      localStorage.setItem(SECRET_ENTRY_STORAGE_KEY, "true");
+      setSelectedTab("상품 분석");
+      openSettingsModal("구독");
     }
     if (params.get("showOnboarding")) {
       setSelectedTab("상품 분석");

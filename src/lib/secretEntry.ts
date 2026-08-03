@@ -29,3 +29,17 @@ export const clearLandingEntry = (): void => {
 // 랜딩페이지에서 들어와 방금 회원가입을 마쳤다는 플래그. 첫 로그인 후
 // RootNewLayout이 이 값을 보고 설정 > 구독 화면을 바로 띄운 뒤 지운다.
 export const SHOW_PRICING_AFTER_SIGNUP_KEY = "feditShowPricingAfterSignup";
+
+// 랜딩페이지 CTA가 /login이 아니라 /signup 계열로 바로 연결될 수도 있고,
+// 그 사이 화면 이동(navigate)에서 쿼리스트링이 안 이어질 수도 있어서, 로그인
+// 페이지 하나에만 심어두면 놓칠 수 있다. 그래서 로그인/회원가입 진입점이 될
+// 수 있는 페이지마다 마운트 시 이 함수를 호출해 최대한 일찍 잡아둔다.
+export const captureLandingRef = (): void => {
+  const ref = new URLSearchParams(window.location.search).get("ref");
+  if (ref === "vip") {
+    localStorage.setItem(SECRET_ENTRY_STORAGE_KEY, "true");
+    localStorage.setItem(LANDING_ENTRY_STORAGE_KEY, "true");
+  } else if (ref === "landing") {
+    localStorage.setItem(LANDING_ENTRY_STORAGE_KEY, "true");
+  }
+};

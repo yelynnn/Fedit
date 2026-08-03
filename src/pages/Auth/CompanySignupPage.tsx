@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle, ChevronRight } from "lucide-react";
 import LoginHeader from "@/components/common/LoginHeader";
 import Footer from "@/components/common/Footer";
 import { PostCorporateAuthRequest } from "@/apis/AuthAPI";
+import { captureLandingRef } from "@/lib/secretEntry";
 
 interface CompanySignupNavState {
   email?: string;
@@ -14,6 +15,12 @@ const CompanySignupPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const navState = location.state as CompanySignupNavState | null;
+
+  // 랜딩페이지 CTA가 여기로 바로 연결될 수도 있어서 여기서도 잡아둔다 —
+  // 자세한 내용은 LoginPage.tsx 쪽 주석 참고.
+  useEffect(() => {
+    captureLandingRef();
+  }, []);
 
   const [email, setEmail] = useState(navState?.email ?? "");
   const [isTermsAgreed] = useState(navState?.agreed ?? false);
