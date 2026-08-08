@@ -29,6 +29,7 @@ import kakaoPayIcon from "@/assets/etc/kakaoIcon.png";
 import tossIcon from "@/assets/etc/tossIcon.png";
 import { RequestUpgrade, GetUpgradeStatus } from "@/apis/KakaoAPI";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
+import BrandApplyPanel from "@/components/settings/BrandApplyPanel";
 import { GetBrandList, GetBrandPicks } from "@/apis/AnalysisAPI";
 import { isSecretEntry as checkSecretEntry, clearSecretEntry } from "@/lib/secretEntry";
 
@@ -40,6 +41,7 @@ type Section =
   | "FEDI대화"
   | "사용가이드"
   | "FAQ"
+  | "브랜드입점신청"
   | "관심브랜드"
   | "구독";
 
@@ -155,7 +157,14 @@ const NAV_GROUPS: {
   },
   {
     title: "고객 지원",
-    items: [{ id: "FAQ", label: "FAQ / 1:1 문의", icon: "ph:question" }],
+    items: [
+      { id: "FAQ", label: "FAQ / 1:1 문의", icon: "ph:question" },
+      {
+        id: "브랜드입점신청",
+        label: "브랜드 입점 신청",
+        icon: "ph:storefront",
+      },
+    ],
   },
   {
     title: "사용 권한 및 청구",
@@ -1171,6 +1180,9 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+
+            {/* ── 브랜드 입점 신청 ── */}
+            {active === "브랜드입점신청" && <BrandApplyPanel />}
 
             {/* ── 관심 브랜드 설정 ── */}
             {active === "관심브랜드" && currentPlan === "basic" && (

@@ -1,18 +1,18 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import {
   useSubscriptionStore,
   getEffectivePlan,
   toBillingPlan,
 } from "@/stores/SubscriptionStore";
-import {
-  useExcelDownloadStore,
-  getExcelDownloadRemaining,
-  EXCEL_MONTHLY_LIMIT,
-} from "@/stores/ExcelDownloadStore";
 import useFilteredData from "@/lib/filteredData";
-import { GetProductList } from "@/apis/AnalysisAPI";
+import {
+  GetProductList,
+  GetExcelDownloadUsage,
+  PostExcelDownload,
+  type ExcelDownloadUsage,
+} from "@/apis/AnalysisAPI";
 import DateNavNotice from "@/components/main/DateNavNotice";
 import type { ApiDetail } from "@/types/Product";
 
@@ -110,8 +110,6 @@ function BrandTab({ isProductTab }: Props) {
   const currentPlan = useSubscriptionStore((s) =>
     toBillingPlan(getEffectivePlan(s.subscription)),
   );
-  const excelDownloadState = useExcelDownloadStore((s) => s);
-  const excelRemaining = getExcelDownloadRemaining(excelDownloadState);
   const {
     selectedColors,
     selectedGenders,
@@ -126,6 +124,39 @@ function BrandTab({ isProductTab }: Props) {
     total: number;
   } | null>(null);
   const [isDownloadHovered, setIsDownloadHovered] = useState(false);
+  const [usage, setUsage] = useState<ExcelDownloadUsage | null>(null);
+  const downloadAbortControllerRef = useRef<AbortController | null>(null);
+  const isCancelledRef = useRef(false);
+
+  const isFree = currentPlan === "free";
+  const isBasicLike = currentPlan === "basic";
+
+  // FREE는 두 API 모두 403이라 아예 안 부른다. BASIC/BASIC_SECRET(둘 다
+  // toBillingPlan에서 "basic"으로 합쳐짐)만 한도가 있어서 조회한다 — PRO는
+  // 무제한이라 버튼 활성화 여부 판단에 안 쓰인다.
+  useEffect(() => {
+    if (!isBasicLike) {
+      setUsage(null);
+      return;
+    }
+    let ignore = false;
+    GetExcelDownloadUsage()
+      .then((u) => {
+        if (!ignore) setUsage(u);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, [isBasicLike]);
+
+  // 다운로드 도중 이 컴포넌트가 언마운트되면(탭 전환 등) 진행 중이던 요청도
+  // 같이 취소한다.
+  useEffect(() => {
+    return () => {
+      downloadAbortControllerRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     const id = "brandtab-hide-scrollbar";
@@ -261,10 +292,10 @@ function BrandTab({ isProductTab }: Props) {
   // 브랜드(또는 플랫폼) 하나만 지정해 전체 페이지를 끝까지 순회하며 모은다.
   // 화면에 이미 로드된 resultLists는 여러 브랜드가 섞여 있고 무한 스크롤로
   // 일부만 불러온 상태일 수 있어, 엑셀에는 항상 전체 데이터를 새로 받아 담는다.
-  async function fetchAllProductsForTarget(target: {
-    brand: string | null;
-    platform: string | null;
-  }): Promise<ApiDetail[]> {
+  async function fetchAllProductsForTarget(
+    target: { brand: string | null; platform: string | null },
+    signal: AbortSignal,
+  ): Promise<ApiDetail[]> {
     const items: ApiDetail[] = [];
     let cursor: string | null = null;
     do {
@@ -278,6 +309,7 @@ function BrandTab({ isProductTab }: Props) {
         selectedPatterns,
         selectedSeasons,
         cursor,
+        signal,
       });
       const pageItems = Array.isArray(data?.items) ? data.items : [];
       items.push(...pageItems);
@@ -286,53 +318,116 @@ function BrandTab({ isProductTab }: Props) {
     return items;
   }
 
-  const isFree = currentPlan === "free";
-  const isBasicLimitReached = currentPlan === "basic" && excelRemaining <= 0;
-  const isDownloadDisabled = isFree || isBasicLimitReached || isDownloading;
+  // 브랜드/플랫폼이 여러 개 선택돼 있으면 한 번에 하나씩 나눠서 파일을
+  // 여러 개 받는다. 아무것도 선택 안 돼 있으면(기본 무신사 데이터) 한
+  // 번만 받는다. Basic/Basic_secret은 다운로드 1회 = 서버 한도 1회 소진
+  // 이라, 여러 브랜드를 한 번에 고르면 클릭 한 번으로 한 달 한도(3회)가
+  // 순식간에 다 없어질 수 있어 브랜드 1개만 선택했을 때만 받을 수 있게 막는다.
+  const targets = [
+    ...brandList.map((brand) => ({ brand, platform: null as string | null })),
+    ...platformList.map((platform) => ({
+      brand: null as string | null,
+      platform,
+    })),
+  ];
+  const finalTargets =
+    targets.length > 0 ? targets : [{ brand: null, platform: null }];
+
+  const isPro = currentPlan === "pro";
+  const isBasicUsageLoading = isBasicLike && usage === null;
+  const isBasicLimitReached =
+    isBasicLike && usage !== null && !usage.canDownload;
+  const isBasicMultiTargetBlocked = isBasicLike && finalTargets.length > 1;
+  // 다운로드 중에는 이 버튼이 "중단" 버튼으로 바뀌므로 여기엔 안 넣는다 —
+  // 눌러서 취소할 수 있어야 하니 계속 활성 상태여야 한다.
+  const isDownloadDisabled =
+    isFree ||
+    isBasicUsageLoading ||
+    isBasicLimitReached ||
+    isBasicMultiTargetBlocked;
 
   const handleDownloadClick = async () => {
-    if (isDownloadDisabled) {
-      if (isBasicLimitReached) {
-        alert(
-          `이번 달 엑셀 다운로드 횟수(월 ${EXCEL_MONTHLY_LIMIT}회)를 모두 사용했어요. 다음 달에 다시 이용해주세요.`,
-        );
-      }
-      return;
-    }
+    if (isDownloadDisabled) return;
 
-    // 브랜드/플랫폼이 여러 개 선택돼 있어도 한 번에 하나씩만 요청해서
-    // 파일을 나눠 받는다. 아무것도 선택 안 돼 있으면(기본 무신사 데이터)
-    // 한 번만 받는다.
-    const targets = [
-      ...brandList.map((brand) => ({ brand, platform: null })),
-      ...platformList.map((platform) => ({ brand: null, platform })),
-    ];
-    const finalTargets =
-      targets.length > 0 ? targets : [{ brand: null, platform: null }];
+    const controller = new AbortController();
+    downloadAbortControllerRef.current = controller;
+    isCancelledRef.current = false;
 
     setIsDownloading(true);
     setDownloadProgress({ done: 0, total: finalTargets.length });
     try {
+      // Pro는 브랜드를 여러 개 골라도 파일 하나로 합쳐서 받는다 — 여기에
+      // 다 모아뒀다가 루프가 끝난 뒤 한 번에 저장한다. Basic은 이미 브랜드
+      // 1개로 제한돼 있어서 기존처럼 브랜드마다 파일을 바로바로 저장한다.
+      const combinedRows: ApiDetail[] = [];
+
       for (let i = 0; i < finalTargets.length; i++) {
+        // 브랜드 사이(=파일 사이) 경계에서 중단 여부를 확인한다 — 이미
+        // 완성돼서 저장까지 끝난 파일의 다운로드 횟수는 그대로 유지된다.
+        if (isCancelledRef.current) break;
+
         const target = finalTargets[i];
-        const rows = await fetchAllProductsForTarget(target);
-        if (rows.length > 0) {
+        let rows: ApiDetail[];
+        try {
+          rows = await fetchAllProductsForTarget(target, controller.signal);
+        } catch (fetchError: any) {
+          if (isCancelledRef.current) break;
+          throw fetchError;
+        }
+        if (isCancelledRef.current) break;
+
+        if (isPro) {
+          combinedRows.push(...rows);
+        } else if (rows.length > 0) {
           const label =
             target.brand ??
             (target.platform ? PLATFORM_LABELS[target.platform] : undefined);
           await downloadXlsxWithImages(rows, label);
+
+          // 파일 하나가 실제로 완성될 때만(=중단되기 전에 끝까지 받았을
+          // 때만) 서버에 기록한다. 중단하면 그 시점까지 받은 파일들의
+          // 기록은 이미 남아있고, 진행 중이던/못 받은 파일은 카운트되지
+          // 않는다. 응답으로 화면 사용량을 그대로 갱신한다.
+          try {
+            const updated = await PostExcelDownload();
+            setUsage(updated);
+            if (!updated.canDownload) break;
+          } catch (recordError: any) {
+            if (recordError?.code === "EXCEL_DOWNLOAD_LIMIT_EXCEEDED") {
+              alert(
+                recordError.message || "이번 달 엑셀 다운로드 한도를 초과했습니다.",
+              );
+              break;
+            }
+            // 기록 자체가 실패해도 파일은 이미 받았으니 조용히 넘어간다.
+          }
         }
         setDownloadProgress({ done: i + 1, total: finalTargets.length });
       }
-      if (currentPlan === "basic") {
-        useExcelDownloadStore.getState().commitDownload();
+
+      if (isPro && !isCancelledRef.current && combinedRows.length > 0) {
+        await downloadXlsxWithImages(combinedRows);
+        try {
+          const updated = await PostExcelDownload();
+          setUsage(updated);
+        } catch {
+          // Pro는 무제한이라 기록이 실패해도 파일은 이미 받았으니 조용히 넘어간다.
+        }
       }
     } catch {
-      alert("엑셀 다운로드에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      if (!isCancelledRef.current) {
+        alert("엑셀 다운로드에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      }
     } finally {
       setIsDownloading(false);
       setDownloadProgress(null);
+      downloadAbortControllerRef.current = null;
     }
+  };
+
+  const handleCancelDownload = () => {
+    isCancelledRef.current = true;
+    downloadAbortControllerRef.current?.abort();
   };
 
   return (
@@ -372,46 +467,45 @@ function BrandTab({ isProductTab }: Props) {
       {isProductTab && (
         <div className="relative">
           <button
-            onClick={handleDownloadClick}
-            disabled={isDownloadDisabled}
+            onClick={isDownloading ? handleCancelDownload : handleDownloadClick}
+            disabled={!isDownloading && isDownloadDisabled}
             onMouseEnter={() => setIsDownloadHovered(true)}
             onMouseLeave={() => setIsDownloadHovered(false)}
             title={
-              isFree
-                ? "무료 요금제는 엑셀 다운로드를 이용할 수 없어요. 요금제를 업그레이드해주세요."
-                : isBasicLimitReached
-                  ? `이번 달 엑셀 다운로드 횟수(월 ${EXCEL_MONTHLY_LIMIT}회)를 모두 사용했어요.`
-                  : undefined
+              isDownloading
+                ? "눌러서 다운로드를 중단해요. 이미 받은 파일의 횟수는 그대로 유지돼요."
+                : isFree
+                  ? "무료 요금제는 엑셀 다운로드를 이용할 수 없어요. 요금제를 업그레이드해주세요."
+                  : isBasicLimitReached
+                    ? `이번 달 엑셀 다운로드 횟수(월 ${usage?.limit ?? 3}회)를 모두 사용했어요.`
+                    : isBasicMultiTargetBlocked
+                      ? "Basic 요금제는 브랜드를 1개만 선택했을 때 다운로드할 수 있어요."
+                      : undefined
             }
             className={[
               "flex h-10 shrink-0 select-none items-center justify-center gap-1 rounded-lg border border-line-alt bg-white px-3 py-2 text-base font-semibold text-tx-neutral",
-              isDownloadDisabled
+              !isDownloading && isDownloadDisabled
                 ? "cursor-not-allowed opacity-40"
                 : "cursor-pointer",
             ].join(" ")}
           >
             <Icon
-              icon={isDownloading ? "svg-spinners:180-ring" : "ci:download"}
+              icon={isDownloading ? "ph:stop-circle-fill" : "ci:download"}
               className="w-5"
             />
             <p>
               {isDownloading
-                ? `다운로드 중… (${downloadProgress?.done ?? 0}/${downloadProgress?.total ?? 0})`
-                : currentPlan === "basic"
-                  ? `엑셀 다운로드 (${excelRemaining}/${EXCEL_MONTHLY_LIMIT})`
+                ? `다운로드 중… (${downloadProgress?.done ?? 0}/${downloadProgress?.total ?? 0}) · 중단`
+                : isBasicLike && usage
+                  ? `엑셀 다운로드 (${usage.used}/${usage.limit})`
                   : "엑셀 다운로드"}
             </p>
           </button>
 
-          {isDownloadHovered && !isFree && (
+          {isDownloadHovered && isBasicLike && (
             <DateNavNotice>
-              엑셀 파일 하나당 브랜드 1개만 다운로드돼요
-              {currentPlan === "basic" && (
-                <>
-                  <br />
-                  Basic 요금제는 월 3회까지 다운로드할 수 있어요
-                </>
-              )}
+              Basic 요금제는 한 번에 브랜드 1개만, 월 {usage?.limit ?? 3}회까지
+              다운로드할 수 있어요
             </DateNavNotice>
           )}
         </div>

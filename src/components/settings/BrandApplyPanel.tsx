@@ -1,0 +1,273 @@
+import { Icon } from "@iconify/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GetBrandList, PostBrandApply } from "@/apis/AnalysisAPI";
+import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
+
+type ApiCategory = { label: string; brands: string[] };
+
+// 설정 > 고객 지원 > 브랜드 입점 신청. BrandFilterModal의 브랜드 탐색(탭 +
+// 검색 + 초성 인덱스) UI를 재사용하되, 여기서는 필터로 쓰려는 게 아니라
+// "이미 있는 브랜드인지 둘러보고, 없으면 입점 신청"이 목적이라 브랜드
+// 선택/토글 기능은 빼고 조회 전용으로 둔다.
+export default function BrandApplyPanel() {
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [activeTab, setActiveTab] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setErr(null);
+        const data = await GetBrandList();
+        if (ignore) return;
+        const cats: ApiCategory[] = Array.isArray(data?.categories)
+          ? data.categories
+          : [];
+        setCategories(cats);
+        if (cats.length > 0) setActiveTab(cats[0].label);
+      } catch (e: any) {
+        if (!ignore) setErr(e?.message || "브랜드 목록을 불러오지 못했습니다.");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  const sourceBrands = useMemo(() => {
+    const cat = categories.find((c) => c.label === activeTab);
+    return cat?.brands ?? [];
+  }, [activeTab, categories]);
+
+  const visibleBrands = useMemo(() => {
+    const k = keyword.trim().toLowerCase();
+    return k
+      ? sourceBrands.filter((b) => b.toLowerCase().includes(k))
+      : sourceBrands;
+  }, [keyword, sourceBrands]);
+
+  const anchorKeys = useMemo(() => {
+    const seen = new Set<string>();
+    const map = new Map<string, string>();
+    visibleBrands.forEach((b) => {
+      const key = getIndexKey(b);
+      if (!seen.has(key)) {
+        seen.add(key);
+        map.set(b, key);
+      }
+    });
+    return map;
+  }, [visibleBrands]);
+
+  const availableLetters = useMemo(
+    () => new Set(Array.from(anchorKeys.values())),
+    [anchorKeys],
+  );
+
+  const jumpToLetter = (letter: string) => {
+    if (!availableLetters.has(letter)) return;
+    setActiveLetter(letter);
+    const target = listRef.current?.querySelector(
+      `[data-anchor-letter="${letter}"]`,
+    );
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleScroll = () => {
+    const el = listRef.current;
+    if (!el) return;
+    const containerTop = el.getBoundingClientRect().top;
+    const anchors = Array.from(
+      el.querySelectorAll<HTMLElement>("[data-anchor-letter]"),
+    );
+    let current: string | undefined;
+    for (const node of anchors) {
+      const top = node.getBoundingClientRect().top - containerTop;
+      if (top <= 12) current = node.dataset.anchorLetter;
+      else break;
+    }
+    if (current) setActiveLetter(current);
+  };
+
+  useEffect(() => {
+    handleScroll();
+  }, [visibleBrands]);
+
+  const handleApply = async () => {
+    const brand = keyword.trim();
+    if (!brand || isApplying) return;
+    setIsApplying(true);
+    try {
+      await PostBrandApply(brand);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      setShowToast(true);
+      toastTimerRef.current = setTimeout(() => setShowToast(false), 3000);
+      setKeyword("");
+    } catch (e: any) {
+      alert(e?.message || "입점 신청에 실패했습니다.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  return (
+    <div className="max-w-[680px]">
+      <h1 className="text-2xl font-semibold text-[#0B0E0F]">브랜드 입점 신청</h1>
+      <p className="mt-1 mb-6 text-base font-medium text-[#6F7173]">
+        찾으시는 브랜드가 없다면 검색 후 입점을 신청해보세요.
+      </p>
+
+      <div className="flex items-center gap-2 rounded-xl border border-line-alt px-4 py-3">
+        <input
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          placeholder="브랜드를 검색하세요."
+          className="flex-1 text-sm outline-none placeholder:text-icon-alt"
+        />
+        <Icon
+          icon="mingcute:search-line"
+          className="h-4 w-4 flex-shrink-0 text-icon-alt"
+        />
+      </div>
+
+      {loading ? (
+        <div className="py-10 text-center text-sm text-icon-neutral">
+          불러오는 중…
+        </div>
+      ) : err ? (
+        <div className="py-10 text-center text-sm text-red-500">{err}</div>
+      ) : (
+        <>
+          <div className="mt-4 flex items-center gap-6 overflow-x-auto whitespace-nowrap border-b border-line-divider">
+            {categories.map((c) => {
+              const active = c.label === activeTab;
+              return (
+                <button
+                  key={c.label}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(c.label);
+                    setKeyword("");
+                  }}
+                  className={[
+                    "-mb-px shrink-0 pb-2.5 text-[15px] font-semibold transition-colors",
+                    active
+                      ? "border-b-2 border-tx-strong text-tx-strong"
+                      : "border-b-2 border-transparent text-icon-neutral hover:text-tx-neutral",
+                  ].join(" ")}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mt-3 text-[13px] text-icon-alt">
+            {visibleBrands.length}개
+          </p>
+
+          {keyword.trim() !== "" && visibleBrands.length === 0 ? (
+            <div className="mt-4 flex items-center justify-between gap-4 rounded-lg bg-fill-bg-strong p-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-icon-neutral">
+                  검색 결과
+                </span>
+                <span className="text-sm font-medium text-tx-neutral">
+                  "{keyword.trim()}" 브랜드가 없어요.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleApply}
+                disabled={isApplying}
+                className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-line-divider bg-white px-3 py-2 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Icon
+                  icon="solar:shop-2-linear"
+                  className="h-4 w-4 text-tx-neutral"
+                />
+                <span className="text-xs font-semibold text-tx-neutral">
+                  {isApplying ? "신청 중..." : "브랜드 입점 신청하기"}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className="relative mt-2 h-[360px]">
+              <div
+                ref={listRef}
+                onScroll={handleScroll}
+                className="h-full overflow-y-auto pr-8"
+              >
+                <div className="grid grid-cols-3 gap-2">
+                  {visibleBrands.map((brand) => (
+                    <div
+                      key={brand}
+                      data-anchor-letter={anchorKeys.get(brand)}
+                      className="truncate rounded-md border border-line-alt bg-fill-bg-strong px-4 py-2 text-center type-body-medium text-tx-neutral"
+                    >
+                      {brand}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex w-6 flex-col items-center gap-1 py-1">
+                {INDEX_LETTERS.map((letter) => {
+                  const available = availableLetters.has(letter);
+                  const active = activeLetter === letter;
+                  return (
+                    <button
+                      key={letter}
+                      type="button"
+                      onClick={() => jumpToLetter(letter)}
+                      disabled={!available}
+                      className={[
+                        "pointer-events-auto flex h-6 w-6 items-center justify-center rounded-pill p-1 text-[11px] transition-colors",
+                        active
+                          ? "bg-[var(--color-fill-normal-interaction-pressed)] font-semibold text-tx-strong"
+                          : available
+                            ? "text-icon-alt hover:text-tx-neutral"
+                            : "text-line-alt",
+                      ].join(" ")}
+                    >
+                      {letter}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 z-[300] flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-tx-neutral px-4 py-3 text-white shadow-xl">
+          <Icon
+            icon="ph:check-circle-fill"
+            className="h-4 w-4 flex-shrink-0"
+          />
+          <span className="whitespace-nowrap text-sm font-semibold">
+            입점 신청이 완료됐어요. 신청 후 3일 내로 반영해드릴게요.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}

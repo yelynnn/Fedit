@@ -7,7 +7,7 @@ import {
   getEffectivePlan,
   toBillingPlan,
 } from "@/stores/SubscriptionStore";
-import { GetBrandList } from "@/apis/AnalysisAPI";
+import { GetBrandList, PostBrandApply } from "@/apis/AnalysisAPI";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 import cancelIcon from "@/assets/etc/cancel.svg";
 
@@ -41,6 +41,9 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [isApplyingBrand, setIsApplyingBrand] = useState(false);
+  const [showApplyToast, setShowApplyToast] = useState(false);
+  const applyToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [showLeft, setShowLeft] = useState(false);
@@ -257,6 +260,28 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     [],
   );
 
+  useEffect(() => {
+    return () => {
+      if (applyToastTimerRef.current) clearTimeout(applyToastTimerRef.current);
+    };
+  }, []);
+
+  const handleApplyBrand = async () => {
+    const brand = keyword.trim();
+    if (!brand || isApplyingBrand) return;
+    setIsApplyingBrand(true);
+    try {
+      await PostBrandApply(brand);
+      if (applyToastTimerRef.current) clearTimeout(applyToastTimerRef.current);
+      setShowApplyToast(true);
+      applyToastTimerRef.current = setTimeout(() => setShowApplyToast(false), 3000);
+    } catch (error: any) {
+      alert(error?.message || "입점 신청에 실패했습니다.");
+    } finally {
+      setIsApplyingBrand(false);
+    }
+  };
+
   const Chip = ({
     brand,
     checked,
@@ -336,14 +361,16 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
           </div>
           <button
             type="button"
-            className="self-end flex-shrink-0 flex items-center gap-1.5 px-2 py-1 bg-white border border-line-divider rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+            onClick={handleApplyBrand}
+            disabled={isApplyingBrand}
+            className="self-end flex-shrink-0 flex items-center gap-1.5 px-2 py-1 bg-white border border-line-divider rounded-lg shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Icon
               icon="solar:shop-2-linear"
               className="w-4 h-4 text-tx-neutral"
             />
             <span className="text-xs font-semibold text-tx-neutral">
-              브랜드 입점 신청하기
+              {isApplyingBrand ? "신청 중..." : "브랜드 입점 신청하기"}
             </span>
           </button>
         </div>
@@ -550,6 +577,15 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
         <Icon icon="ph:arrow-counter-clockwise" />
         선택 초기화하기
       </button>
+
+      {showApplyToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] flex items-center gap-2 rounded-2xl bg-tx-neutral px-4 py-3 text-white shadow-xl">
+          <Icon icon="ph:check-circle-fill" className="h-4 w-4 flex-shrink-0" />
+          <span className="text-sm font-semibold whitespace-nowrap">
+            입점 신청이 완료됐어요. 신청 후 3일 내로 반영해드릴게요.
+          </span>
+        </div>
+      )}
     </Modal>
   );
 }

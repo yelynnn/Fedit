@@ -74,7 +74,11 @@ type ProductFilterPayload = {
 };
 
 const GetProductList = async (
-  payload: ProductFilterPayload & { cursor?: string | null },
+  payload: ProductFilterPayload & {
+    cursor?: string | null;
+    // 엑셀 다운로드 중단 등, 진행 중인 요청을 취소할 수 있어야 하는 곳에서 넘긴다.
+    signal?: AbortSignal;
+  },
 ) => {
   const {
     brandList,
@@ -86,6 +90,7 @@ const GetProductList = async (
     selectedPatterns,
     selectedSeasons,
     cursor,
+    signal,
   } = payload;
 
   const params = {
@@ -114,6 +119,7 @@ const GetProductList = async (
       });
       return searchParams.toString();
     },
+    signal,
   });
   return res.data;
 };
@@ -190,6 +196,63 @@ const PutBrandPicks = async (brandNames: string[]): Promise<void> => {
   }
 };
 
+const PostBrandApply = async (brand: string): Promise<void> => {
+  try {
+    await axiosInstance.post("/menu/apply", { brand });
+  } catch (error: any) {
+    if (error?.response) {
+      const e = new Error(
+        error.response?.data?.message || "입점 신청에 실패했습니다.",
+      ) as Error & { status?: number };
+      e.status = error.response.status;
+      throw e;
+    }
+    throw new Error("서버에 연결할 수 없습니다.");
+  }
+};
+
+// FREE는 두 API 모두 403(FREE_PLAN_NOT_ALLOWED), BASIC/BASIC_SECRET는 월
+// limit 안에서 used/remaining을 관리, PRO는 limited:false로 무제한이지만
+// used는 계속 집계된다.
+export type ExcelDownloadUsage = {
+  plan: string;
+  limited: boolean;
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  canDownload: boolean;
+};
+
+const handleExcelDownloadError = (error: any, fallbackMessage: string): never => {
+  if (error?.response) {
+    const e = new Error(
+      error.response?.data?.message || fallbackMessage,
+    ) as Error & { code?: string; status?: number };
+    e.status = error.response.status;
+    e.code = error.response?.data?.code;
+    throw e;
+  }
+  throw new Error("서버에 연결할 수 없습니다.");
+};
+
+const GetExcelDownloadUsage = async (): Promise<ExcelDownloadUsage> => {
+  try {
+    const res = await axiosInstance.get("/excel-downloads/usage");
+    return res.data;
+  } catch (error: any) {
+    return handleExcelDownloadError(error, "다운로드 현황을 불러오지 못했습니다.");
+  }
+};
+
+const PostExcelDownload = async (): Promise<ExcelDownloadUsage> => {
+  try {
+    const res = await axiosInstance.post("/excel-downloads");
+    return res.data;
+  } catch (error: any) {
+    return handleExcelDownloadError(error, "다운로드 기록에 실패했습니다.");
+  }
+};
+
 export {
   GetProductByItemCode,
   GetDetailInfo,
@@ -205,4 +268,7 @@ export {
   GetCategoryList,
   GetBrandPicks,
   PutBrandPicks,
+  PostBrandApply,
+  GetExcelDownloadUsage,
+  PostExcelDownload,
 };
