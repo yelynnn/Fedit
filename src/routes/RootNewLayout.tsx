@@ -12,10 +12,7 @@ import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { useFilterStore } from "@/stores/FilterStore";
 import { CaptureGuard } from "@/capture-guard";
-import {
-  SHOW_PRICING_AFTER_SIGNUP_KEY,
-  SECRET_ENTRY_STORAGE_KEY,
-} from "@/lib/secretEntry";
+import { SHOW_PRICING_AFTER_SIGNUP_KEY, setSecretEntry } from "@/lib/secretEntry";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -57,7 +54,7 @@ function RootNewLayout() {
       openInterestBrandModal();
     }
     if (params.get("simulateSecretSignup")) {
-      localStorage.setItem(SECRET_ENTRY_STORAGE_KEY, "true");
+      setSecretEntry();
       setSelectedTab("상품 분석");
       openSettingsModal("구독");
     }

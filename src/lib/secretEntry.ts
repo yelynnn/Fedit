@@ -2,13 +2,35 @@
 // 로그인 페이지로 넘어올 때 붙는 ?ref= 쿼리스트링을 읽어 로컬에 남겨두는
 // 플래그들. 로그인 페이지 → (선택) 회원가입 → 첫 로그인까지 여러 화면을
 // 거치는 동안에도 "어디서 들어왔는지"를 잃지 않기 위해 localStorage를 쓴다.
+//
+// 이 값은 계정이 아니라 브라우저에 저장되는 값이라, 같은 브라우저로 다른
+// 계정에 로그인해도 그대로 남아있는다 — 특히 테스트하다 남은 값이 전혀
+// 관계없는 계정에서 비밀 특가로 잘못 보이는 문제가 있었다. 그래서 만료
+// 시각을 같이 저장해두고, 24시간 지나면 자동으로 무효화한다.
+const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24시간
+
+const setWithExpiry = (key: string): void => {
+  localStorage.setItem(key, String(Date.now() + EXPIRY_MS));
+};
+
+const isValid = (key: string): boolean => {
+  const raw = localStorage.getItem(key);
+  if (!raw) return false;
+  const expiresAt = Number(raw);
+  if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) {
+    localStorage.removeItem(key);
+    return false;
+  }
+  return true;
+};
 
 // 비밀 링크(?ref=vip)로 들어온 사용자에게 Basic 요금제를 첫 달 9,900원
 // 특가로 보여주기 위한 플래그. 결제(카카오페이 요청)가 완료되면 지운다.
 export const SECRET_ENTRY_STORAGE_KEY = "feditSecretEntry";
 
-export const isSecretEntry = (): boolean =>
-  localStorage.getItem(SECRET_ENTRY_STORAGE_KEY) === "true";
+export const setSecretEntry = (): void => setWithExpiry(SECRET_ENTRY_STORAGE_KEY);
+
+export const isSecretEntry = (): boolean => isValid(SECRET_ENTRY_STORAGE_KEY);
 
 export const clearSecretEntry = (): void => {
   localStorage.removeItem(SECRET_ENTRY_STORAGE_KEY);
@@ -19,8 +41,7 @@ export const clearSecretEntry = (): void => {
 // (그냥 로그인만 한 기존 회원에게는 적용하지 않기 위해).
 export const LANDING_ENTRY_STORAGE_KEY = "feditLandingEntry";
 
-export const isLandingEntry = (): boolean =>
-  localStorage.getItem(LANDING_ENTRY_STORAGE_KEY) === "true";
+export const isLandingEntry = (): boolean => isValid(LANDING_ENTRY_STORAGE_KEY);
 
 export const clearLandingEntry = (): void => {
   localStorage.removeItem(LANDING_ENTRY_STORAGE_KEY);
@@ -37,9 +58,9 @@ export const SHOW_PRICING_AFTER_SIGNUP_KEY = "feditShowPricingAfterSignup";
 export const captureLandingRef = (): void => {
   const ref = new URLSearchParams(window.location.search).get("ref");
   if (ref === "vip") {
-    localStorage.setItem(SECRET_ENTRY_STORAGE_KEY, "true");
-    localStorage.setItem(LANDING_ENTRY_STORAGE_KEY, "true");
+    setSecretEntry();
+    setWithExpiry(LANDING_ENTRY_STORAGE_KEY);
   } else if (ref === "landing") {
-    localStorage.setItem(LANDING_ENTRY_STORAGE_KEY, "true");
+    setWithExpiry(LANDING_ENTRY_STORAGE_KEY);
   }
 };
