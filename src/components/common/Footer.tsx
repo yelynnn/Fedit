@@ -20,6 +20,7 @@ function Footer() {
                 <span>대표자명: 김예린</span>
               </p>
               <p>사업자등록번호: 535-03-03921</p>
+              <p>통신판매신고: 제 2026-고양덕양구-1878호</p>
               <p>사업장 주소: 경기도 고양시 덕양구 오금로 193</p>
               <p className="flex flex-wrap items-center gap-x-1.5">
                 <span>고객센터: 010-7939-1833</span>
@@ -101,7 +102,7 @@ function Footer() {
 
       <div className="w-full bg-[#1F2123]">
         <div className="flex flex-col items-center justify-between max-w-screen-xl gap-3 px-6 py-4 mx-auto text-xs text-white/80 md:flex-row">
-          <p>© 2025 FEDIT. All rights reserved.</p>
+          <p>© 2026 FEDIT. All rights reserved.</p>
 
           <div className="flex items-center gap-4">
             <Link to="/privacy" className="hover:text-white">

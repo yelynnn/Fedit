@@ -1,12 +1,24 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Icon } from "@iconify/react";
-import TrendIndexBox from "../product/TrendIndexBox";
+// import TrendIndexBox from "../product/TrendIndexBox";
+import TrendIndexBoxMock from "../product/TrendIndexBoxMock";
 import dayjs from "dayjs";
 import AIAnalysisBox from "../product/AIAnalysisBox";
 import MonthModal from "./modal/MonthModal";
 import DateNavNotice from "./DateNavNotice";
-import { GetDashboardRanking, GetRankingItemDetail } from "@/apis/DashBoardAPI";
-import type { RankingProduct, RankingItemDetailResponse } from "@/types/Main";
+import {
+  // GetDashboardRanking, // 트렌드 지수 고도화 테스트 API로 잠시 대체 — 아래 참고
+  GetRankingItemDetail,
+  GetTestTrendRanking,
+  GetTestTrendSnapshot,
+} from "@/apis/DashBoardAPI";
+import type {
+  RankingProduct,
+  RankingItemDetailResponse,
+  TrendRankingItem,
+  TrendRankingPageResponse,
+  TrendSnapshotDetailDto,
+} from "@/types/Main";
 import { useProductStore } from "@/stores/ProductStore";
 import {
   useSubscriptionStore,
@@ -18,10 +30,29 @@ import SubscriptionLockOverlay from "@/components/common/SubscriptionLockOverlay
 const PLATFORMS = ["무신사", "29CM", "W컨셉", "플랫폼 통합"];
 const CATEGORIES = ["상의", "아우터", "바지", "원피스/스커트"];
 
+// test/trend가 받는 platform/category 슬러그.
+const PLATFORM_SLUG: Record<string, string> = {
+  무신사: "musinsa",
+  "29CM": "29cm",
+  W컨셉: "wconcept",
+  "플랫폼 통합": "all",
+};
+
+// category 슬러그는 top/outer/pants/dress/skirt 5개인데 버튼은 4개 — "원피스/스커트"
+// 버튼 하나가 dress+skirt 두 카테고리를 가리켜서, 이 버튼일 때만 두 번 조회해
+// 합친다(아래 랭킹 조회 useEffect 참고).
+const CATEGORY_SLUGS: Record<string, string[]> = {
+  상의: ["top"],
+  아우터: ["outer"],
+  바지: ["pants"],
+  "원피스/스커트": ["dress", "skirt"],
+};
+
 // 잠금 상태(무료체험 미시작/만료)에서는 트렌드 항목 상위 3개까지만 보여준다.
 const LOCK_VISIBLE_COUNT = 3;
 
-const toApiDate = (date: dayjs.Dayjs) => date.format("YYYY-MM");
+// GetDashboardRanking과 함께 잠시 안 쓰는 중 — 되돌릴 때 같이 복구.
+// const toApiDate = (date: dayjs.Dayjs) => date.format("YYYY-MM");
 
 const DATA_UNAVAILABLE_NOTICE = (
   <>
@@ -31,16 +62,32 @@ const DATA_UNAVAILABLE_NOTICE = (
   </>
 );
 
+// test/trend의 date는 ISO-8601 날짜(예: 2026-08-05) — currentDate에서 매번 뽑아 쓴다.
+const toIsoDate = (date: dayjs.Dayjs) => date.format("YYYY-MM-DD");
+
 export default function RankBox() {
   const { setModalProductId } = useProductStore((s) => s);
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
-  const [currentDate, setCurrentDate] = useState(dayjs());
+  // 트렌드 지수 고도화 테스트 — test/trend에 실제 시딩된 날짜(8/5)로 기본값을 맞춘다.
+  const [currentDate, setCurrentDate] = useState(dayjs("2026-08-05"));
   const [selectedPlatform, setSelectedPlatform] = useState<string>("무신사");
   const [selectedCategory, setSelectedCategory] = useState<string>("상의");
-  const [activeRank, setActiveRank] = useState<number>(1);
-  const [rankingList, setRankingList] = useState<RankingProduct[]>([]);
+  // GetDashboardRanking 연동을 잠시 꺼둔 동안엔 항상 빈 값 — setter는 안 쓴다.
+  const [activeRank] = useState<number>(1);
+  const [rankingList] = useState<RankingProduct[]>([]);
   const [itemDetail, setItemDetail] =
     useState<RankingItemDetailResponse | null>(null);
+  // 트렌드 지수 고도화 테스트용 — test/trend, test/trend/{tempItemId}로 받아온
+  // 데이터. 왼쪽 트렌드 항목 리스트와 우측 트렌드 지수 박스를 이걸로 그린다.
+  const [testRankingList, setTestRankingList] = useState<TrendRankingItem[]>(
+    [],
+  );
+  const [activeTempItemId, setActiveTempItemId] = useState<number | null>(
+    null,
+  );
+  const [snapshotDetail, setSnapshotDetail] =
+    useState<TrendSnapshotDetailDto | null>(null);
+  const [isSnapshotLoading, setIsSnapshotLoading] = useState(false);
   const [similarCurrentPage, setSimilarCurrentPage] = useState(1);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const detailPanelRef = useRef<HTMLDivElement>(null);
@@ -79,7 +126,7 @@ export default function RankBox() {
 
   useEffect(() => {
     updateTrendThumb();
-  }, [rankingList]);
+  }, [testRankingList]);
 
   useEffect(() => {
     const activeItem = rankingList.find((item) => item.rank === activeRank);
@@ -94,21 +141,65 @@ export default function RankBox() {
 
   useEffect(() => {
     if (detailPanelRef.current) detailPanelRef.current.scrollTop = 0;
-  }, [activeRank]);
+  }, [activeTempItemId]);
 
+  // 기존 랭킹 조회 — 트렌드 지수 고도화 테스트 API로 잠시 대체. 되돌릴 때
+  // 아래 주석만 풀고 밑에 있는 test/trend 연동 useEffect 두 개를 지우면 된다.
+  // useEffect(() => {
+  //   GetDashboardRanking({
+  //     platform: selectedPlatform,
+  //     category: selectedCategory,
+  //     date: toApiDate(currentDate),
+  //   })
+  //     .then((res) => {
+  //       const result = res.rankData?.rankData?.result ?? [];
+  //       setRankingList(result);
+  //       setActiveRank(result[0]?.rank ?? 1);
+  //     })
+  //     .catch(() => {});
+  // }, [selectedPlatform, selectedCategory, currentDate]);
+
+  // 트렌드 지수 고도화 테스트 — 왼쪽 트렌드 항목 리스트를 test/trend로 받아온다.
+  // "원피스/스커트"처럼 슬러그가 두 개면(dress+skirt) 각각 조회해서 하나로 합친다
+  // — 한쪽만 데이터가 있어도(allSettled) 결과는 보여주고, trend_score 내림차순으로
+  // 정렬한 뒤 position을 1부터 다시 매긴다.
   useEffect(() => {
-    GetDashboardRanking({
-      platform: selectedPlatform,
-      category: selectedCategory,
-      date: toApiDate(currentDate),
-    })
-      .then((res) => {
-        const result = res.rankData?.rankData?.result ?? [];
-        setRankingList(result);
-        setActiveRank(result[0]?.rank ?? 1);
-      })
-      .catch(() => {});
+    const platform = PLATFORM_SLUG[selectedPlatform] ?? selectedPlatform;
+    const date = toIsoDate(currentDate);
+    const categories = CATEGORY_SLUGS[selectedCategory] ?? [selectedCategory];
+
+    Promise.allSettled(
+      categories.map((category) =>
+        GetTestTrendRanking({ platform, category, date, page: 0, size: 20 }),
+      ),
+    ).then((results) => {
+      const merged = results
+        .filter(
+          (r): r is PromiseFulfilledResult<TrendRankingPageResponse> =>
+            r.status === "fulfilled",
+        )
+        .flatMap((r) => r.value.content ?? [])
+        .sort((a, b) => b.trend_score - a.trend_score)
+        .map((item, index) => ({ ...item, position: index + 1 }));
+
+      setTestRankingList(merged);
+      setActiveTempItemId(merged[0]?.temp_item_id ?? null);
+    });
   }, [selectedPlatform, selectedCategory, currentDate]);
+
+  // 트렌드 지수 고도화 테스트 — 선택된 항목의 트렌드 지수 상세를
+  // test/trend/{tempItemId}로 받아온다. date를 안 넘기면 최신 스냅샷을 준다.
+  useEffect(() => {
+    if (activeTempItemId == null) {
+      setSnapshotDetail(null);
+      return;
+    }
+    setIsSnapshotLoading(true);
+    GetTestTrendSnapshot(activeTempItemId)
+      .then(setSnapshotDetail)
+      .catch(() => setSnapshotDetail(null))
+      .finally(() => setIsSnapshotLoading(false));
+  }, [activeTempItemId]);
 
   const handleMonthSelect = (value: string) => {
     setCurrentDate(dayjs(`${value}-01`));
@@ -227,13 +318,15 @@ export default function RankBox() {
               onScroll={updateTrendThumb}
               className={`h-full hide-scrollbar ${isLocked ? "overflow-hidden" : "overflow-y-auto"}`}
             >
-              {rankingList.map((item, index) => {
-                const isActive = activeRank === item.rank;
+              {testRankingList.map((item, index) => {
+                const isActive = activeTempItemId === item.temp_item_id;
                 const isHidden = isLocked && index >= LOCK_VISIBLE_COUNT;
                 return (
                   <li
-                    key={item.itemcode}
-                    onClick={() => !isHidden && setActiveRank(item.rank)}
+                    key={item.temp_item_id}
+                    onClick={() =>
+                      !isHidden && setActiveTempItemId(item.temp_item_id)
+                    }
                     className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
                       isActive
                         ? "border-b border-[#E4E4E4] bg-[#F4FFEE]"
@@ -248,7 +341,7 @@ export default function RankBox() {
                         className="object-cover w-full h-full border border-gray-200 rounded-sm"
                       />
                       <div className="absolute top-0 left-0 flex items-center justify-center w-[19px] h-[19px] bg-[#242628] rounded text-[12px] font-medium leading-[133%] text-white">
-                        {index + 1}
+                        {item.position}
                       </div>
                     </div>
 
@@ -296,12 +389,15 @@ export default function RankBox() {
             style={isLocked ? { opacity: 0.5, filter: "blur(1.75px)" } : undefined}
           >
           <div className="px-8 mb-4 -mx-8">
-            <TrendIndexBox
+            {/* 트렌드 지수 고도화 UI 작업 중 — test/trend/{tempItemId} 테스트
+                API로 잠시 교체. 정식 연동 끝나면 아래 TrendIndexBox로 되돌린다. */}
+            {/* <TrendIndexBox
               itemCode={
                 rankingList.find((item) => item.rank === activeRank)
                   ?.itemcode ?? ""
               }
-            />
+            /> */}
+            <TrendIndexBoxMock data={snapshotDetail} isLoading={isSnapshotLoading} />
           </div>
 
           <AIAnalysisBox

@@ -13,6 +13,11 @@ import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { useFilterStore } from "@/stores/FilterStore";
 import { CaptureGuard } from "@/capture-guard";
 import { SHOW_PRICING_AFTER_SIGNUP_KEY, setSecretEntry } from "@/lib/secretEntry";
+import {
+  isPendingBasicDowngrade,
+  clearPendingBasicDowngrade,
+} from "@/lib/pendingDowngrade";
+import { useSubscriptionStore } from "@/stores/SubscriptionStore";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -26,6 +31,8 @@ function RootNewLayout() {
     openSettingsModal,
   } = useUIStore();
   const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
+  const subscription = useSubscriptionStore((s) => s.subscription);
+  const subscriptionLoaded = useSubscriptionStore((s) => s.loaded);
 
   const handleCloseInterestBrandModal = () => {
     closeInterestBrandModal();
@@ -41,6 +48,18 @@ function RootNewLayout() {
     openSettingsModal("구독");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // pro→basic 다운그레이드 신청 시 SettingsPage가 남겨둔 "적용 대기" 플래그를
+  // 여기서 소비한다. 다음 결제일이 지나 실제로 basic으로 전환된 뒤 첫 진입에서만
+  // 브랜드 온보딩 모달을 딱 한 번 띄우고, 그 즉시 플래그를 지운다. 재업그레이드 등
+  // basic으로 전환되지 않은 채 대기 상태가 풀린 경우엔 모달 없이 플래그만 정리한다.
+  useEffect(() => {
+    if (!subscriptionLoaded || !subscription) return;
+    if (!isPendingBasicDowngrade()) return;
+    if (subscription.downgradePending) return;
+    clearPendingBasicDowngrade();
+    if (subscription.plan === "basic") openInterestBrandModal();
+  }, [subscriptionLoaded, subscription, openInterestBrandModal]);
 
   // 개발 중 결제 없이 모달을 확인하기 위한 디버그 트리거: /?showBrandModal=1
   // 온보딩 투어만 바로 확인하려면: /?showOnboarding=signup (또는 pro, brand-modal)

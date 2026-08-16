@@ -215,12 +215,12 @@ export default function BrandApplyPanel() {
                 onScroll={handleScroll}
                 className="h-full overflow-y-auto pr-8"
               >
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-wrap gap-2">
                   {visibleBrands.map((brand) => (
                     <div
                       key={brand}
                       data-anchor-letter={anchorKeys.get(brand)}
-                      className="truncate rounded-md border border-line-alt bg-fill-bg-strong px-4 py-2 text-center type-body-medium text-tx-neutral"
+                      className="inline-flex max-w-full items-center justify-center truncate rounded-md border border-line-alt bg-fill-bg-strong px-4 py-2 type-body-medium text-tx-neutral"
                     >
                       {brand}
                     </div>

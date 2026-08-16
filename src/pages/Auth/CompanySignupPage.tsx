@@ -60,7 +60,7 @@ const CompanySignupPage = () => {
     <div className="flex min-h-screen flex-col bg-white text-tx-default">
       <LoginHeader />
 
-      <main className="flex flex-1 justify-center px-5 pt-[92px]">
+      <main className="flex flex-1 justify-center px-5 pt-[92px] pb-[60px]">
         <section className="w-full max-w-[426px]">
           <div className="mb-[28px]">
             <h1 className="mb-[10px] text-[24px] font-semibold tracking-[-0.04em] text-tx-default">

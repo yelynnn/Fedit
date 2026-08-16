@@ -18,7 +18,7 @@ const SignupSelectPage = () => {
     <div className="flex min-h-screen flex-col bg-white text-tx-default">
       <LoginHeader />
 
-      <main className="flex flex-1 justify-center px-5 pt-[110px]">
+      <main className="flex flex-1 justify-center px-5 pt-[110px] pb-[60px]">
         <section className="w-full max-w-[520px]">
           <div className="mb-[40px]">
             <h1 className="mb-[10px] text-[26px] font-semibold tracking-[-0.04em] text-tx-default">

@@ -137,3 +137,81 @@ export type RankingItemDetailResponse = {
   ai_description: string;
   related_items: RelatedItem[];
 };
+
+// 트렌드 지수 고도화 — 테스트용 API(test/trend, test/trend/{tempItemId}) 응답 타입.
+// 기존 GetDashboardRanking/GetTrendIndex와는 별개의 데이터 소스라 필드 구성이 다르다.
+export type TrendRankingItem = {
+  position: number;
+  temp_item_id: number;
+  product_name: string;
+  brand: string;
+  thumbnail: string;
+  rank: number;
+  rank_change: number | null;
+  trend_score: number;
+  band: string;
+};
+
+export type TrendRankingPageResponse = {
+  content: TrendRankingItem[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+};
+
+export type GetTestTrendRankingParams = {
+  platform: string;
+  category: string;
+  date: string;
+  page?: number;
+  size?: number;
+};
+
+export type TrendSnapshotDetailDto = {
+  temp_item_id: number;
+  product_name: string;
+  brand: string;
+  platform: string;
+  category: string;
+  date_asof: string;
+  thumbnail: string;
+  product_detail_url: string;
+  integrated_index: {
+    score: number;
+    band: string;
+    score_basis: string;
+    confidence: number | null;
+  };
+  brand_index: {
+    awareness_pct: number | null;
+    awareness_label: string | null;
+  };
+  product_index: {
+    interest_pct: number | null;
+    interest_label: string | null;
+    like_count: number | null;
+    like_prev: number | null;
+    like_change_pct: number | null;
+  };
+  purchase_power_index: {
+    purchase_pct: number | null;
+    purchase_label: string | null;
+    rank: number | null;
+    rank_prev: number | null;
+    rank_change: number | null;
+    review_change: number | null;
+    reorder: number | null;
+  };
+  signal_meta: {
+    streak_days: number | null;
+    days_observed: number | null;
+    gap_days: number | null;
+    is_new: boolean;
+    signal_coverage: string | null;
+    cohort_ratio: number | null;
+    soldout_variants: number | null;
+  };
+};

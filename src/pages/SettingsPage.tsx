@@ -32,6 +32,7 @@ import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import BrandApplyPanel from "@/components/settings/BrandApplyPanel";
 import { GetBrandList, GetBrandPicks } from "@/apis/AnalysisAPI";
 import { isSecretEntry as checkSecretEntry, clearSecretEntry } from "@/lib/secretEntry";
+import { setPendingBasicDowngrade } from "@/lib/pendingDowngrade";
 
 const GUIDE_TABS: ("전체" | GuideCategory)[] = ["전체", ...GUIDE_CATEGORIES];
 
@@ -385,14 +386,27 @@ export default function SettingsPage() {
         const updated = await PostChangePlan(plan);
         setSubscription(updated);
         const label = PLAN_DEFS.find((p) => p.key === plan)?.label ?? plan;
-        alert(`${label} 요금제로 변경되었습니다.`);
-        if (plan === "basic") {
-          closeSettingsModal();
-          openInterestBrandModal();
-        } else if (plan === "pro") {
-          closeSettingsModal();
-          setSelectedTab("상품 분석");
-          openOnboardingTour("pro");
+        if (updated.downgradePending) {
+          // 다운그레이드는 다음 결제일부터 적용되므로, 그 전까지는 여전히
+          // 기존 플랜이 유지된다. 아직 적용되지 않은 basic 온보딩(브랜드 선택
+          // 등)을 미리 보여주면 혼란스러우니 안내만 하고 모달은 열지 않는다.
+          // 대신 "실제로 basic이 된 뒤 첫 진입"에 한 번만 온보딩을 띄우도록
+          // 플래그를 남겨둔다 (RootNewLayout에서 소비).
+          setPendingBasicDowngrade();
+          const nextDate = updated.nextBillingDate
+            ? formatMonthDay(updated.nextBillingDate)
+            : "다음 결제일";
+          alert(`${nextDate}부터 ${label} 요금제로 적용됩니다.`);
+        } else {
+          alert(`${label} 요금제로 변경되었습니다.`);
+          if (plan === "basic") {
+            closeSettingsModal();
+            openInterestBrandModal();
+          } else if (plan === "pro") {
+            closeSettingsModal();
+            setSelectedTab("상품 분석");
+            openOnboardingTour("pro");
+          }
         }
       } else {
         const customerKey = await GetCustomerKey();
@@ -1352,6 +1366,14 @@ export default function SettingsPage() {
                             />
                             결제에 실패했어요. 카드 정보를 확인해주세요.
                           </p>
+                        ) : subscription?.downgradePending ? (
+                          <p className="flex items-center gap-1 mt-0.5 text-sm text-tx-alt">
+                            <Icon icon="ph:info" className="w-4 h-4" />
+                            {subscription?.nextBillingDate
+                              ? formatMonthDay(subscription.nextBillingDate)
+                              : "다음 결제일"}
+                            부터 Basic 요금제로 자동 전환돼요
+                          </p>
                         ) : (
                           <p className="text-sm text-tx-alt mt-0.5">
                             다음 결제일 {subscription?.nextBillingDate ?? "-"}
@@ -1970,8 +1992,12 @@ export default function SettingsPage() {
                   </button>
                   <button
                     type="button"
-                    disabled
-                    className="flex items-center justify-between w-full p-4 border cursor-not-allowed rounded-xl border-line-divider bg-surface-base opacity-60"
+                    onClick={() => setSelectedMethod("toss")}
+                    className={`flex items-center justify-between w-full p-4 border rounded-xl transition-colors ${
+                      selectedMethod === "toss"
+                        ? "border-1 border-tx-neutral bg-surface-base"
+                        : "border-line-divider hover:border-tx-alt"
+                    }`}
                   >
                     <span className="flex items-center gap-2">
                       <img
@@ -1979,13 +2005,16 @@ export default function SettingsPage() {
                         alt="토스페이먼츠"
                         className="object-contain w-auto h-7"
                       />
-                      <span className="text-sm font-semibold text-tx-alt">
+                      <span className="text-sm font-semibold text-tx-strong">
                         토스페이먼츠
                       </span>
                     </span>
-                    <span className="px-2 py-1 text-xs font-semibold rounded-full text-tx-alt bg-fill-bg-strong">
-                      추후 오픈 예정
-                    </span>
+                    {selectedMethod === "toss" && (
+                      <Icon
+                        icon="ph:check-circle-fill"
+                        className="w-5 h-5 text-tx-neutral"
+                      />
+                    )}
                   </button>
                 </div>
 

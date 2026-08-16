@@ -111,7 +111,7 @@ const NextSignupPage = () => {
 
       <LoginHeader />
 
-      <main className="flex flex-1 justify-center px-5 pt-[74px]">
+      <main className="flex flex-1 justify-center px-5 pt-[74px] pb-[60px]">
         <section className="w-full max-w-[392px]">
           <div className="mb-[34px]">
             <h1 className="text-[24px] font-semibold leading-[1.35] tracking-[-0.04em] text-tx-default">
