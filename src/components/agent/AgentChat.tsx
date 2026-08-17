@@ -165,6 +165,9 @@ export default function AgentChat({ conversationId, onClose }: Props) {
             </button>
           )}
         </div>
+        <span className="flex-shrink-0 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 whitespace-nowrap">
+          베타 테스트 중
+        </span>
         <div className="flex items-center gap-3 flex-shrink-0 ml-2">
           <button
             onClick={() => {

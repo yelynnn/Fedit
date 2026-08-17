@@ -1,6 +1,6 @@
 import { axiosInstance } from "./AxiosInstance";
 
-// basic_secret은 비밀 링크로 유입된 Basic — 가격만 9,900원으로 다를 뿐
+// basic_secret은 비밀 링크로 유입된 Basic — 가격만 19,000원으로 다를 뿐
 // 기능은 Basic과 완전히 동일하다. 화면 표시/기능 게이팅은 SubscriptionStore의
 // toBillingPlan/isBasicPlan을 거쳐 항상 "basic"으로 취급해야 한다.
 export type PlanType = "basic" | "pro" | "basic_secret";

@@ -160,6 +160,7 @@ function RootNewLayout() {
         )}
         <button
           onClick={() => (isAgentOpen ? closeAgent() : openAgent())}
+          title="FEDI Agent (베타 테스트 중)"
           className="flex items-center justify-center w-12 h-12 transition-colors bg-gray-900 rounded-full shadow-lg hover:bg-gray-700"
         >
           <Icon

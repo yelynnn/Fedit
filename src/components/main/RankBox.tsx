@@ -332,7 +332,7 @@ export default function RankBox() {
                         ? "border-b border-[#E4E4E4] bg-[#F4FFEE]"
                         : "border-b border-gray-100 hover:bg-gray-50"
                     } ${isHidden ? "pointer-events-none select-none" : ""}`}
-                    style={isHidden ? { opacity: 0.5, filter: "blur(1.75px)" } : undefined}
+                    style={isHidden ? { opacity: 0.5, filter: "blur(3px)" } : undefined}
                   >
                     <div className="relative flex-shrink-0 w-18 h-18">
                       <img
@@ -386,7 +386,7 @@ export default function RankBox() {
 
           <div
             className={isLocked ? "pointer-events-none select-none" : ""}
-            style={isLocked ? { opacity: 0.5, filter: "blur(1.75px)" } : undefined}
+            style={isLocked ? { opacity: 0.5, filter: "blur(3px)" } : undefined}
           >
           <div className="px-8 mb-4 -mx-8">
             {/* 트렌드 지수 고도화 UI 작업 중 — test/trend/{tempItemId} 테스트

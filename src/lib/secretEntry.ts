@@ -24,7 +24,7 @@ const isValid = (key: string): boolean => {
   return true;
 };
 
-// 비밀 링크(?ref=vip)로 들어온 사용자에게 Basic 요금제를 첫 달 9,900원
+// 비밀 링크(?ref=vip)로 들어온 사용자에게 Basic 요금제를 첫 달 19,000원
 // 특가로 보여주기 위한 플래그. 결제(카카오페이 요청)가 완료되면 지운다.
 export const SECRET_ENTRY_STORAGE_KEY = "feditSecretEntry";
 

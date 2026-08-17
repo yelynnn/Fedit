@@ -17,7 +17,7 @@ const LoginPage = () => {
   // 이 로그인 페이지로 ?ref=vip 또는 ?ref=landing을 붙여서 보내주면, 이후
   // 회원가입/로그인을 마치고 설정 화면에 도착했을 때까지 이어서 알 수
   // 있도록 로컬에 남겨둔다.
-  // - ref=vip: 비밀 특가(Basic 9,900원) 대상 + 가입 직후 요금제 화면 노출
+  // - ref=vip: 비밀 특가(Basic 19,000원) 대상 + 가입 직후 요금제 화면 노출
   // - ref=landing: 가입 직후 요금제 화면 노출만 (특가 없음)
   useEffect(() => {
     captureLandingRef();

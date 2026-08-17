@@ -11,15 +11,14 @@ interface TypeStore {
 export const useTypeStore = create<TypeStore>()(
   persist(
     (set, get) => ({
-      audienceType: "adult",
+      audienceType: "female",
       selectedMonth: "",
 
       setAudienceType: (type) => {
         const currentType = get().audienceType;
 
         if (currentType !== type) {
-          const defaultMonth = type === "kids" ? "2025-10" : "";
-          set({ audienceType: type, selectedMonth: defaultMonth });
+          set({ audienceType: type, selectedMonth: "" });
         }
       },
 
@@ -27,14 +26,11 @@ export const useTypeStore = create<TypeStore>()(
     }),
     {
       name: "type-store",
+      // 예전 "adult"/"kids" 값이 남아있는 브라우저를 위한 1회성 마이그레이션.
       onRehydrateStorage: () => (state) => {
-        if (state) {
-          if (state.audienceType === "kids" && !state.selectedMonth) {
-            state.selectedMonth = "2025-10";
-          } else if (state.audienceType === "adult") {
-            state.selectedMonth = "";
-          }
-        }
+        if (!state) return;
+        if (state.audienceType === "adult") state.audienceType = "female";
+        else if (state.audienceType === "kids") state.audienceType = "male";
       },
     }
   )

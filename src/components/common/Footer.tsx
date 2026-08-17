@@ -68,12 +68,22 @@ function Footer() {
               </h4>
               <ul className="mt-4 space-y-2 text-sm text-tx-alt">
                 <li>
-                  <a href="#" className="hover:text-tx-alt">
+                  <a
+                    href="https://fedit.framer.website/contact-us"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-tx-alt"
+                  >
                     광고 문의
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-tx-alt">
+                  <a
+                    href="https://fedit.framer.website/contact-us"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-tx-alt"
+                  >
                     제휴 문의
                   </a>
                 </li>
@@ -85,12 +95,22 @@ function Footer() {
               </h4>
               <ul className="mt-4 space-y-2 text-sm text-tx-alt">
                 <li>
-                  <a href="#" className="hover:text-tx-alt">
+                  <a
+                    href="https://fedit.framer.website/contact-us"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-tx-alt"
+                  >
                     고객센터
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-tx-alt">
+                  <a
+                    href="https://fedit.framer.website/contact-us"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-tx-alt"
+                  >
                     오류 신고
                   </a>
                 </li>

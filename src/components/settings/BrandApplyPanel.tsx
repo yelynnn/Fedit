@@ -2,6 +2,11 @@ import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GetBrandList, PostBrandApply } from "@/apis/AnalysisAPI";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+} from "@/stores/SubscriptionStore";
 
 type ApiCategory = { label: string; brands: string[] };
 
@@ -10,12 +15,15 @@ type ApiCategory = { label: string; brands: string[] };
 // "이미 있는 브랜드인지 둘러보고, 없으면 입점 신청"이 목적이라 브랜드
 // 선택/토글 기능은 빼고 조회 전용으로 둔다.
 export default function BrandApplyPanel() {
+  const { subscription } = useSubscriptionStore((s) => s);
+  const isFree = toBillingPlan(getEffectivePlan(subscription)) === "free";
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [activeTab, setActiveTab] = useState("");
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const [showApplyConfirm, setShowApplyConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -110,7 +118,16 @@ export default function BrandApplyPanel() {
     handleScroll();
   }, [visibleBrands]);
 
-  const handleApply = async () => {
+  const handleApplyClick = () => {
+    if (!keyword.trim() || isApplying) return;
+    if (isFree) {
+      alert("무료 플랜에서는 제공하지 않는 기능이에요. 요금제를 업그레이드하면 이용할 수 있어요.");
+      return;
+    }
+    setShowApplyConfirm(true);
+  };
+
+  const handleConfirmApply = async () => {
     const brand = keyword.trim();
     if (!brand || isApplying) return;
     setIsApplying(true);
@@ -120,8 +137,9 @@ export default function BrandApplyPanel() {
       setShowToast(true);
       toastTimerRef.current = setTimeout(() => setShowToast(false), 3000);
       setKeyword("");
+      setShowApplyConfirm(false);
     } catch (e: any) {
-      alert(e?.message || "입점 신청에 실패했습니다.");
+      alert(e?.message || "신청에 실패했습니다.");
     } finally {
       setIsApplying(false);
     }
@@ -129,12 +147,14 @@ export default function BrandApplyPanel() {
 
   return (
     <div className="max-w-[680px]">
-      <h1 className="text-2xl font-semibold text-[#0B0E0F]">브랜드 입점 신청</h1>
+      <h1 className="text-2xl font-semibold text-[#0B0E0F]">
+        브랜드 분석 신청
+      </h1>
       <p className="mt-1 mb-6 text-base font-medium text-[#6F7173]">
-        찾으시는 브랜드가 없다면 검색 후 입점을 신청해보세요.
+        찾으시는 브랜드가 없다면 검색 후 신청해보세요.
       </p>
 
-      <div className="flex items-center gap-2 rounded-xl border border-line-alt px-4 py-3">
+      <div className="flex items-center gap-2 px-4 py-3 border rounded-xl border-line-alt">
         <input
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
@@ -143,19 +163,19 @@ export default function BrandApplyPanel() {
         />
         <Icon
           icon="mingcute:search-line"
-          className="h-4 w-4 flex-shrink-0 text-icon-alt"
+          className="flex-shrink-0 w-4 h-4 text-icon-alt"
         />
       </div>
 
       {loading ? (
-        <div className="py-10 text-center text-sm text-icon-neutral">
+        <div className="py-10 text-sm text-center text-icon-neutral">
           불러오는 중…
         </div>
       ) : err ? (
-        <div className="py-10 text-center text-sm text-red-500">{err}</div>
+        <div className="py-10 text-sm text-center text-red-500">{err}</div>
       ) : (
         <>
-          <div className="mt-4 flex items-center gap-6 overflow-x-auto whitespace-nowrap border-b border-line-divider">
+          <div className="flex items-center gap-6 mt-4 overflow-x-auto border-b whitespace-nowrap border-line-divider">
             {categories.map((c) => {
               const active = c.label === activeTab;
               return (
@@ -184,7 +204,7 @@ export default function BrandApplyPanel() {
           </p>
 
           {keyword.trim() !== "" && visibleBrands.length === 0 ? (
-            <div className="mt-4 flex items-center justify-between gap-4 rounded-lg bg-fill-bg-strong p-4">
+            <div className="flex items-center justify-between gap-4 p-4 mt-4 rounded-lg bg-fill-bg-strong">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-icon-neutral">
                   검색 결과
@@ -195,16 +215,16 @@ export default function BrandApplyPanel() {
               </div>
               <button
                 type="button"
-                onClick={handleApply}
+                onClick={handleApplyClick}
                 disabled={isApplying}
                 className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-line-divider bg-white px-3 py-2 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon
                   icon="solar:shop-2-linear"
-                  className="h-4 w-4 text-tx-neutral"
+                  className="w-4 h-4 text-tx-neutral"
                 />
                 <span className="text-xs font-semibold text-tx-neutral">
-                  {isApplying ? "신청 중..." : "브랜드 입점 신청하기"}
+                  {isApplying ? "신청 중..." : "신규 브랜드 신청하기"}
                 </span>
               </button>
             </div>
@@ -213,14 +233,14 @@ export default function BrandApplyPanel() {
               <div
                 ref={listRef}
                 onScroll={handleScroll}
-                className="h-full overflow-y-auto pr-8"
+                className="h-full pr-8 overflow-y-auto"
               >
                 <div className="flex flex-wrap gap-2">
                   {visibleBrands.map((brand) => (
                     <div
                       key={brand}
                       data-anchor-letter={anchorKeys.get(brand)}
-                      className="inline-flex max-w-full items-center justify-center truncate rounded-md border border-line-alt bg-fill-bg-strong px-4 py-2 type-body-medium text-tx-neutral"
+                      className="inline-flex items-center justify-center max-w-full px-4 py-2 truncate border rounded-md border-line-alt bg-fill-bg-strong type-body-medium text-tx-neutral"
                     >
                       {brand}
                     </div>
@@ -228,7 +248,7 @@ export default function BrandApplyPanel() {
                 </div>
               </div>
 
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex w-6 flex-col items-center gap-1 py-1">
+              <div className="absolute inset-y-0 right-0 flex flex-col items-center w-6 gap-1 py-1 pointer-events-none">
                 {INDEX_LETTERS.map((letter) => {
                   const available = availableLetters.has(letter);
                   const active = activeLetter === letter;
@@ -257,14 +277,49 @@ export default function BrandApplyPanel() {
         </>
       )}
 
+      {showApplyConfirm && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50">
+          <div className="flex w-[480px] flex-col items-center gap-5 rounded-2xl bg-white p-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EFFBF3]">
+              <Icon
+                icon="solar:shop-2-linear"
+                className="w-5 h-5 text-tx-strong"
+              />
+            </div>
+            <h2 className="text-center text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-tx-strong">
+              "{keyword.trim()}" 브랜드를 입점 신청할까요?
+            </h2>
+            <div className="w-full rounded-xl bg-fill-bg-strong p-4 text-[14px] leading-[150%] text-tx-neutral">
+              입력하신 브랜드명이 맞는지 다시 한번 확인해주세요. 신청 후에는
+              취소할 수 없고, 신청일로부터 3일 내로 반영해드릴게요.
+            </div>
+            <div className="flex w-full gap-3">
+              <button
+                type="button"
+                onClick={() => setShowApplyConfirm(false)}
+                disabled={isApplying}
+                className="h-[46px] flex-1 rounded-md border border-[#E4E4E4] type-title-medium text-tx-neutral hover:bg-fill-bg-strong disabled:cursor-not-allowed"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmApply}
+                disabled={isApplying}
+                className="h-[46px] flex-1 rounded-md bg-fill-primary type-title-medium text-tx-inverse disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isApplying ? "신청 중..." : "신청하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showToast && (
         <div className="fixed bottom-6 left-1/2 z-[300] flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-tx-neutral px-4 py-3 text-white shadow-xl">
-          <Icon
-            icon="ph:check-circle-fill"
-            className="h-4 w-4 flex-shrink-0"
-          />
-          <span className="whitespace-nowrap text-sm font-semibold">
-            입점 신청이 완료됐어요. 신청 후 3일 내로 반영해드릴게요.
+          <Icon icon="ph:check-circle-fill" className="flex-shrink-0 w-4 h-4" />
+          <span className="text-sm font-semibold whitespace-nowrap">
+            신규 브랜드 신청이 완료됐어요. 신청 후 3일 내로 반영해드릴게요.
           </span>
         </div>
       )}

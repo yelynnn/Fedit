@@ -54,7 +54,7 @@ function NewMainKeywordBox({
   categories = [],
 }: BrandBoxProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { audienceType, selectedMonth, setSelectedMonth } = useTypeStore();
+  const { selectedMonth, setSelectedMonth } = useTypeStore();
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [showNaverInfo, setShowNaverInfo] = useState(false);
 
@@ -184,11 +184,14 @@ function NewMainKeywordBox({
           </div>
         )}
 
-        {audienceType === "kids" && !isMonthly && (
+        {/* 키즈(잠금) 탭 전용 배너 — 어덜트/키즈 → 여성/남성 토글로 바뀌면서
+            잠시 주석 처리. 남성 탭이 나중에 별도 데이터를 받게 되면 그때 이
+            자리에 맞는 배너로 다시 쓸 수 있다. */}
+        {/* {audienceType === "kids" && !isMonthly && (
           <div className="flex items-center justify-center w-full gap-6 py-3 mb-5 text-sm font-semibold border-b text-tx-neutral border-line-alt">
             출산육아 / 키즈 키워드
           </div>
-        )}
+        )} */}
 
         <div
           className={`px-5 flex ${isMonthly ? "flex-row gap-5 justify-between" : "flex-col"}`}
@@ -258,7 +261,7 @@ function NewMainKeywordBox({
                   <div className="relative">
                     <div
                       className="pointer-events-none select-none"
-                      style={{ opacity: 0.5, filter: "blur(1.75px)" }}
+                      style={{ opacity: 0.5, filter: "blur(3px)" }}
                     >
                       {hiddenItems.map(renderItem)}
                     </div>

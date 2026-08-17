@@ -19,11 +19,19 @@ const PLATFORMS: { platform: string; title: string }[] = [
   { platform: "wconcept", title: "W컨셉" },
 ];
 
+// 여성/남성 모두 지금은 화면·API가 완전히 동일하다 — 나중에 성별별 데이터가
+// 갈리면 fetchAll의 GetTrendKeyword 호출에 audienceType(성별)을 파라미터로
+// 실어 보내면 된다. 예전 "어덜트/키즈(잠금)" 토글을 대체한다.
+const AUDIENCE_TABS: { type: string; label: string }[] = [
+  { type: "female", label: "여성" },
+  { type: "male", label: "남성" },
+];
+
 const DATA_UNAVAILABLE_NOTICE = (
   <>
     아직 누적된 분석 데이터가 없어
     <br />
-    8월부터 해당 분석 결과를 제공할 수 있어요
+    7월부터 해당 분석 결과를 제공할 수 있어요
   </>
 );
 
@@ -38,8 +46,8 @@ function DashBoardPage() {
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
   const [isMonthModalOpen, setMonthModalOpen] = useState(false);
 
-  // 아직 누적된 월간 분석 데이터가 없어서(8월부터 제공 예정) 이전달/날짜
-  // 선택은 잠시 막아두고, 누른 버튼 바로 아래에 안내 토스트만 3초간 보여준다.
+  // 7월 분석 데이터부터 누적돼서 이전달 이동/월 선택 모달이 열리지만, 그보다
+  // 더 이전달은 아직 없어서 그때만 버튼 바로 아래에 안내 토스트를 보여준다.
   const [dateNoticeTarget, setDateNoticeTarget] = useState<
     "modal" | "prev" | "next" | null
   >(null);
@@ -52,6 +60,33 @@ function DashBoardPage() {
   };
 
   const dateListOptions = ["2026-07"];
+
+  const goToMonth = (value: string) => {
+    setSelectedMonth(value);
+    setCurrentDate(dayjs(`${value}-01`));
+  };
+
+  const handlePrevMonth = () => {
+    const target = currentDate.subtract(1, "month");
+    const value = target.format("YYYY-MM");
+    if (!dateListOptions.includes(value)) {
+      handleDateNavBlocked("prev");
+      return;
+    }
+    goToMonth(value);
+  };
+
+  const handleNextMonth = () => {
+    if (isCurrentMonth) return;
+    const target = currentDate.add(1, "month");
+    if (target.isSame(dayjs(), "month")) {
+      // 실제 이번 달로 돌아오는 경우 — 오늘 날짜 그대로 복귀.
+      setSelectedMonth("");
+      setCurrentDate(dayjs());
+      return;
+    }
+    goToMonth(target.format("YYYY-MM"));
+  };
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -69,6 +104,9 @@ function DashBoardPage() {
         const requestDate =
           selectedMonth && selectedMonth.trim() !== "" ? selectedMonth : today;
 
+        // 지금은 여성/남성 데이터가 같아서 audienceType을 API에 보내진 않지만,
+        // 나중에 백엔드가 성별별 데이터를 나눠주면 여기 params에 audienceType을
+        // 추가하면 된다. useEffect 의존성엔 이미 넣어둬서 탭 전환 시 재조회된다.
         const responses = await Promise.all(
           PLATFORMS.map(({ platform, title }) =>
             GetTrendKeyword({ date: requestDate, platform }).then((res) => ({
@@ -109,33 +147,25 @@ function DashBoardPage() {
     };
 
     fetchAll();
-  }, [selectedMonth]);
+  }, [selectedMonth, audienceType]);
 
   return (
     <div className="w-full h-full px-14">
       <section>
         <div className="flex items-stretch w-full gap-1 p-1 mt-3 border rounded-lg border-line-alt bg-fill-bg-strong">
-          {["adult", "kids"].map((type) => {
+          {AUDIENCE_TABS.map(({ type, label }) => {
             const isSelected = audienceType === type;
             return (
               <button
                 key={type}
-                onClick={() => type !== "kids" && setAudienceType(type)}
-                disabled={type === "kids"}
+                onClick={() => setAudienceType(type)}
                 className={`flex flex-1 h-9 justify-center items-center gap-[10px] px-3 rounded-md text-[16px] font-semibold leading-[150%] tracking-[-0.08px] transition-colors duration-200 ${
                   isSelected
                     ? "border border-line-neutral bg-fill-bg text-tx-default"
-                    : "border border-transparent text-tx-alt cursor-not-allowed"
+                    : "border border-transparent text-tx-alt hover:text-tx-neutral"
                 }`}
               >
-                {type === "adult" ? (
-                  "어덜트"
-                ) : (
-                  <span className="flex items-center justify-center gap-1">
-                    키즈
-                    <Icon icon="si:lock-duotone" className="w-4 h-4" />
-                  </span>
-                )}
+                {label}
               </button>
             );
           })}
@@ -149,63 +179,60 @@ function DashBoardPage() {
           />
         </div>
 
-        {audienceType === "adult" && (
-          <div className="flex items-center justify-between w-full pl-1 mb-4">
+        <div className="flex items-center justify-between w-full pl-1 mb-4">
+          <div className="relative">
+            <button
+              onClick={() => setMonthModalOpen(true)}
+              className="flex items-center gap-1.5 text-base font-semibold text-tx-alt hover:opacity-80 transition-opacity"
+            >
+              {isToday
+                ? `오늘(${currentDate.format("YYYY.MM.DD")})`
+                : currentDate.format("YYYY년 M월")}
+              <Icon icon="ph:caret-down" className="w-5 h-5 text-tx-alt" />
+            </button>
+
+            <MonthModal
+              isOpen={isMonthModalOpen}
+              onClose={() => setMonthModalOpen(false)}
+              onSelect={(value) => {
+                goToMonth(value);
+                setMonthModalOpen(false);
+              }}
+              dateList={dateListOptions}
+            />
+
+            {dateNoticeTarget === "modal" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
+          </div>
+
+          <div className="flex items-center gap-4 pr-2 text-sm font-medium text-tx-neutral">
             <div className="relative">
               <button
-                onClick={() => handleDateNavBlocked("modal")}
-                className="flex items-center gap-1.5 text-base font-semibold text-tx-alt hover:opacity-80 transition-opacity"
+                onClick={handlePrevMonth}
+                className="flex items-center gap-1 transition-colors hover:text-[#151515]"
               >
-                {isToday
-                  ? `오늘(${currentDate.format("YYYY.MM.DD")})`
-                  : currentDate.format("YYYY년 M월")}
-                <Icon icon="ph:caret-down" className="w-5 h-5 text-tx-alt" />
+                <Icon icon="ph:caret-left" className="w-4 h-4" /> 이전달
               </button>
-
-              <MonthModal
-                isOpen={isMonthModalOpen}
-                onClose={() => setMonthModalOpen(false)}
-                onSelect={(value) => {
-                  setSelectedMonth(value);
-                  setCurrentDate(dayjs(value));
-                  setMonthModalOpen(false);
-                }}
-                dateList={dateListOptions}
-              />
-
-              {dateNoticeTarget === "modal" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
+              {dateNoticeTarget === "prev" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
             </div>
 
-            <div className="flex items-center gap-4 pr-2 text-sm font-medium text-tx-neutral">
-              <div className="relative">
-                <button
-                  onClick={() => handleDateNavBlocked("prev")}
-                  className="flex items-center gap-1 transition-colors hover:text-[#151515]"
-                >
-                  <Icon icon="ph:caret-left" className="w-4 h-4" /> 이전달
-                </button>
-                {dateNoticeTarget === "prev" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
-              </div>
+            <div className="w-[1px] h-3 bg-line-alt"></div>
 
-              <div className="w-[1px] h-3 bg-line-alt"></div>
-
-              <div className="relative">
-                <button
-                  onClick={() => handleDateNavBlocked("next")}
-                  disabled={isCurrentMonth} // 💡 이번 달이면 버튼 기능 비활성화
-                  className={`flex items-center gap-1 transition-colors ${
-                    isCurrentMonth
-                      ? "text-icon-alt cursor-not-allowed" // 💡 비활성화 시 회색 처리 및 마우스 커서 변경
-                      : "hover:text-[#151515]"
-                  }`}
-                >
-                  다음달 <Icon icon="ph:caret-right" className="w-4 h-4" />
-                </button>
-                {dateNoticeTarget === "next" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
-              </div>
+            <div className="relative">
+              <button
+                onClick={handleNextMonth}
+                disabled={isCurrentMonth} // 💡 이번 달이면 버튼 기능 비활성화
+                className={`flex items-center gap-1 transition-colors ${
+                  isCurrentMonth
+                    ? "text-icon-alt cursor-not-allowed" // 💡 비활성화 시 회색 처리 및 마우스 커서 변경
+                    : "hover:text-[#151515]"
+                }`}
+              >
+                다음달 <Icon icon="ph:caret-right" className="w-4 h-4" />
+              </button>
+              {dateNoticeTarget === "next" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
             </div>
           </div>
-        )}
+        </div>
 
         <div className="flex flex-wrap gap-5">
           {keywordList.map((box) => (
@@ -225,20 +252,18 @@ function DashBoardPage() {
         </div>
       </section>
 
-      {audienceType === "adult" && (
-        <section className="mt-8">
-          <div className="flex items-end gap-2 mb-3">
-            <SubTitleBox
-              title="플랫폼 내 인기 랭킹"
-              label="플랫폼 랭킹"
-              infoText="판매량과 소비자 관심 데이터를 바탕으로 FEDIT만의 자체 로직으로 분석해 현재 트렌드에 부합하는 상품을 매월 선정한 랭킹이에요."
-            />
-          </div>
-          <div>
-            <RankBox />
-          </div>
-        </section>
-      )}
+      <section className="mt-8">
+        <div className="flex items-end gap-2 mb-3">
+          <SubTitleBox
+            title="플랫폼 내 인기 랭킹"
+            label="플랫폼 랭킹"
+            infoText="판매량과 소비자 관심 데이터를 바탕으로 FEDIT만의 자체 로직으로 분석해 현재 트렌드에 부합하는 상품을 매월 선정한 랭킹이에요."
+          />
+        </div>
+        <div>
+          <RankBox />
+        </div>
+      </section>
     </div>
   );
 }

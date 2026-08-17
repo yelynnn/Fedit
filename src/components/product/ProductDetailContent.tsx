@@ -57,6 +57,11 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
   const [toast, setToast] = useState<{ boardName: string; imageUrl: string } | null>(null);
   const boardDropdownRef = useRef<HTMLDivElement>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const relatedScrollRef = useRef<HTMLDivElement>(null);
+  const [relatedHovering, setRelatedHovering] = useState(false);
+  const [relatedShowLeft, setRelatedShowLeft] = useState(false);
+  const [relatedShowRight, setRelatedShowRight] = useState(false);
+  const [relatedHoverSide, setRelatedHoverSide] = useState<"left" | "right" | null>(null);
 
   const selectedBoard = boards.find((b) => b.boardId === selectedBoardId) ?? null;
   const isSaved = !!(effectiveId && savedItemcodes.has(effectiveId));
@@ -153,6 +158,33 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
       // 무시
     }
   };
+
+  const updateRelatedScrollButtons = () => {
+    const el = relatedScrollRef.current;
+    if (!el) return;
+    setRelatedShowLeft(el.scrollLeft > 0);
+    setRelatedShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  };
+
+  const scrollRelatedLeft = () => {
+    relatedScrollRef.current?.scrollBy({ left: -300, behavior: "smooth" });
+    setTimeout(updateRelatedScrollButtons, 250);
+  };
+
+  const scrollRelatedRight = () => {
+    relatedScrollRef.current?.scrollBy({ left: 300, behavior: "smooth" });
+    setTimeout(updateRelatedScrollButtons, 250);
+  };
+
+  const onRelatedMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const half = rect.width / 2;
+    setRelatedHoverSide(e.clientX - rect.left < half ? "left" : "right");
+  };
+
+  useEffect(() => {
+    updateRelatedScrollButtons();
+  }, [related]);
 
   const handleUndoSave = async () => {
     if (!effectiveId || !selectedBoard) return;
@@ -440,23 +472,64 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
               <span className="font-semibold text-tx-alt">
                 유사한 스타일 아이템
               </span>
-              <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                {related.map((r, idx) => (
+              <div
+                className="relative"
+                onMouseEnter={() => {
+                  setRelatedHovering(true);
+                  updateRelatedScrollButtons();
+                }}
+                onMouseLeave={() => {
+                  setRelatedHovering(false);
+                  setRelatedHoverSide(null);
+                }}
+                onMouseMove={onRelatedMouseMove}
+              >
+                <div
+                  ref={relatedScrollRef}
+                  onScroll={updateRelatedScrollButtons}
+                  className="flex gap-3 overflow-x-auto pb-2 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                >
+                  {related.map((r, idx) => (
+                    <button
+                      key={r.itemcode || idx}
+                      type="button"
+                      className="flex-shrink-0"
+                      onClick={() =>
+                        r.itemcode && (onItemClick ? onItemClick(r.itemcode) : setSelectedProductId(r.itemcode))
+                      }
+                    >
+                      <img
+                        src={r.product_image_url || defaultImg}
+                        alt={`related-${idx}`}
+                        className="object-cover rounded-lg w-42 h-42"
+                      />
+                    </button>
+                  ))}
+                </div>
+
+                {relatedHovering && relatedHoverSide === "left" && relatedShowLeft && (
                   <button
-                    key={r.itemcode || idx}
-                    type="button"
-                    className="flex-shrink-0"
-                    onClick={() =>
-                      r.itemcode && (onItemClick ? onItemClick(r.itemcode) : setSelectedProductId(r.itemcode))
-                    }
+                    onClick={scrollRelatedLeft}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 px-2 py-2 rounded-lg bg-white shadow-[0_4px_8px_rgba(0,0,0,0.10)] border border-line-alt z-10"
                   >
-                    <img
-                      src={r.product_image_url || defaultImg}
-                      alt={`related-${idx}`}
-                      className="object-cover rounded-lg w-42 h-42"
+                    <Icon
+                      icon="grommet-icons:form-previous"
+                      className="w-5 h-5 text-tx-neutral"
                     />
                   </button>
-                ))}
+                )}
+
+                {relatedHovering && relatedHoverSide === "right" && relatedShowRight && (
+                  <button
+                    onClick={scrollRelatedRight}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 px-2 py-2 rounded-lg bg-white shadow-[0_4px_8px_rgba(0,0,0,0.10)] border border-line-alt z-10"
+                  >
+                    <Icon
+                      icon="grommet-icons:form-next"
+                      className="w-5 h-5 text-tx-neutral"
+                    />
+                  </button>
+                )}
               </div>
             </div>
           </>

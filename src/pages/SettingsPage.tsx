@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useChatStore } from "@/stores/ChatStore";
@@ -31,7 +31,10 @@ import { RequestUpgrade, GetUpgradeStatus } from "@/apis/KakaoAPI";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import BrandApplyPanel from "@/components/settings/BrandApplyPanel";
 import { GetBrandList, GetBrandPicks } from "@/apis/AnalysisAPI";
-import { isSecretEntry as checkSecretEntry, clearSecretEntry } from "@/lib/secretEntry";
+import {
+  isSecretEntry as checkSecretEntry,
+  clearSecretEntry,
+} from "@/lib/secretEntry";
 import { setPendingBasicDowngrade } from "@/lib/pendingDowngrade";
 
 const GUIDE_TABS: ("전체" | GuideCategory)[] = ["전체", ...GUIDE_CATEGORIES];
@@ -66,27 +69,28 @@ const PLAN_DEFS: {
     price: "0원",
     sub: "14일 · Basic 기능 일부 (브랜드 제한)",
     features: [
-      { ok: true, text: "무신사 입점 브랜드 모니터링 제공" },
+      { ok: true, text: "관심 브랜드 최대 3개 모니터링" },
       { ok: true, text: "플랫폼별 키워드 분석 제공" },
       { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
+      { ok: false, text: "신규 브랜드 분석 신청 미지원" },
     ],
   },
   {
     key: "basic",
     label: "Basic",
     badge: "추천",
-    originalPrice: "29,000원",
-    discount: "34% 할인",
-    price: "19,000원",
+    originalPrice: "59,000원",
+    discount: "51% 할인",
+    price: "29,000원",
     sub: "/월",
     features: [
       {
         ok: true,
-        text: "기본 무신사 입점 브랜드 외 브랜드 10개 추가 모니터링",
+        text: "관심 브랜드 최대 10개 모니터링",
       },
       { ok: true, text: "플랫폼별 키워드 분석 제공" },
       { ok: true, text: "엑셀 다운로드 월 3회" },
-      { ok: true, text: "추가 제안 브랜드 제안 문의 가능" },
+      { ok: true, text: "신규 브랜드 분석 신청 월 1회" },
       { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
     ],
   },
@@ -94,15 +98,15 @@ const PLAN_DEFS: {
     key: "pro",
     label: "Pro",
     badge: null,
-    originalPrice: "79,000원",
-    discount: "25% 할인",
-    price: "59,000원",
-    sub: "/월",
+    originalPrice: null,
+    discount: null,
+    price: "가격 문의",
+    sub: "",
     features: [
       { ok: true, text: "모든 브랜드 모니터링 제공" },
-      { ok: true, text: "모든 Basic 기능 포함" },
-      { ok: true, text: "엑셀 다운로드 무제한" },
       { ok: true, text: "유형/색상/패션쇼 분석 지원" },
+      { ok: true, text: "엑셀 다운로드 무제한" },
+      { ok: true, text: "신규 브랜드 분석 신청 월 3회" },
       { ok: true, text: "기업 트렌드 리포트 제공 (월말 추가 제공)" },
       { ok: true, text: "자사 맞춤형 AI Agent 제공" },
     ],
@@ -125,9 +129,9 @@ const PLAN_PARTICLE: Record<PlanType, string> = {
 };
 
 const PLAN_AMOUNT: Record<PlanType, number> = {
-  basic: 19000,
+  basic: 29000,
   pro: 59000,
-  basic_secret: 9900,
+  basic_secret: 19000,
 };
 
 // 카카오페이 코드송금 링크 — 개발자센터 대시보드에서 관리자가 1회 수동 발급한
@@ -162,7 +166,7 @@ const NAV_GROUPS: {
       { id: "FAQ", label: "FAQ / 1:1 문의", icon: "ph:question" },
       {
         id: "브랜드입점신청",
-        label: "브랜드 입점 신청",
+        label: "브랜드 분석 신청",
         icon: "ph:storefront",
       },
     ],
@@ -215,6 +219,7 @@ export default function SettingsPage() {
   const [inquiryContent, setInquiryContent] = useState("");
   const [inquiryEmail, setInquiryEmail] = useState("");
   const [isSendingInquiry, setIsSendingInquiry] = useState(false);
+  const inquiryFormRef = useRef<HTMLDivElement>(null);
   const [withdrawStep, setWithdrawStep] = useState<
     null | "stats" | "reason" | "interview" | "interview-confirmed" | "complete"
   >(null);
@@ -228,7 +233,7 @@ export default function SettingsPage() {
   );
   const [agreedCancelTerms, setAgreedCancelTerms] = useState(false);
   // 비밀 링크(?ref=vip)로 들어왔던 사용자인지 — 로그인 페이지에서 심어둔
-  // 플래그를 읽어서 Basic 카드를 "비밀 특가(9,900원 첫 달)"로 보여준다.
+  // 플래그를 읽어서 Basic 카드를 "비밀 특가(19,000원 첫 달)"로 보여준다.
   const [isSecretEntry] = useState(checkSecretEntry);
   // basic_secret은 설정 화면의 일반 결제 플로우로는 선택할 수 없는 플랜(비밀
   // 링크 전용)이라 여기서 다루는 대상에서 제외한다.
@@ -242,6 +247,15 @@ export default function SettingsPage() {
   const [upgradeRequestId, setUpgradeRequestId] = useState<number | null>(null);
   const [isRequestingUpgrade, setIsRequestingUpgrade] = useState(false);
   const [depositorName, setDepositorName] = useState("");
+
+  // Pro는 결제 플로우 없이 항상 외부 문의 페이지로 연결한다.
+  const goToInquiry = () => {
+    window.open(
+      "https://fedit.framer.website/contact-us",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
 
   const closePendingPlanModal = () => {
     setPendingPlan(null);
@@ -278,7 +292,7 @@ export default function SettingsPage() {
   const effectivePlan = getEffectivePlan(subscription);
   const currentPlan: "free" | PlanType = toBillingPlan(effectivePlan);
 
-  // 비밀 링크로 들어온 경우, Basic 카드는 "첫 달 9,900원" 특가로 바꿔서
+  // 비밀 링크로 들어온 경우, Basic 카드는 "첫 달 19,000원" 특가로 바꿔서
   // 보여준다. Pro는 가격은 그대로지만(정가 그대로 결제) 배지만 "비밀 링크
   // 한정"으로 같이 표시한다. 실제 결제 요청에 보낼 plan_code(및 그 금액)는
   // 이거랑 별개로 handleStartKakaoPayment 안에서 pendingPlan === "basic"일
@@ -290,8 +304,8 @@ export default function SettingsPage() {
           ? {
               ...plan,
               badge: "비밀 링크 한정",
-              discount: "→ 9,900원 · 첫 1달",
-              price: "9,900원",
+              discount: "→ 19,000원 · 첫 1달",
+              price: "19,000원",
             }
           : plan.key === "pro"
             ? { ...plan, badge: "비밀 링크 한정" }
@@ -889,8 +903,11 @@ export default function SettingsPage() {
             {/* ── FEDI 채팅 목록 ── */}
             {active === "FEDI대화" && (
               <div className="max-w-[620px]">
-                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
+                <h1 className="flex items-center gap-2 text-2xl font-semibold text-[#0B0E0F]">
                   FEDI 채팅 목록
+                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-600">
+                    베타 테스트 중
+                  </span>
                 </h1>
                 <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
                   총 {conversations.length}개의 대화
@@ -1125,7 +1142,10 @@ export default function SettingsPage() {
                   </div>
                 ))}
 
-                <h3 className="mt-8 mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]">
+                <h3
+                  ref={inquiryFormRef}
+                  className="mt-8 mb-4 text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#3D3F41]"
+                >
                   1:1 문의
                 </h3>
                 <div className="border-t border-line-divider" />
@@ -1345,8 +1365,7 @@ export default function SettingsPage() {
                               icon="ph:warning-circle"
                               className="w-4 h-4"
                             />
-                            이용 기간이 만료됐어요. 요금제를 다시
-                            선택해주세요.
+                            이용 기간이 만료됐어요. 요금제를 다시 선택해주세요.
                           </p>
                         ) : currentPlan === "free" ? (
                           <p className="text-sm text-tx-alt mt-0.5">
@@ -1384,12 +1403,16 @@ export default function SettingsPage() {
                   </div>
                   {currentPlan !== "pro" && (
                     <button
-                      onClick={() =>
-                        setPendingPlan(currentPlan === "free" ? "basic" : "pro")
-                      }
+                      onClick={() => {
+                        if (currentPlan === "free") {
+                          setPendingPlan("basic");
+                        } else {
+                          goToInquiry();
+                        }
+                      }}
                       className="px-5 py-2 bg-[#111827] text-white text-sm font-semibold rounded-xl hover:bg-black transition-colors"
                     >
-                      업그레이드
+                      {currentPlan === "free" ? "업그레이드" : "문의하기"}
                     </button>
                   )}
                 </div>
@@ -1419,9 +1442,11 @@ export default function SettingsPage() {
                         ? isTrialAvailable
                           ? "무료체험 시작하기"
                           : "무료 체험"
-                        : isSecretEntry
-                          ? "비밀 특가로 시작하기"
-                          : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
+                        : plan.key === "pro"
+                          ? "문의하기"
+                          : isSecretEntry
+                            ? "비밀 특가로 시작하기"
+                            : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
                     const isLoading =
                       billingLoading === plan.key ||
                       (plan.key === "free" && isStartingTrial);
@@ -1443,15 +1468,24 @@ export default function SettingsPage() {
                             isSecretEntry ? (
                               <span
                                 className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#7A5C00]"
-                                style={{ borderRadius: 4, background: "#FFF6DD" }}
+                                style={{
+                                  borderRadius: 4,
+                                  background: "#FFF6DD",
+                                }}
                               >
-                                <Icon icon="ph:lock-simple-fill" className="w-3 h-3" />
+                                <Icon
+                                  icon="ph:lock-simple-fill"
+                                  className="w-3 h-3"
+                                />
                                 {plan.badge}
                               </span>
                             ) : (
                               <span
                                 className="px-1.5 py-0.5 text-[12px] font-semibold leading-[133%] text-[#1A75FF]"
-                                style={{ borderRadius: 4, background: "#EAF2FE" }}
+                                style={{
+                                  borderRadius: 4,
+                                  background: "#EAF2FE",
+                                }}
                               >
                                 {plan.badge}
                               </span>
@@ -1483,6 +1517,11 @@ export default function SettingsPage() {
                               {plan.sub}
                             </p>
                           )}
+                          {plan.key === "pro" && (
+                            <p className="text-[12px] font-medium leading-[133%] text-[#6F7173]">
+                              브랜드별 맞춤형 AI 분석 구축
+                            </p>
+                          )}
                         </div>
 
                         {/* 버튼 */}
@@ -1490,12 +1529,16 @@ export default function SettingsPage() {
                           disabled={
                             isCurrent ||
                             isFreeDisabled ||
-                            !!billingLoading ||
+                            (plan.key !== "pro" && !!billingLoading) ||
                             isStartingTrial
                           }
                           onClick={() => {
                             if (plan.key === "free") {
                               if (isTrialAvailable) handleStartTrial();
+                              return;
+                            }
+                            if (plan.key === "pro") {
+                              goToInquiry();
                               return;
                             }
                             setPendingPlan(plan.key);
@@ -2028,8 +2071,13 @@ export default function SettingsPage() {
                       <p className="text-xs leading-relaxed text-[#7A5C00]">
                         결제하기를 누르면 카카오페이 송금 링크가 새 창으로
                         열려요. 정확히{" "}
-                        <b>{PLAN_AMOUNT[kakaoPlanCode ?? "basic"].toLocaleString()}원</b>을
-                        아래 입금자명과 동일한 이름으로 송금해주세요.
+                        <b>
+                          {PLAN_AMOUNT[
+                            kakaoPlanCode ?? "basic"
+                          ].toLocaleString()}
+                          원
+                        </b>
+                        을 아래 입금자명과 동일한 이름으로 송금해주세요.
                       </p>
                     </div>
 
