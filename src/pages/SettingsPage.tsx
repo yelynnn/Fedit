@@ -100,8 +100,11 @@ const PLAN_DEFS: {
     badge: null,
     originalPrice: null,
     discount: null,
-    price: "가격 문의",
-    sub: "",
+    // 토스 심사용 임시 처리 — 심사 통과 후 아래 두 줄 주석 해제하고 그 아래 두 줄 삭제
+    // price: "가격 문의",
+    // sub: "",
+    price: "150,000원",
+    sub: "/월",
     features: [
       { ok: true, text: "모든 브랜드 모니터링 제공" },
       { ok: true, text: "유형/색상/패션쇼 분석 지원" },
@@ -130,7 +133,9 @@ const PLAN_PARTICLE: Record<PlanType, string> = {
 
 const PLAN_AMOUNT: Record<PlanType, number> = {
   basic: 29000,
-  pro: 59000,
+  // 토스 심사용 임시 처리 — 심사 통과 후 아래 줄 주석 해제하고 그 아래 줄 삭제
+  // pro: 59000,
+  pro: 150000,
   basic_secret: 19000,
 };
 
@@ -249,6 +254,8 @@ export default function SettingsPage() {
   const [depositorName, setDepositorName] = useState("");
 
   // Pro는 결제 플로우 없이 항상 외부 문의 페이지로 연결한다.
+  // 토스 심사용 임시 처리로 아래 함수를 호출하는 곳이 없어졌다 — 심사 통과
+  // 후 원복하면서 호출부가 되살아나면 이 void 줄은 지워도 된다.
   const goToInquiry = () => {
     window.open(
       "https://fedit.framer.website/contact-us",
@@ -256,6 +263,7 @@ export default function SettingsPage() {
       "noopener,noreferrer",
     );
   };
+  void goToInquiry;
 
   const closePendingPlanModal = () => {
     setPendingPlan(null);
@@ -1407,12 +1415,17 @@ export default function SettingsPage() {
                         if (currentPlan === "free") {
                           setPendingPlan("basic");
                         } else {
-                          goToInquiry();
+                          // 토스 심사용 임시 처리 — 심사 통과 후 아래 주석 해제하고 그 아래 줄 삭제
+                          // goToInquiry();
+                          setPendingPlan("pro");
                         }
                       }}
                       className="px-5 py-2 bg-[#111827] text-white text-sm font-semibold rounded-xl hover:bg-black transition-colors"
                     >
+                      {/* 토스 심사용 임시 처리 — 심사 통과 후 아래 주석 해제하고 그 아래 줄 삭제
                       {currentPlan === "free" ? "업그레이드" : "문의하기"}
+                      */}
+                      업그레이드
                     </button>
                   )}
                 </div>
@@ -1436,17 +1449,17 @@ export default function SettingsPage() {
                     const isDowngrade =
                       PLAN_RANK[plan.key] < PLAN_RANK[currentPlan];
                     const isTrialAvailable = effectivePlan === "none";
+                    // 토스 심사용 임시 처리 — 심사 통과 후 위 plan.key === "pro" 분기를
+                    // 복원하고 아래 plan.key !== "pro" 조건에서 "!== \"pro\" &&"를 삭제
                     const btnLabel = isCurrent
                       ? "현재 플랜"
                       : plan.key === "free"
                         ? isTrialAvailable
                           ? "무료체험 시작하기"
                           : "무료 체험"
-                        : plan.key === "pro"
-                          ? "문의하기"
-                          : isSecretEntry
-                            ? "비밀 특가로 시작하기"
-                            : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
+                        : plan.key !== "pro" && isSecretEntry
+                          ? "비밀 특가로 시작하기"
+                          : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
                     const isLoading =
                       billingLoading === plan.key ||
                       (plan.key === "free" && isStartingTrial);
@@ -1537,10 +1550,12 @@ export default function SettingsPage() {
                               if (isTrialAvailable) handleStartTrial();
                               return;
                             }
-                            if (plan.key === "pro") {
-                              goToInquiry();
-                              return;
-                            }
+                            // 토스 심사용 임시 처리 — 심사 통과 후 아래 주석 해제하고 그 아래
+                            // setPendingPlan(plan.key) 호출부는 그대로 두면 됨(공통 처리라 삭제 불필요)
+                            // if (plan.key === "pro") {
+                            //   goToInquiry();
+                            //   return;
+                            // }
                             setPendingPlan(plan.key);
                           }}
                           className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
