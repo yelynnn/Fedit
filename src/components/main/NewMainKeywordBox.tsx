@@ -19,7 +19,21 @@ import { useUIStore } from "@/stores/UIStore";
 // 잠금 상태(무료체험 미시작/만료)에서는 순위 4위까지만 보여주고 그 아래는 블러 처리한다.
 const LOCK_VISIBLE_RANK = 4;
 
-function getImageByTitle(title: string) {
+// 플랫폼 아이콘은 백엔드가 응답에 실어 보내는 sourceName(요청 종류에 따라
+// 문구가 달라질 수 있는 표시용 텍스트)이 아니라, 우리가 요청할 때 쓴
+// platformKey(naver/musinsa/wconcept, 성별 접미사는 떼고 비교)로 고정
+// 매칭한다 — sourceName 텍스트가 기대와 다르면 아이콘이 깨져 보이므로
+// title 기반 매칭은 platformKey가 없을 때의 대비용으로만 남겨둔다.
+function getImageByPlatform(platformKey: string | undefined, title: string) {
+  const key = platformKey?.replace(/_male$/, "");
+  switch (key) {
+    case "naver":
+      return naverIcon;
+    case "musinsa":
+      return musinsaIcon;
+    case "wconcept":
+      return wconceptIcon;
+  }
   switch (title) {
     case "네이버":
       return naverIcon;
@@ -40,6 +54,7 @@ interface CategoryBlock {
 
 interface BrandBoxProps {
   title: string;
+  platformKey?: string;
   dateType?: string;
   dateList?: string[];
   categories?: CategoryBlock[];
@@ -49,6 +64,7 @@ interface BrandBoxProps {
 
 function NewMainKeywordBox({
   title,
+  platformKey,
   dateType,
   dateList = [],
   categories = [],
@@ -98,7 +114,7 @@ function NewMainKeywordBox({
         <div className="relative flex items-center">
           <div className="flex items-center gap-3">
             <img
-              src={getImageByTitle(title)}
+              src={getImageByPlatform(platformKey, title)}
               alt={title}
               className="object-contain w-6 h-6"
             />

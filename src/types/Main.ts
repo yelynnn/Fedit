@@ -181,9 +181,12 @@ export type TrendSnapshotDetailDto = {
   product_detail_url: string;
   integrated_index: {
     score: number;
+    score_change_pct: number | null;
     band: string;
     score_basis: string;
     confidence: number | null;
+    reorder_count: number | null;
+    insight: string | null;
   };
   brand_index: {
     awareness_pct: number | null;
@@ -211,7 +214,10 @@ export type TrendSnapshotDetailDto = {
     gap_days: number | null;
     is_new: boolean;
     signal_coverage: string | null;
+    delta_mode: string | null;
+    matched_variants: number | null;
     cohort_ratio: number | null;
+    demand_pressure: number | null;
     soldout_variants: number | null;
   };
 };

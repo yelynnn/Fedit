@@ -24,6 +24,9 @@ export default function BrandApplyPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const [showApplyConfirm, setShowApplyConfirm] = useState(false);
+  const [applyErrorMessage, setApplyErrorMessage] = useState<string | null>(
+    null,
+  );
   const [showToast, setShowToast] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -139,7 +142,8 @@ export default function BrandApplyPanel() {
       setKeyword("");
       setShowApplyConfirm(false);
     } catch (e: any) {
-      alert(e?.message || "신청에 실패했습니다.");
+      setShowApplyConfirm(false);
+      setApplyErrorMessage(e?.message || "신청에 실패했습니다.");
     } finally {
       setIsApplying(false);
     }
@@ -311,6 +315,29 @@ export default function BrandApplyPanel() {
                 {isApplying ? "신청 중..." : "신청하기"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {applyErrorMessage && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50">
+          <div className="flex w-[480px] flex-col items-center gap-5 rounded-2xl bg-white p-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FDECEC]">
+              <Icon
+                icon="ph:warning-circle-fill"
+                className="w-5 h-5 text-status-error"
+              />
+            </div>
+            <p className="text-center text-[16px] font-semibold leading-[150%] text-tx-strong">
+              {applyErrorMessage}
+            </p>
+            <button
+              type="button"
+              onClick={() => setApplyErrorMessage(null)}
+              className="h-[46px] w-full rounded-md bg-fill-primary type-title-medium text-tx-inverse"
+            >
+              확인
+            </button>
           </div>
         </div>
       )}
