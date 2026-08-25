@@ -20,6 +20,7 @@ import type {
   TrendSnapshotDetailDto,
 } from "@/types/Main";
 import { useProductStore } from "@/stores/ProductStore";
+import { useTypeStore } from "@/stores/TypeStore";
 import {
   useSubscriptionStore,
   getEffectivePlan,
@@ -67,11 +68,17 @@ const toIsoDate = (date: dayjs.Dayjs) => date.format("YYYY-MM-DD");
 
 export default function RankBox() {
   const { setModalProductId } = useProductStore((s) => s);
+  const { audienceType } = useTypeStore();
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
   // 트렌드 지수 고도화 테스트 — test/trend에 실제 시딩된 날짜(8/5)로 기본값을 맞춘다.
   const [currentDate, setCurrentDate] = useState(dayjs("2026-08-05"));
   const [selectedPlatform, setSelectedPlatform] = useState<string>("무신사");
   const [selectedCategory, setSelectedCategory] = useState<string>("상의");
+  // 남성 탭에는 원피스/스커트 카테고리를 노출하지 않는다.
+  const visibleCategories =
+    audienceType === "male"
+      ? CATEGORIES.filter((category) => category !== "원피스/스커트")
+      : CATEGORIES;
   // GetDashboardRanking 연동을 잠시 꺼둔 동안엔 항상 빈 값 — setter는 안 쓴다.
   const [activeRank] = useState<number>(1);
   const [rankingList] = useState<RankingProduct[]>([]);
@@ -127,6 +134,14 @@ export default function RankBox() {
   useEffect(() => {
     updateTrendThumb();
   }, [testRankingList]);
+
+  // 남성 탭에선 원피스/스커트가 안 보이니, 그 상태로 남성으로 넘어오면
+  // 기본 카테고리로 되돌린다.
+  useEffect(() => {
+    if (audienceType === "male" && selectedCategory === "원피스/스커트") {
+      setSelectedCategory("상의");
+    }
+  }, [audienceType, selectedCategory]);
 
   useEffect(() => {
     const activeItem = rankingList.find((item) => item.rank === activeRank);
@@ -291,7 +306,7 @@ export default function RankBox() {
         </div>
 
         <div className="flex items-center gap-[4px] p-1 bg-fill-bg-strong border border-line-alt rounded-full">
-          {CATEGORIES.map((category) => (
+          {visibleCategories.map((category) => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}

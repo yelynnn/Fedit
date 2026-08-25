@@ -72,6 +72,7 @@
   --color-fill-bg-strong:       var(--color-fill-normal-strong);               /* #f9fafb */
   --color-fill-hover:           var(--color-fill-normal-interaction-hover);    /* rgba hover */
   --color-fill-inactive:        var(--color-fill-normal-interaction-inactive); /* #e4e4e4 */
+  --color-fill-pressed:         var(--color-fill-normal-interaction-pressed); /* rgba(11,14,15,0.08) */
 
   /* ---------- FEDIT 서피스(화면/카드/모달) ---------- */
   --color-surface-base:     var(--color-surface-basement); /* #f6f8fa — 페이지 바닥 */
@@ -115,6 +116,7 @@
   /* ---------- FEDIT 오버레이 ---------- */
   --color-dim:        var(--color-overlay-dim);        /* rgba(0,0,0,0.5) */
   --color-dim-strong: var(--color-overlay-dim-strong); /* rgba(0,0,0,0.75) */
+  --color-lighten-strong: var(--color-overlay-lighten-strong); /* rgba(255,255,255,0.75) */
 
   /* ---------- FEDIT 데이터 시각화 ---------- */
   --color-data-blue:        var(--color-data-blue-default);
@@ -125,6 +127,8 @@
   --color-data-pink:        var(--color-data-pink-default);
   --color-data-red:         var(--color-data-red-default);
   --color-data-red-light:   var(--color-data-red-lighten);
+  --color-data-red-medium:  var(--palette-red-70);   /* #ff8c8c — 상승 배지 배경 */
+  --color-data-blue-medium: var(--palette-blue-80);  /* #9ec5ff — 하락 배지 배경 */
   --color-data-violet:      var(--color-data-violet-default);
 
   /* ---------- 폰트 ---------- */

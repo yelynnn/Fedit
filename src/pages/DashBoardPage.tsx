@@ -46,6 +46,8 @@ function DashBoardPage() {
   const [currentDate, setCurrentDate] = useState(dayjs());
   const isToday = currentDate.isSame(dayjs(), "day");
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
+  const prevMonth = currentDate.subtract(1, "month");
+  const nextMonth = currentDate.add(1, "month");
   const [isMonthModalOpen, setMonthModalOpen] = useState(false);
 
   // 여성은 7월, 남성은 8월 분석 데이터부터 누적돼서 이전달 이동/월 선택
@@ -170,25 +172,6 @@ function DashBoardPage() {
   return (
     <div className="w-full h-full px-14">
       <section>
-        <div className="flex items-stretch w-full gap-1 p-1 mt-3 border rounded-lg border-line-alt bg-fill-bg-strong">
-          {AUDIENCE_TABS.map(({ type, label }) => {
-            const isSelected = audienceType === type;
-            return (
-              <button
-                key={type}
-                onClick={() => setAudienceType(type)}
-                className={`flex flex-1 h-9 justify-center items-center gap-[10px] px-3 rounded-md text-[16px] font-semibold leading-[150%] tracking-[-0.08px] transition-colors duration-200 ${
-                  isSelected
-                    ? "border border-line-neutral bg-fill-bg text-tx-default"
-                    : "border border-transparent text-tx-alt hover:text-tx-neutral"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
         <div className="flex items-end gap-2 mb-3">
           <SubTitleBox
             title="플랫폼 내 인기 키워드"
@@ -238,7 +221,8 @@ function DashBoardPage() {
                 onClick={handlePrevMonth}
                 className="flex items-center gap-1 transition-colors hover:text-[#151515]"
               >
-                <Icon icon="ph:caret-left" className="w-4 h-4" /> 이전달
+                <Icon icon="ph:caret-left" className="w-4 h-4" />
+                {prevMonth.month() + 1}월
               </button>
               {dateNoticeTarget === "prev" && (
                 <DateNavNotice>
@@ -259,7 +243,8 @@ function DashBoardPage() {
                     : "hover:text-[#151515]"
                 }`}
               >
-                다음달 <Icon icon="ph:caret-right" className="w-4 h-4" />
+                {nextMonth.month() + 1}월
+                <Icon icon="ph:caret-right" className="w-4 h-4" />
               </button>
               {dateNoticeTarget === "next" && (
                 <DateNavNotice>
@@ -301,6 +286,26 @@ function DashBoardPage() {
           <RankBox />
         </div>
       </section>
+
+      {/* 여성/남성 탭 — 화면 스크롤해도 계속 보이게 하단 고정. 대시보드에서만 */}
+      <div className="fixed bottom-[30px] left-1/2 z-40 -translate-x-1/2 inline-flex items-center rounded-full border border-line-subtle bg-lighten-strong p-0.5 shadow-[0_8px_32px_0_rgba(0,0,0,0.16)]">
+        {AUDIENCE_TABS.map(({ type, label }) => {
+          const isSelected = audienceType === type;
+          return (
+            <button
+              key={type}
+              onClick={() => setAudienceType(type)}
+              className={`box-border flex h-[46px] w-[60px] flex-col items-center justify-center gap-2.5 rounded-full px-3 py-2 text-base font-semibold leading-[1.5] tracking-[-0.08px] transition-colors duration-200 ${
+                isSelected
+                  ? "bg-fill-primary text-tx-inverse"
+                  : "text-tx-neutral"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
