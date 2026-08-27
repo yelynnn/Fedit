@@ -147,7 +147,14 @@ export type CategoryGroup = { label: string; items: string[] };
 const GetCategoryList = async (): Promise<CategoryGroup[]> => {
   try {
     const res = await axiosInstance.get("/menu/category");
-    return Array.isArray(res.data?.categories) ? res.data.categories : [];
+    const groups: CategoryGroup[] = Array.isArray(res.data?.categories) ? res.data.categories : [];
+    // 세부 항목 중 대분류명과 완전히 같은 값(예: "원피스" 안의 "원피스")은 목록에서
+    // 안 보이게 한다 — "전체 선택하기"로 이미 커버되고, 상품-카테고리 연결은
+    // DB에 그대로 남아있어서 필터링에는 영향 없음.
+    return groups.map((g) => ({
+      ...g,
+      items: g.items.filter((item) => item !== g.label),
+    }));
   } catch {
     return [];
   }

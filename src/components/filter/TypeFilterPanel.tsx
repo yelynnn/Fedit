@@ -2,6 +2,7 @@ import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { GetCategoryList, type CategoryGroup } from "@/apis/AnalysisAPI";
+import { groupItemsBySubcategory } from "@/data/TypeSubcategories";
 
 // 유형 카테고리 하나에 품목이 100개 넘게 들어있는 경우가 있어(예: 아우터),
 // 평평한 체크리스트 하나로는 찾기 힘들다. 카테고리를 서브탭으로 나누고,
@@ -34,6 +35,15 @@ export default function TypeFilterPanel() {
       : activeItems;
   }, [keyword, activeItems]);
 
+  // 세부 품목이 100개 넘게 들어있는 카테고리(바지/원피스 등)는 평평한 칩
+  // 목록만으로는 찾기 힘들다. 데님/카고팬츠/슬랙스처럼 한 번 더 묶어서
+  // 보여주고, 어디에도 안 걸리는 품목은 "기타 OO"로 모은다. 설정에 없는
+  // 카테고리는 null이 와서 기존처럼 평평한 목록으로 표시된다.
+  const subgroups = useMemo(
+    () => groupItemsBySubcategory(activeTab, visibleItems),
+    [activeTab, visibleItems],
+  );
+
   // 카테고리를 통째로 선택했을 때는 왼쪽 필터 칩에 세부 품목이 다 나열되지
   // 않도록, 개별 품목 대신 카테고리 라벨 하나만 filterList에 넣는다(예:
   // "원피스"). 그래서 개별 품목의 체크 상태도 filterList에 그 품목이 직접
@@ -50,8 +60,21 @@ export default function TypeFilterPanel() {
       });
       return;
     }
-    if (filterList.includes(value)) removeFilter(value);
-    else addFilter(value);
+    if (filterList.includes(value)) {
+      removeFilter(value);
+      return;
+    }
+    addFilter(value);
+    // 낱개로 하나씩 체크하다가 결국 카테고리 안의 모든 품목이 다 선택된
+    // 상태가 되면, "선택된 필터" 칩에 품목이 전부 나열되지 않도록 카테고리
+    // 라벨 하나로 합쳐준다("전체 선택하기" 체크박스를 눌렀을 때와 동일한 결과).
+    const willBeFullySelected = activeItems.every(
+      (item) => item === value || filterList.includes(item),
+    );
+    if (willBeFullySelected) {
+      activeItems.forEach((item) => removeFilter(item));
+      addFilter(activeTab);
+    }
   };
 
   const allChecked =
@@ -129,32 +152,65 @@ export default function TypeFilterPanel() {
         </label>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {visibleItems.length === 0 ? (
-          <p className="w-full py-6 text-center text-sm text-tx-alt">
-            검색 결과가 없어요.
-          </p>
-        ) : (
-          visibleItems.map((item) => {
-            const checked = isCategoryFullySelected || filterList.includes(item);
-            return (
-              <button
-                key={item}
-                type="button"
-                onClick={() => toggle(item)}
-                className={[
-                  "rounded-md px-3 py-1.5 text-sm transition-colors",
-                  checked
-                    ? "bg-tx-neutral text-white"
-                    : "border border-line-alt bg-fill-bg-strong text-tx-neutral hover:border-tx-neutral",
-                ].join(" ")}
-              >
-                {item}
-              </button>
-            );
-          })
-        )}
-      </div>
+      {visibleItems.length === 0 ? (
+        <p className="w-full py-6 text-center text-sm text-tx-alt">
+          검색 결과가 없어요.
+        </p>
+      ) : subgroups ? (
+        <div className="flex flex-col gap-3">
+          {subgroups.map((group) => (
+            <div key={group.label} className="flex flex-col gap-1.5">
+              <p className="text-xs font-semibold text-tx-alt">{group.label}</p>
+              <div className="flex flex-wrap gap-2">
+                {group.items.map((item) => (
+                  <TypeChip
+                    key={item}
+                    item={item}
+                    checked={isCategoryFullySelected || filterList.includes(item)}
+                    onToggle={toggle}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {visibleItems.map((item) => (
+            <TypeChip
+              key={item}
+              item={item}
+              checked={isCategoryFullySelected || filterList.includes(item)}
+              onToggle={toggle}
+            />
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+function TypeChip({
+  item,
+  checked,
+  onToggle,
+}: {
+  item: string;
+  checked: boolean;
+  onToggle: (value: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(item)}
+      className={[
+        "rounded-md px-3 py-1.5 text-sm transition-colors",
+        checked
+          ? "bg-tx-neutral text-white"
+          : "border border-line-alt bg-fill-bg-strong text-tx-neutral hover:border-tx-neutral",
+      ].join(" ")}
+    >
+      {item}
+    </button>
   );
 }

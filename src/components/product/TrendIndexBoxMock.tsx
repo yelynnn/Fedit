@@ -487,7 +487,6 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
             </p>
             <HeadlineChange value={product_index.like_change_pct} />
           </div>
-          ]
           <div className="flex flex-col justify-end flex-1 w-full gap-4">
             <div className="flex w-full items-end gap-10 overflow-hidden @max-[380px]:justify-center">
               <TodayVsYesterdayBars
@@ -523,7 +522,6 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
               showPrefix={false}
             />
           </div>
-          \
           <div className="flex flex-col justify-end flex-1 w-full gap-4">
             <div className="flex flex-col w-full gap-2">
               <RankLabelRow
