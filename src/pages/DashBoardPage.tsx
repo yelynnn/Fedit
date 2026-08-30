@@ -26,6 +26,13 @@ const AUDIENCE_TABS: { type: string; label: string }[] = [
   { type: "male", label: "남성" },
 ];
 
+// W컨셉은 남성 탭에서는 "_male" 접미사가 아니라 완전히 다른 플랫폼(4910)으로
+// 요청한다 — W컨셉 자체가 남성 데이터를 제공하지 않아서, 남성 탭에서는
+// 그 자리를 4910이 대신한다.
+const MALE_PLATFORM_OVERRIDE: Record<string, string> = {
+  wconcept: "4910",
+};
+
 // 여성은 7월 데이터부터, 남성은 8월 데이터부터 누적돼서 안내 문구의
 // 기준월이 다르다.
 const getDataUnavailableNotice = (audienceType: string) => (
@@ -115,14 +122,16 @@ function DashBoardPage() {
         const responses = await Promise.all(
           PLATFORMS.map(({ platform, title }) => {
             const requestPlatform =
-              audienceType === "male" ? `${platform}_male` : platform;
+              audienceType === "male"
+                ? (MALE_PLATFORM_OVERRIDE[platform] ?? `${platform}_male`)
+                : platform;
             return GetTrendKeyword({
               date: requestDate,
               platform: requestPlatform,
             }).then((res) => ({
               res,
               title,
-              platform,
+              platform: requestPlatform,
             }));
           }),
         );

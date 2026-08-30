@@ -12,6 +12,7 @@ import BoardsPage from "@/pages/BoardsPage";
 import { useSubscriptionStore, isBasicPlan } from "@/stores/SubscriptionStore";
 import ProUpgradeOverlay from "@/components/common/ProUpgradeOverlay";
 import { GetBrandPicks } from "@/apis/AnalysisAPI";
+import { REQUIRED_COUNT } from "@/components/billing/InterestBrandModal";
 import { useUIStore } from "@/stores/UIStore";
 
 // PRO 요금제에서만 이용 가능한 탭
@@ -128,8 +129,13 @@ export function NewFilterTabPanels() {
     GetBrandPicks()
       .then((picks) => {
         if (ignore) return;
-        setInterestBrandPicks(picks);
-        if (picks.length > 0) {
+        // 관심 브랜드는 정확히 REQUIRED_COUNT(10)개를 골라야 "완료"로 친다
+        // (InterestBrandModal의 저장 조건과 동일). 10개 미만으로 남아있는
+        // 값은 완료 전 이탈 등으로 생긴 잔여 데이터이므로, 다 고른 것처럼
+        // 취급해 그 브랜드들만 계속 선택 가능한 상태로 남기지 않는다.
+        const isComplete = picks.length === REQUIRED_COUNT;
+        setInterestBrandPicks(isComplete ? picks : []);
+        if (isComplete) {
           const state = useFilterStore.getState();
           const hasExistingSelection =
             state.brandList.length > 0 || state.platformList.length > 0;

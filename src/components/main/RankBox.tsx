@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Icon } from "@iconify/react";
-// import TrendIndexBox from "../product/TrendIndexBox";
 import TrendIndexBoxMock from "../product/TrendIndexBoxMock";
 import dayjs from "dayjs";
 import AIAnalysisBox from "../product/AIAnalysisBox";
 import MonthModal from "./modal/MonthModal";
 import DateNavNotice from "./DateNavNotice";
 import {
-  // GetDashboardRanking, // 트렌드 지수 고도화 테스트 API로 잠시 대체 — 아래 참고
   GetRankingItemDetail,
-  GetTestTrendRanking,
-  GetTestTrendSnapshot,
+  GetTrendRanking,
+  GetTrendSnapshot,
 } from "@/apis/DashBoardAPI";
 import type {
   RankingProduct,
@@ -31,9 +29,9 @@ import SubscriptionLockOverlay from "@/components/common/SubscriptionLockOverlay
 const PLATFORMS = ["무신사", "29CM", "W컨셉", "플랫폼 통합"];
 const CATEGORIES = ["상의", "아우터", "바지", "원피스/스커트"];
 
-// test/trend가 받는 platform/category 슬러그.
+// /trend가 받는 platform/category 슬러그.
 const PLATFORM_SLUG: Record<string, string> = {
-  무신사: "musinsa",
+  무신사: "무신사",
   "29CM": "29cm",
   W컨셉: "wconcept",
   "플랫폼 통합": "all",
@@ -43,17 +41,14 @@ const PLATFORM_SLUG: Record<string, string> = {
 // 버튼 하나가 dress+skirt 두 카테고리를 가리켜서, 이 버튼일 때만 두 번 조회해
 // 합친다(아래 랭킹 조회 useEffect 참고).
 const CATEGORY_SLUGS: Record<string, string[]> = {
-  상의: ["top"],
-  아우터: ["outer"],
-  바지: ["pants"],
-  "원피스/스커트": ["dress", "skirt"],
+  상의: ["상의"],
+  아우터: ["아우터"],
+  바지: ["바지"],
+  "원피스/스커트": ["원피스/스커트"],
 };
 
 // 잠금 상태(무료체험 미시작/만료)에서는 트렌드 항목 상위 3개까지만 보여준다.
 const LOCK_VISIBLE_COUNT = 3;
-
-// GetDashboardRanking과 함께 잠시 안 쓰는 중 — 되돌릴 때 같이 복구.
-// const toApiDate = (date: dayjs.Dayjs) => date.format("YYYY-MM");
 
 const DATA_UNAVAILABLE_NOTICE = (
   <>
@@ -63,15 +58,11 @@ const DATA_UNAVAILABLE_NOTICE = (
   </>
 );
 
-// test/trend의 date는 ISO-8601 날짜(예: 2026-08-05) — currentDate에서 매번 뽑아 쓴다.
-const toIsoDate = (date: dayjs.Dayjs) => date.format("YYYY-MM-DD");
-
 export default function RankBox() {
   const { setModalProductId } = useProductStore((s) => s);
   const { audienceType } = useTypeStore();
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
-  // 트렌드 지수 고도화 테스트 — test/trend에 실제 시딩된 날짜(8/5)로 기본값을 맞춘다.
-  const [currentDate, setCurrentDate] = useState(dayjs("2026-08-05"));
+  const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedPlatform, setSelectedPlatform] = useState<string>("무신사");
   const [selectedCategory, setSelectedCategory] = useState<string>("상의");
   // 남성 탭에는 원피스/스커트 카테고리를 노출하지 않는다.
@@ -79,19 +70,17 @@ export default function RankBox() {
     audienceType === "male"
       ? CATEGORIES.filter((category) => category !== "원피스/스커트")
       : CATEGORIES;
-  // GetDashboardRanking 연동을 잠시 꺼둔 동안엔 항상 빈 값 — setter는 안 쓴다.
+  // itemcode 기반 랭킹(GetRankingItemDetail 등)은 아직 연동 전이라 항상 빈 값 — setter는 안 쓴다.
   const [activeRank] = useState<number>(1);
   const [rankingList] = useState<RankingProduct[]>([]);
   const [itemDetail, setItemDetail] =
     useState<RankingItemDetailResponse | null>(null);
-  // 트렌드 지수 고도화 테스트용 — test/trend, test/trend/{tempItemId}로 받아온
-  // 데이터. 왼쪽 트렌드 항목 리스트와 우측 트렌드 지수 박스를 이걸로 그린다.
+  // 트렌드 지수 고도화 — /trend(랭킹), /trend/{tempItemId}(스냅샷 상세)로
+  // 받아온 데이터. 왼쪽 트렌드 항목 리스트와 우측 트렌드 지수 박스를 이걸로 그린다.
   const [testRankingList, setTestRankingList] = useState<TrendRankingItem[]>(
     [],
   );
-  const [activeTempItemId, setActiveTempItemId] = useState<number | null>(
-    null,
-  );
+  const [activeTempItemId, setActiveTempItemId] = useState<number | null>(null);
   const [snapshotDetail, setSnapshotDetail] =
     useState<TrendSnapshotDetailDto | null>(null);
   const [isSnapshotLoading, setIsSnapshotLoading] = useState(false);
@@ -158,34 +147,20 @@ export default function RankBox() {
     if (detailPanelRef.current) detailPanelRef.current.scrollTop = 0;
   }, [activeTempItemId]);
 
-  // 기존 랭킹 조회 — 트렌드 지수 고도화 테스트 API로 잠시 대체. 되돌릴 때
-  // 아래 주석만 풀고 밑에 있는 test/trend 연동 useEffect 두 개를 지우면 된다.
-  // useEffect(() => {
-  //   GetDashboardRanking({
-  //     platform: selectedPlatform,
-  //     category: selectedCategory,
-  //     date: toApiDate(currentDate),
-  //   })
-  //     .then((res) => {
-  //       const result = res.rankData?.rankData?.result ?? [];
-  //       setRankingList(result);
-  //       setActiveRank(result[0]?.rank ?? 1);
-  //     })
-  //     .catch(() => {});
-  // }, [selectedPlatform, selectedCategory, currentDate]);
-
-  // 트렌드 지수 고도화 테스트 — 왼쪽 트렌드 항목 리스트를 test/trend로 받아온다.
+  // 트렌드 지수 고도화 — 왼쪽 트렌드 항목 리스트를 /trend로 받아온다.
   // "원피스/스커트"처럼 슬러그가 두 개면(dress+skirt) 각각 조회해서 하나로 합친다
   // — 한쪽만 데이터가 있어도(allSettled) 결과는 보여주고, trend_score 내림차순으로
-  // 정렬한 뒤 position을 1부터 다시 매긴다.
+  // 정렬한 뒤 position을 1부터 다시 매긴다. gender는 남성 탭일 때만 "남성"으로
+  // 넘긴다 — 현재 남성 외에는(여성 포함) gender 값 자체가 없다.
   useEffect(() => {
     const platform = PLATFORM_SLUG[selectedPlatform] ?? selectedPlatform;
-    const date = toIsoDate(currentDate);
+    // 일단 date 없이 보내서 백엔드가 최신 점수값을 주도록 확인해본다.
     const categories = CATEGORY_SLUGS[selectedCategory] ?? [selectedCategory];
+    const gender = audienceType === "male" ? "남성" : undefined;
 
     Promise.allSettled(
       categories.map((category) =>
-        GetTestTrendRanking({ platform, category, date, page: 0, size: 20 }),
+        GetTrendRanking({ platform, category, page: 0, size: 20, gender }),
       ),
     ).then((results) => {
       const merged = results
@@ -200,17 +175,17 @@ export default function RankBox() {
       setTestRankingList(merged);
       setActiveTempItemId(merged[0]?.temp_item_id ?? null);
     });
-  }, [selectedPlatform, selectedCategory, currentDate]);
+  }, [selectedPlatform, selectedCategory, currentDate, audienceType]);
 
-  // 트렌드 지수 고도화 테스트 — 선택된 항목의 트렌드 지수 상세를
-  // test/trend/{tempItemId}로 받아온다. date를 안 넘기면 최신 스냅샷을 준다.
+  // 트렌드 지수 고도화 — 선택된 항목의 트렌드 지수 상세를
+  // /trend/{tempItemId}로 받아온다. date를 안 넘기면 최신 스냅샷을 준다.
   useEffect(() => {
     if (activeTempItemId == null) {
       setSnapshotDetail(null);
       return;
     }
     setIsSnapshotLoading(true);
-    GetTestTrendSnapshot(activeTempItemId)
+    GetTrendSnapshot(activeTempItemId)
       .then(setSnapshotDetail)
       .catch(() => setSnapshotDetail(null))
       .finally(() => setIsSnapshotLoading(false));
@@ -263,7 +238,9 @@ export default function RankBox() {
               <Icon icon="ph:caret-left" />
               {prevMonth.month() + 1}월
             </button>
-            {dateNoticeTarget === "prev" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
+            {dateNoticeTarget === "prev" && (
+              <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>
+            )}
           </div>
           <div className="w-[1px] h-3 bg-gray-300"></div>
           <div className="relative">
@@ -279,7 +256,9 @@ export default function RankBox() {
               {nextMonth.month() + 1}월
               <Icon icon="ph:caret-right" />
             </button>
-            {dateNoticeTarget === "next" && <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>}
+            {dateNoticeTarget === "next" && (
+              <DateNavNotice>{DATA_UNAVAILABLE_NOTICE}</DateNavNotice>
+            )}
           </div>
         </div>
       </div>
@@ -347,7 +326,11 @@ export default function RankBox() {
                         ? "border-b border-[#E4E4E4] bg-[#F4FFEE]"
                         : "border-b border-gray-100 hover:bg-gray-50"
                     } ${isHidden ? "pointer-events-none select-none" : ""}`}
-                    style={isHidden ? { opacity: 0.5, filter: "blur(3px)" } : undefined}
+                    style={
+                      isHidden
+                        ? { opacity: 0.5, filter: "blur(3px)" }
+                        : undefined
+                    }
                   >
                     <div className="relative flex-shrink-0 w-18 h-18">
                       <img
@@ -403,101 +386,96 @@ export default function RankBox() {
             className={isLocked ? "pointer-events-none select-none" : ""}
             style={isLocked ? { opacity: 0.5, filter: "blur(3px)" } : undefined}
           >
-          <div className="px-8 mb-4 -mx-8">
-            {/* 트렌드 지수 고도화 UI 작업 중 — test/trend/{tempItemId} 테스트
-                API로 잠시 교체. 정식 연동 끝나면 아래 TrendIndexBox로 되돌린다. */}
-            {/* <TrendIndexBox
-              itemCode={
+            <div className="px-8 mb-4 -mx-8">
+              <TrendIndexBoxMock
+                data={snapshotDetail}
+                isLoading={isSnapshotLoading}
+              />
+            </div>
+
+            <AIAnalysisBox
+              content={itemDetail?.ai_description ?? ""}
+              itemcode={
                 rankingList.find((item) => item.rank === activeRank)
                   ?.itemcode ?? ""
               }
-            /> */}
-            <TrendIndexBoxMock data={snapshotDetail} isLoading={isSnapshotLoading} />
-          </div>
+              isRanking={true}
+              onDetailClick={() => {
+                const itemcode = rankingList.find(
+                  (item) => item.rank === activeRank,
+                )?.itemcode;
+                if (itemcode) setModalProductId(itemcode);
+              }}
+            />
 
-          <AIAnalysisBox
-            content={itemDetail?.ai_description ?? ""}
-            itemcode={
-              rankingList.find((item) => item.rank === activeRank)?.itemcode ??
-              ""
-            }
-            isRanking={true}
-            onDetailClick={() => {
-              const itemcode = rankingList.find(
-                (item) => item.rank === activeRank,
-              )?.itemcode;
-              if (itemcode) setModalProductId(itemcode);
-            }}
-          />
-
-          <div>
-            <div className="flex items-center gap-1.5 mt-8 mb-4">
-              <Icon
-                icon="tabler:capture-filled"
-                className="w-5 h-5 text-gray-700"
-              />
-              <h3 className="text-base font-semibold text-gray-800">
-                디테일 유사 아이템
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-              {currentSimilarItems.map((item, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setModalProductId(item.itemCode)}
-                  className="flex gap-4 cursor-pointer"
-                >
-                  <div className="flex-shrink-0 overflow-hidden bg-gray-100 border border-gray-200 rounded-lg w-22 h-22">
-                    {item.thumbnail ? (
-                      <img
-                        src={item.thumbnail}
-                        alt={item.product_name}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <div className="w-full h-full" />
-                    )}
-                  </div>
-                  <div className="flex flex-col justify-center gap-1.5">
-                    <span className="overflow-hidden text-[12px] font-medium leading-[133%] text-[#6F7173] text-ellipsis truncate">
-                      {item.brand}
-                    </span>
-                    <span className="overflow-hidden text-[14px] font-semibold leading-[143%] tracking-[-0.07px] text-[#3D3F41] text-ellipsis line-clamp-2">
-                      {item.product_name}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex justify-center gap-3 pt-4">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={similarCurrentPage === 1}
-                  className={`flex items-center justify-center w-8 h-8 transition-colors border border-gray-200 rounded-full ${
-                    similarCurrentPage === 1
-                      ? "text-gray-300 cursor-not-allowed bg-gray-50"
-                      : "text-gray-800 hover:bg-gray-100 cursor-pointer"
-                  }`}
-                >
-                  <Icon icon="ph:caret-left" />
-                </button>
-                <button
-                  onClick={handleNextPage}
-                  disabled={similarCurrentPage === totalPages}
-                  className={`flex items-center justify-center w-8 h-8 transition-colors border border-gray-200 rounded-full ${
-                    similarCurrentPage === totalPages
-                      ? "text-gray-300 cursor-not-allowed bg-gray-50"
-                      : "text-gray-800 hover:bg-gray-100 cursor-pointer"
-                  }`}
-                >
-                  <Icon icon="ph:caret-right" />
-                </button>
+            <div>
+              <div className="flex items-center gap-1.5 mt-8 mb-4">
+                <Icon
+                  icon="tabler:capture-filled"
+                  className="w-5 h-5 text-gray-700"
+                />
+                <h3 className="text-base font-semibold text-gray-800">
+                  디테일 유사 아이템
+                </h3>
               </div>
-            )}
-          </div>
+
+              <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+                {currentSimilarItems.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setModalProductId(item.itemCode)}
+                    className="flex gap-4 cursor-pointer"
+                  >
+                    <div className="flex-shrink-0 overflow-hidden bg-gray-100 border border-gray-200 rounded-lg w-22 h-22">
+                      {item.thumbnail ? (
+                        <img
+                          src={item.thumbnail}
+                          alt={item.product_name}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full" />
+                      )}
+                    </div>
+                    <div className="flex flex-col justify-center gap-1.5">
+                      <span className="overflow-hidden text-[12px] font-medium leading-[133%] text-[#6F7173] text-ellipsis truncate">
+                        {item.brand}
+                      </span>
+                      <span className="overflow-hidden text-[14px] font-semibold leading-[143%] tracking-[-0.07px] text-[#3D3F41] text-ellipsis line-clamp-2">
+                        {item.product_name}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex justify-center gap-3 pt-4">
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={similarCurrentPage === 1}
+                    className={`flex items-center justify-center w-8 h-8 transition-colors border border-gray-200 rounded-full ${
+                      similarCurrentPage === 1
+                        ? "text-gray-300 cursor-not-allowed bg-gray-50"
+                        : "text-gray-800 hover:bg-gray-100 cursor-pointer"
+                    }`}
+                  >
+                    <Icon icon="ph:caret-left" />
+                  </button>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={similarCurrentPage === totalPages}
+                    className={`flex items-center justify-center w-8 h-8 transition-colors border border-gray-200 rounded-full ${
+                      similarCurrentPage === totalPages
+                        ? "text-gray-300 cursor-not-allowed bg-gray-50"
+                        : "text-gray-800 hover:bg-gray-100 cursor-pointer"
+                    }`}
+                  >
+                    <Icon icon="ph:caret-right" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

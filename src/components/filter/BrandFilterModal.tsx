@@ -131,15 +131,15 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     brandList.length +
     platformList.reduce((sum, code) => sum + platformBrandCount(code), 0);
 
-  // Basic 플랜은 관심 브랜드 10개 + 무신사 입점 브랜드만, 무료 플랜은 무신사
-  // 입점 브랜드만 이용 가능하므로, 그 외 카테고리 탭에서는 이미 선택된(=관심
-  // 브랜드로 고른) 것 외에는 새로 추가하지 못하도록 막는다. 무료 플랜은
-  // interestBrandPicks가 항상 비어 있어 아래 isBrandDisabled에서 자연히
-  // 전부 잠긴다. "선택된 브랜드" 탭과 무신사 탭은 예외.
-  const isRestrictedTab =
-    (isBasic || isFree) &&
-    activeTab !== "selected" &&
-    !activeTab.includes("무신사");
+  // Basic 플랜은 관심 브랜드 10개(+ 기본 제공되는 무신사) 만, 무료 플랜은
+  // 기본 제공되는 무신사만 이용 가능하다. "기본 제공"은 상품 분석 화면 등에서
+  // 브랜드를 아무것도 고르지 않았을 때 자동으로 채워지는 값(NewFilterTabBar
+  // 참고)일 뿐, 이 모달에서 브랜드를 직접 골라 담는 것과는 별개다 — 여기서는
+  // 무신사 탭을 포함한 모든 카테고리 탭에서 이미 선택된(=관심 브랜드로 고른)
+  // 것 외에는 새로 추가하지 못하도록 막는다. 무료 플랜은 interestBrandPicks가
+  // 항상 비어 있어 아래 isBrandDisabled에서 자연히 전부 잠긴다. "선택된
+  // 브랜드" 탭만 예외(이미 골라둔 것 해제는 허용).
+  const isRestrictedTab = (isBasic || isFree) && activeTab !== "selected";
 
   const visibleBrands = useMemo(() => {
     const k = keyword.trim().toLowerCase();
@@ -273,7 +273,9 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const handleApplyBrandClick = () => {
     if (!keyword.trim() || isApplyingBrand) return;
     if (isFree) {
-      alert("무료 플랜에서는 제공하지 않는 기능이에요. 요금제를 업그레이드하면 이용할 수 있어요.");
+      alert(
+        "무료 플랜에서는 제공하지 않는 기능이에요. 요금제를 업그레이드하면 이용할 수 있어요.",
+      );
       return;
     }
     setShowApplyConfirm(true);
@@ -467,7 +469,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
           <Icon icon="ph:info" className="w-3.5 h-3.5 flex-shrink-0" />
           {isFree
             ? "무료 플랜은 무신사 입점 브랜드만 이용할 수 있어요. 더 많은 브랜드를 보려면 요금제를 업그레이드해주세요."
-            : "Basic 플랜은 관심 브랜드 10개와 무신사 입점 브랜드만 이용할 수 있어요."}
+            : "Basic 플랜은 관심 브랜드 10개만 이용할 수 있어요."}
         </p>
       )}
 
@@ -523,14 +525,21 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
                     );
                   })}
                 {visibleBrands.map((brand) => {
+                  const disabled = isBrandDisabled(brand);
+                  // 잠긴 칩은 플랫폼 기본값(무신사 전체 등)에 포함돼 있어도
+                  // "선택됨"으로 보여주지 않는다 — 실제로는 브랜드 하나하나를
+                  // 고른 게 아니라 플랫폼 단위로 백엔드에 보내는 것이라,
+                  // 개별 브랜드가 선택된 것처럼 보이면 관심 브랜드 10개를 다
+                  // 고른 것으로 오해할 수 있다.
                   const checked =
-                    isPlatformFullySelected || brandList.includes(brand);
+                    !disabled &&
+                    (isPlatformFullySelected || brandList.includes(brand));
                   return (
                     <Chip
                       key={brand}
                       brand={brand}
                       checked={checked}
-                      disabled={isBrandDisabled(brand)}
+                      disabled={disabled}
                       anchorLetter={anchorKeys.get(brand)}
                       onClick={() => toggleOne(brand)}
                     />

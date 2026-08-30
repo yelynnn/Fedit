@@ -71,6 +71,7 @@ const PLAN_DEFS: {
     features: [
       { ok: true, text: "관심 브랜드 최대 3개 모니터링" },
       { ok: true, text: "플랫폼별 키워드 분석 제공" },
+      { ok: true, text: "데일리 트렌드 뉴스레터 제공" },
       { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
       { ok: false, text: "신규 브랜드 분석 신청 미지원" },
     ],
@@ -91,6 +92,7 @@ const PLAN_DEFS: {
       { ok: true, text: "플랫폼별 키워드 분석 제공" },
       { ok: true, text: "엑셀 다운로드 월 3회" },
       { ok: true, text: "신규 브랜드 분석 신청 월 1회" },
+      { ok: true, text: "데일리 트렌드 뉴스레터 제공" },
       { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
     ],
   },
@@ -98,12 +100,12 @@ const PLAN_DEFS: {
     key: "pro",
     label: "Pro",
     badge: null,
-    originalPrice: null,
-    discount: null,
+    originalPrice: "500,000원",
+    discount: "30% 할인",
     // 토스 심사용 임시 처리 — 심사 통과 후 아래 두 줄 주석 해제하고 그 아래 두 줄 삭제
     // price: "가격 문의",
     // sub: "",
-    price: "150,000원",
+    price: "350,000원",
     sub: "/월",
     features: [
       { ok: true, text: "모든 브랜드 모니터링 제공" },
@@ -111,6 +113,7 @@ const PLAN_DEFS: {
       { ok: true, text: "엑셀 다운로드 무제한" },
       { ok: true, text: "신규 브랜드 분석 신청 월 3회" },
       { ok: true, text: "기업 트렌드 리포트 제공 (월말 추가 제공)" },
+      { ok: true, text: "데일리 트렌드 뉴스레터 제공" },
       { ok: true, text: "자사 맞춤형 AI Agent 제공" },
     ],
   },
@@ -135,7 +138,7 @@ const PLAN_AMOUNT: Record<PlanType, number> = {
   basic: 29000,
   // 토스 심사용 임시 처리 — 심사 통과 후 아래 줄 주석 해제하고 그 아래 줄 삭제
   // pro: 59000,
-  pro: 150000,
+  pro: 350000,
   basic_secret: 19000,
 };
 
@@ -1530,11 +1533,11 @@ export default function SettingsPage() {
                               {plan.sub}
                             </p>
                           )}
-                          {plan.key === "pro" && (
+                          {/* {plan.key === "pro" && (
                             <p className="text-[12px] font-medium leading-[133%] text-[#6F7173]">
                               브랜드별 맞춤형 AI 분석 구축
                             </p>
-                          )}
+                          )} */}
                         </div>
 
                         {/* 버튼 */}
@@ -2066,9 +2069,7 @@ export default function SettingsPage() {
                       <span className="text-sm font-semibold text-tx-strong">
                         토스페이먼츠
                       </span>
-                      <span className="text-xs text-tx-assistive">
-                        준비 중
-                      </span>
+                      <span className="text-xs text-tx-assistive">준비 중</span>
                     </span>
                     {selectedMethod === "toss" && (
                       <Icon

@@ -82,26 +82,6 @@ export type RankingProduct = {
   itemcode: string;
 };
 
-export type DashboardRankingResponse = {
-  platform: string;
-  category: string;
-  date: string;
-  rankData: {
-    date: string;
-    category: string;
-    platform: string;
-    rankData: {
-      result: RankingProduct[];
-    };
-  };
-};
-
-export type GetDashboardRankingParams = {
-  platform: string;
-  category: string;
-  date: string;
-};
-
 export type TrendIndexResponse = {
   isPlatform: boolean;
   brand: {
@@ -138,8 +118,8 @@ export type RankingItemDetailResponse = {
   related_items: RelatedItem[];
 };
 
-// 트렌드 지수 고도화 — 테스트용 API(test/trend, test/trend/{tempItemId}) 응답 타입.
-// 기존 GetDashboardRanking/GetTrendIndex와는 별개의 데이터 소스라 필드 구성이 다르다.
+// 트렌드 지수 고도화 — 랭킹은 /trend, 상품 스냅샷 상세는 /trend/{tempItemId}를
+// 쓴다. 기존 GetTrendIndex와는 별개의 데이터 소스라 필드 구성이 다르다.
 export type TrendRankingItem = {
   position: number;
   temp_item_id: number;
@@ -162,17 +142,23 @@ export type TrendRankingPageResponse = {
   last: boolean;
 };
 
-export type GetTestTrendRankingParams = {
+export type GetTrendRankingParams = {
   platform: string;
   category: string;
-  date: string;
+  // 없으면 백엔드가 가장 최신 점수값을 준다.
+  date?: string;
   page?: number;
   size?: number;
+  // 현재는 "남성"만 값이 있고 그 외(여성 등)는 전부 null이라, 남성 데이터가
+  // 필요할 때만 "남성"을 넘긴다.
+  gender?: string;
 };
 
 export type TrendSnapshotDetailDto = {
   temp_item_id: number;
   product_name: string;
+  // true면 오늘 스냅샷이 없어 과거 스냅샷을 대신 보여주는 것 — UI에서 분기 처리.
+  referenced_snapshot: boolean;
   brand: string;
   platform: string;
   category: string;
@@ -180,12 +166,10 @@ export type TrendSnapshotDetailDto = {
   thumbnail: string;
   product_detail_url: string;
   integrated_index: {
-    score: number;
-    score_change_pct: number | null;
+    score: number | null;
     band: string;
     score_basis: string;
     confidence: number | null;
-    reorder_count: number | null;
     insight: string | null;
   };
   brand_index: {

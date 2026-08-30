@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { Icon } from "@iconify/react";
 import NewFilterOption from "./NewFilterOption";
 import useFilteredData from "@/lib/filteredData";
+import { GetSeasonList } from "@/apis/AnalysisAPI";
 import {
   Select,
   SelectContent,
@@ -21,6 +23,24 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void 
   } = useFilterStore();
   const data = useFilteredData();
 
+  // /menu/season은 "23FW", "25SS"처럼 "YY" + "SS"/"FW" 시즌 코드를 준다.
+  // 연도 선택지는 앞 2자리(YY)만 뽑아 "20YY"로 복원하고 중복 제거,
+  // 최신 연도가 위로 오도록 내림차순 정렬한다.
+  const [years, setYears] = useState<string[]>([]);
+  useEffect(() => {
+    let ignore = false;
+    GetSeasonList().then((seasons) => {
+      if (ignore) return;
+      const uniqueYears = Array.from(
+        new Set(seasons.map((s) => `20${s.slice(0, 2)}`)),
+      ).sort((a, b) => Number(b) - Number(a));
+      setYears(uniqueYears);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   return (
     <aside
       data-tour="filter-panel"
@@ -36,7 +56,11 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void 
           </SelectTrigger>
           <SelectContent className="rounded-xl border-line-divider">
             <SelectItem value="all">전체</SelectItem>
-            <SelectItem value="2026">2026년</SelectItem>
+            {years.map((year) => (
+              <SelectItem key={year} value={year}>
+                {year}년
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

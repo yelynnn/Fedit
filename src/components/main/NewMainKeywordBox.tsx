@@ -4,6 +4,7 @@ import { useTypeStore } from "@/stores/TypeStore";
 import naverIcon from "@/assets/brand/naverIcon.png";
 import musinsaIcon from "@/assets/brand/musinsaIcon.png";
 import wconceptIcon from "@/assets/brand/wconceptIcon.png";
+import icon4910 from "@/assets/brand/4910.png";
 import MonthModal from "./modal/MonthModal";
 import infoFilledIcon from "@/assets/etc/info_filled.svg";
 import upIcon from "@/assets/etc/upIcon.svg";
@@ -33,6 +34,8 @@ function getImageByPlatform(platformKey: string | undefined, title: string) {
       return musinsaIcon;
     case "wconcept":
       return wconceptIcon;
+    case "4910":
+      return icon4910;
   }
   switch (title) {
     case "네이버":
@@ -116,7 +119,15 @@ function NewMainKeywordBox({
             <img
               src={getImageByPlatform(platformKey, title)}
               alt={title}
-              className="object-contain w-6 h-6"
+              // 4910 로고는 다른 플랫폼 아이콘(정사각형)과 달리 가로로 긴
+              // 와이드형이라, 같은 정사각형 박스에 넣으면 object-contain이
+              // 세로를 반토막 내서 유독 작아 보인다. 원본 비율(2:1)에 맞는
+              // 박스를 따로 줘서 다른 아이콘과 높이를 맞춘다.
+              className={`object-contain h-6 ${
+                platformKey?.replace(/_male$/, "") === "4910"
+                  ? "w-12 rounded-md"
+                  : "w-6"
+              }`}
             />
             <h3 className="text-base font-semibold leading-6">
               {title} 키워드

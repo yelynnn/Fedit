@@ -267,7 +267,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
   const getPlatformLabel = (platform: string) => {
     const p = platform.toLowerCase();
     if (p.includes("무신사")) return "무";
-    if (p.includes("wconcept")) return "W";
+    if (p.includes("wconcept") || p.includes("w컨셉")) return "W";
     if (p.includes("29cm")) return "29";
     return p;
   };
@@ -400,11 +400,13 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
 
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    {detailData.regular_price && (
-                      <span className="text-sm font-semibold text-tx-assistive line-through">
-                        {formatPrice(detailData.regular_price)}
-                      </span>
-                    )}
+                    {detailData.regular_price &&
+                      formatPrice(detailData.regular_price) !==
+                        formatPrice(detailData.current_price) && (
+                        <span className="text-sm font-semibold text-tx-assistive line-through">
+                          {formatPrice(detailData.regular_price)}
+                        </span>
+                      )}
                     <span className="text-base font-semibold text-tx-default">
                       {formatPrice(detailData.current_price)}
                     </span>

@@ -18,13 +18,13 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
     "";
 
   // 플랫폼 텍스트 변환 매핑
-  const getPlatformLabel = (platform: string) => {
-    const p = platform.toLowerCase();
-    if (p.includes("무신사")) return "무";
-    if (p.includes("wconcept")) return "W";
-    if (p.includes("29cm")) return "29";
-    return p;
-  };
+  // const getPlatformLabel = (platform: string) => {
+  //   const p = platform.toLowerCase();
+  //   if (p.includes("무신사")) return "무";
+  //   if (p.includes("wconcept") || p.includes("w컨셉")) return "W";
+  //   if (p.includes("29cm")) return "29";
+  //   return p;
+  // };
 
   return (
     <section className="flex flex-col h-[394px] overflow-hidden rounded-none w-55 bg-white border border-surface-base">
@@ -36,11 +36,11 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
           alt={product.product_name}
           className="absolute inset-0 object-cover w-full h-full"
         />
-        {product.platform && (
+        {/* {product.platform && (
           <div className="relative z-10 flex items-center justify-center w-5 h-5 text-white bg-tx-neutral rounded text-xs font-medium">
             {getPlatformLabel(product.platform)}
           </div>
-        )}
+        )} */}
       </div>
 
       <div className="flex w-full flex-col items-start gap-3 self-stretch pt-2 pr-3 pb-4 pl-3">

@@ -142,6 +142,16 @@ const GetDetailList = async (): Promise<string[]> => {
   }
 };
 
+// "23FW", "25SS" 처럼 "YY" + "SS"/"FW"가 붙은 시즌 코드 목록을 그대로 준다.
+const GetSeasonList = async (): Promise<string[]> => {
+  try {
+    const res = await axiosInstance.get("/menu/season");
+    return Array.isArray(res.data?.seasons) ? res.data.seasons : [];
+  } catch {
+    return [];
+  }
+};
+
 export type CategoryGroup = { label: string; items: string[] };
 
 const GetCategoryList = async (): Promise<CategoryGroup[]> => {
@@ -273,6 +283,7 @@ export {
   GetPatternList,
   GetDetailList,
   GetCategoryList,
+  GetSeasonList,
   GetBrandPicks,
   PutBrandPicks,
   PostBrandApply,

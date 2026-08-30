@@ -7,7 +7,7 @@ import { GetBrandList, GetBrandPicks, PutBrandPicks } from "@/apis/AnalysisAPI";
 import pointIcon from "@/assets/etc/pointIcon.svg";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 
-const REQUIRED_COUNT = 10;
+export const REQUIRED_COUNT = 10;
 
 type ApiCategory = { label: string; brands: string[] };
 

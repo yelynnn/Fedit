@@ -1,17 +1,15 @@
-import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { GetCategoryList, type CategoryGroup } from "@/apis/AnalysisAPI";
 import { groupItemsBySubcategory } from "@/data/TypeSubcategories";
 
 // 유형 카테고리 하나에 품목이 100개 넘게 들어있는 경우가 있어(예: 아우터),
-// 평평한 체크리스트 하나로는 찾기 힘들다. 카테고리를 서브탭으로 나누고,
-// 탭 안에서 검색 + 칩 선택으로 좁혀 찾을 수 있게 한다.
+// 평평한 체크리스트 하나로는 찾기 힘들다. 카테고리를 서브탭으로 나눠 칩
+// 선택으로 좁혀 찾을 수 있게 한다.
 export default function TypeFilterPanel() {
   const { filterList, addFilter, removeFilter } = useFilterStore((s) => s);
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
   const [activeTab, setActiveTab] = useState("");
-  const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,20 +26,20 @@ export default function TypeFilterPanel() {
     [categories, activeTab],
   );
 
-  const visibleItems = useMemo(() => {
-    const k = keyword.trim().toLowerCase();
-    return k
-      ? activeItems.filter((item) => item.toLowerCase().includes(k))
-      : activeItems;
-  }, [keyword, activeItems]);
-
   // 세부 품목이 100개 넘게 들어있는 카테고리(바지/원피스 등)는 평평한 칩
   // 목록만으로는 찾기 힘들다. 데님/카고팬츠/슬랙스처럼 한 번 더 묶어서
   // 보여주고, 어디에도 안 걸리는 품목은 "기타 OO"로 모은다. 설정에 없는
   // 카테고리는 null이 와서 기존처럼 평평한 목록으로 표시된다.
   const subgroups = useMemo(
-    () => groupItemsBySubcategory(activeTab, visibleItems),
-    [activeTab, visibleItems],
+    () => groupItemsBySubcategory(activeTab, activeItems),
+    [activeTab, activeItems],
+  );
+
+  // 서브그룹 라벨은 화면에 보여주지 않지만, 데님/카고팬츠/슬랙스처럼
+  // 묶인 순서 자체는 유지한 채 브랜드 칩처럼 한 줄로 자연스럽게 흘려보낸다.
+  const orderedItems = useMemo(
+    () => subgroups?.flatMap((group) => group.items) ?? activeItems,
+    [subgroups, activeItems],
   );
 
   // 카테고리를 통째로 선택했을 때는 왼쪽 필터 칩에 세부 품목이 다 나열되지
@@ -108,10 +106,7 @@ export default function TypeFilterPanel() {
             <button
               key={c.label}
               type="button"
-              onClick={() => {
-                setActiveTab(c.label);
-                setKeyword("");
-              }}
+              onClick={() => setActiveTab(c.label)}
               className={[
                 "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
                 active
@@ -125,21 +120,8 @@ export default function TypeFilterPanel() {
         })}
       </div>
 
-      <div className="flex items-center gap-2 rounded-lg border border-line-alt px-3 py-2">
-        <Icon
-          icon="mingcute:search-line"
-          className="h-4 w-4 flex-shrink-0 text-icon-alt"
-        />
-        <input
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder={`${activeTab} 안에서 검색`}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-icon-alt"
-        />
-      </div>
-
       <div className="flex items-center justify-between text-xs text-tx-alt">
-        <span>{visibleItems.length}개</span>
+        <span>{orderedItems.length}개</span>
         <label className="inline-flex cursor-pointer select-none items-center gap-1.5">
           <input
             type="checkbox"
@@ -152,31 +134,13 @@ export default function TypeFilterPanel() {
         </label>
       </div>
 
-      {visibleItems.length === 0 ? (
+      {orderedItems.length === 0 ? (
         <p className="w-full py-6 text-center text-sm text-tx-alt">
-          검색 결과가 없어요.
+          표시할 항목이 없어요.
         </p>
-      ) : subgroups ? (
-        <div className="flex flex-col gap-3">
-          {subgroups.map((group) => (
-            <div key={group.label} className="flex flex-col gap-1.5">
-              <p className="text-xs font-semibold text-tx-alt">{group.label}</p>
-              <div className="flex flex-wrap gap-2">
-                {group.items.map((item) => (
-                  <TypeChip
-                    key={item}
-                    item={item}
-                    checked={isCategoryFullySelected || filterList.includes(item)}
-                    onToggle={toggle}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {visibleItems.map((item) => (
+          {orderedItems.map((item) => (
             <TypeChip
               key={item}
               item={item}
