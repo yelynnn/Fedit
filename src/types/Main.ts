@@ -175,6 +175,8 @@ export type TrendSnapshotDetailDto = {
   brand_index: {
     awareness_pct: number | null;
     awareness_label: string | null;
+    store_likes: number | null;
+    search_volume: number | null;
   };
   product_index: {
     interest_pct: number | null;
@@ -189,8 +191,10 @@ export type TrendSnapshotDetailDto = {
     rank: number | null;
     rank_prev: number | null;
     rank_change: number | null;
-    review_change: number | null;
+    review_count: number | null;
+    review_change_pct: number | null;
     reorder: number | null;
+    reorder_change_pct: number | null;
   };
   signal_meta: {
     streak_days: number | null;

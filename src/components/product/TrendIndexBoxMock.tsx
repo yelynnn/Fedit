@@ -429,16 +429,16 @@ function IndexPreparingState() {
         <span className="text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
           지수 준비 중이에요
         </span>
-        <div className="min-w-6 flex-1 border-t border-dashed border-line-alt" />
+        <div className="flex-1 border-t border-dashed min-w-6 border-line-alt" />
         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-falling-bg px-3 py-1.5 text-sm font-semibold leading-[1.43] tracking-[-0.07px] text-tx-strong">
-          <span className="flex h-2 w-2 shrink-0 items-center justify-center rounded-full bg-falling">
-            <span className="h-1 w-1 rounded-full bg-white" />
+          <span className="flex items-center justify-center w-2 h-2 rounded-full shrink-0 bg-falling">
+            <span className="w-1 h-1 bg-white rounded-full" />
           </span>
           분석 진행 중
         </span>
       </div>
 
-      <div className="flex w-full flex-col gap-4 rounded-xl border border-line-alt bg-fill-bg-strong px-4 py-4">
+      <div className="flex flex-col w-full gap-4 px-4 py-4 border rounded-xl border-line-alt bg-fill-bg-strong">
         {PREP_STEPS.map((step) => (
           <div key={step.title} className="flex items-start gap-2.5">
             {step.status === "done" ? (
@@ -459,7 +459,9 @@ function IndexPreparingState() {
             <div className="flex flex-col gap-0.5">
               <span
                 className={`text-sm font-semibold leading-[1.43] tracking-[-0.07px] ${
-                  step.status === "pending" ? "text-tx-assistive" : "text-tx-strong"
+                  step.status === "pending"
+                    ? "text-tx-assistive"
+                    : "text-tx-strong"
                 }`}
               >
                 {step.title}
@@ -477,6 +479,26 @@ function IndexPreparingState() {
   );
 }
 
+// 상품 자체의 판매 데이터가 아직 없을 때, 카테고리 시장 흐름으로 대신
+// 보여주는 상태. 시장 판매 수준·해당 상품 판매량 필드가 아직 없어 항상
+// 같은 목업 문구로 보여준다.
+function PurchaseMarketFallback() {
+  return (
+    <>
+      <p className="mt-2 w-full text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-alt">
+        해당 상품의 판매 데이터가 모이기 전까지,
+        <br />
+        속한 카테고리의 시장 흐름을 보여드려요.
+      </p>
+      <div className="flex flex-col w-full gap-3 mt-auto">
+        <ChipStat label="카테고리 관심도" value="데이터 수집 중" empty />
+        <ChipStat label="시장 판매 수준" value="데이터 수집 중" empty />
+        <ChipStat label="해당 상품 판매량" value="데이터 수집 중" empty />
+      </div>
+    </>
+  );
+}
+
 function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
   if (isLoading) return <EmptyState text="불러오는 중..." />;
   if (!data) return <EmptyState text="트렌드 지수 데이터가 없어요." />;
@@ -484,6 +506,9 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
   const { integrated_index, brand_index, product_index, purchase_power_index } =
     data;
   const isPreparing = integrated_index.score == null;
+  // purchase_label은 값이 없을 때도 null이 아니라 "-" 문자열로 오기 때문에
+  // 실제 점수 필드인 purchase_pct로 데이터 유무를 판단한다.
+  const isPurchaseFallback = purchase_power_index.purchase_pct == null;
   const overallDir = bandDirection(integrated_index.band);
   const overallStyle = DIRECTION_STYLE[overallDir];
   const apiInsight = integrated_index.insight;
@@ -616,19 +641,25 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
           <p className="w-full text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
             {brand_index.awareness_label ?? "-"}
           </p>
-          {/* 스토어 찜 수 필드가 아직 없어 항상 브랜드 검색 데이터 기준임을 안내한다 */}
-          <p className="w-full mb-2 text-xs font-semibold leading-[1.33] text-falling">
-            브랜드 검색 데이터 기준
-          </p>
+          {/* 스토어 찜 수가 없을 때만 브랜드 검색 데이터 기준임을 안내한다 */}
+          {brand_index.store_likes == null && (
+            <p className="w-full mb-2 text-xs font-semibold leading-[1.33] text-falling">
+              브랜드 검색 데이터 기준
+            </p>
+          )}
 
           <div className="flex flex-col w-full gap-2 mt-auto">
             <RankLabelRow label="인지도 순위" />
             <PercentileSlider pct={brand_index.awareness_pct} />
-            {/* 네이버 검색량·스토어 찜 수 — 아직 백엔드 필드가 없어 항상
-              플레이스홀더만 보여준다. 값이 생기면 조건부로 실제 수치를 표시하게 바꾼다. */}
-            <div className="flex flex-col w-full gap-1.5">
-              <ChipStat label="네이버 검색량" value="-" />
-              <ChipStat label="스토어 찜 수" value="입점 플랫폼 없음" empty />
+            <div className="flex flex-col w-full gap-3 mt-1">
+              <ChipStat
+                label="네이버 검색량"
+                value={fmtNum(brand_index.search_volume)}
+              />
+              <ChipStat
+                label="스토어 찜 수"
+                value={fmtNum(brand_index.store_likes)}
+              />
             </div>
           </div>
         </div>
@@ -644,18 +675,28 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
             <HeadlineChange value={product_index.like_change_pct} />
           </div>
           <div className="flex flex-col justify-end flex-1 w-full gap-4">
-            <div className="flex w-full items-end gap-10 overflow-hidden @max-[380px]:justify-center">
-              <TodayVsYesterdayBars
-                prev={product_index.like_prev}
-                current={product_index.like_count}
-                gapDays={data.signal_meta.gap_days}
-              />
-              <MiniTrendLine
-                prev={product_index.like_prev}
-                current={product_index.like_count}
-                gapDays={data.signal_meta.gap_days}
-              />
-            </div>
+            {product_index.like_prev != null &&
+            product_index.like_count != null ? (
+              <div className="flex w-full items-end gap-10 overflow-hidden @max-[380px]:justify-center">
+                <TodayVsYesterdayBars
+                  prev={product_index.like_prev}
+                  current={product_index.like_count}
+                  gapDays={data.signal_meta.gap_days}
+                />
+                <MiniTrendLine
+                  prev={product_index.like_prev}
+                  current={product_index.like_count}
+                  gapDays={data.signal_meta.gap_days}
+                />
+              </div>
+            ) : (
+              // 전날 대비 증감을 계산할 이전값이 없을 때는 막대·추이 그래프 대신
+              // 브랜드 인지도와 동일한 퍼센타일 바로 현재 점수 기준 위치만 보여준다.
+              <div className="flex flex-col w-full gap-2">
+                <RankLabelRow label="관심도 순위" />
+                <PercentileSlider pct={product_index.interest_pct} />
+              </div>
+            )}
             <ChipStat
               label="좋아요&찜 수"
               value={fmtNum(product_index.like_count)}
@@ -666,54 +707,61 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
 
         {/* 구매 화력도 */}
         <div className={`${BOTTOM_BOX_CLASS} ${PANEL_BG_CLASS}`}>
-          <span className="w-full text-base font-semibold text-tx-neutral">
-            구매 화력도
-          </span>
-          <div className="flex w-full flex-col gap-1.5">
-            <p className="w-full text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
-              {purchase_power_index.purchase_label ?? "-"}
-            </p>
-            <HeadlineChange
-              value={purchase_power_index.rank_change}
-              suffix="단계"
-              digits={0}
-              showPrefix={false}
-            />
+          <div className="flex items-center w-full gap-1.5">
+            <span className="text-base font-semibold text-tx-neutral">
+              구매 화력도
+            </span>
+            {isPurchaseFallback && (
+              <span className="inline-flex items-center rounded-full bg-falling-bg px-2 py-0.5 text-xs font-semibold leading-[1.33] text-falling">
+                시장 기준
+              </span>
+            )}
           </div>
-          <div className="flex flex-col justify-end flex-1 w-full gap-4">
-            <div className="flex flex-col w-full gap-2">
-              <RankLabelRow
-                label="화력 순위"
-                prev={purchase_power_index.rank_prev}
-                current={purchase_power_index.rank}
-                direction={directionOf(purchase_power_index.rank_change)}
-              />
-              <PercentileSlider pct={purchase_power_index.purchase_pct} />
-            </div>
-            <div className="flex flex-wrap items-center w-full gap-x-6 gap-y-2">
-              <ChipStat
-                label="리뷰 수"
-                value={
-                  purchase_power_index.review_change != null
-                    ? `${purchase_power_index.review_change >= 0 ? "+" : ""}${fmtNum(purchase_power_index.review_change)}`
-                    : "-"
-                }
-                valueColorClass={
-                  DIRECTION_STYLE[
-                    directionOf(purchase_power_index.review_change)
-                  ].text
-                }
-              />
-              <ChipStat
-                label="리오더"
-                value={
-                  purchase_power_index.reorder != null
-                    ? `${purchase_power_index.reorder}차`
-                    : "-"
-                }
-              />
-            </div>
-          </div>
+
+          {isPurchaseFallback ? (
+            <PurchaseMarketFallback />
+          ) : (
+            <>
+              <div className="flex w-full flex-col gap-1.5">
+                <p className="w-full text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
+                  {purchase_power_index.purchase_label ?? "-"}
+                </p>
+                <HeadlineChange
+                  value={purchase_power_index.rank_change}
+                  suffix="단계"
+                  digits={0}
+                  showPrefix={false}
+                />
+              </div>
+              <div className="flex flex-col justify-end flex-1 w-full gap-4">
+                <div className="flex flex-col w-full gap-2">
+                  <RankLabelRow
+                    label="화력 순위"
+                    prev={purchase_power_index.rank_prev}
+                    current={purchase_power_index.rank}
+                    direction={directionOf(purchase_power_index.rank_change)}
+                  />
+                  <PercentileSlider pct={purchase_power_index.purchase_pct} />
+                </div>
+                <div className="flex flex-wrap items-center w-full gap-x-6 gap-y-2">
+                  <ChipStat
+                    label="리뷰 수"
+                    value={fmtNum(purchase_power_index.review_count)}
+                    badgeValue={purchase_power_index.review_change_pct}
+                  />
+                  <ChipStat
+                    label="리오더"
+                    value={
+                      purchase_power_index.reorder != null
+                        ? `${purchase_power_index.reorder}차`
+                        : "-"
+                    }
+                    badgeValue={purchase_power_index.reorder_change_pct}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
