@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useProductStore } from "@/stores/ProductStore";
 import { GetDetailInfo, GetProductByItemCode, GetRelatedItemInfo } from "@/apis/AnalysisAPI";
+import { GetTrendIndex } from "@/apis/DashBoardAPI";
 import {
   PostCreateBoard,
   PostAddBoardItem,
@@ -12,10 +13,11 @@ import {
   type BoardListItem,
 } from "@/apis/BoardAPI";
 import type { ApiDetail } from "@/types/Product";
+import type { TrendSnapshotDetailDto } from "@/types/Main";
 import DetailItem from "./DetailItem";
 import defaultImg from "@/assets/logo/defaultImg.svg";
 import AIAnalysisBox from "./AIAnalysisBox";
-import TrendIndexBox from "./TrendIndexBox";
+import TrendIndexBoxMock from "./TrendIndexBoxMock";
 import { formatSalesCount } from "@/lib/utils";
 
 const hasValue = (v: string | string[] | undefined | null) =>
@@ -45,6 +47,9 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
   const [detailData, setDetailData] = useState<ApiDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [related, setRelated] = useState<RelatedItem[]>([]);
+  const [trendSnapshot, setTrendSnapshot] =
+    useState<TrendSnapshotDetailDto | null>(null);
+  const [isTrendLoading, setIsTrendLoading] = useState(false);
 
   const [boards, setBoards] = useState<BoardListItem[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
@@ -248,6 +253,28 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
     };
   }, [effectiveId]);
 
+  useEffect(() => {
+    if (!effectiveId) {
+      setTrendSnapshot(null);
+      return;
+    }
+    let canceled = false;
+    setIsTrendLoading(true);
+    GetTrendIndex(effectiveId)
+      .then((res) => {
+        if (!canceled) setTrendSnapshot(res);
+      })
+      .catch(() => {
+        if (!canceled) setTrendSnapshot(null);
+      })
+      .finally(() => {
+        if (!canceled) setIsTrendLoading(false);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [effectiveId]);
+
   const mainCategory = useMemo(
     () => detailData?.categories?.[0]?.main_category ?? "",
     [detailData],
@@ -264,13 +291,13 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
       : detailData.release_date;
   }, [detailData]);
 
-  const getPlatformLabel = (platform: string) => {
-    const p = platform.toLowerCase();
-    if (p.includes("무신사")) return "무";
-    if (p.includes("wconcept") || p.includes("w컨셉")) return "W";
-    if (p.includes("29cm")) return "29";
-    return p;
-  };
+  // const getPlatformLabel = (platform: string) => {
+  //   const p = platform.toLowerCase();
+  //   if (p.includes("무신사")) return "무";
+  //   if (p.includes("wconcept") || p.includes("w컨셉")) return "W";
+  //   if (p.includes("29cm")) return "29";
+  //   return p;
+  // };
 
   if (!effectiveId && !detailData) return null;
 
@@ -319,13 +346,13 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
                   )}
                 </div>
 
-                {detailData.platform && (
+                {/* {detailData.platform && (
                   <div className="absolute bottom-4 left-4">
                     <div className="flex items-center justify-center w-5 h-5 text-white bg-tx-neutral rounded text-xs font-medium">
                       {getPlatformLabel(detailData.platform)}
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
 
               <div className="flex-1 min-w-0">
@@ -468,7 +495,7 @@ export default function ProductDetailContent({ product, itemcodeOverride, onClos
               itemcode={effectiveId ?? ""}
               isRanking={false}
             />
-            <TrendIndexBox itemCode={effectiveId ?? ""} />
+            <TrendIndexBoxMock data={trendSnapshot} isLoading={isTrendLoading} />
             <div className="h-[1px] w-full bg-line-alt my-5" />
             <div className="flex flex-col gap-3">
               <span className="font-semibold text-tx-alt">

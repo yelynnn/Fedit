@@ -2,7 +2,6 @@ import type {
   GetTrendKeywordParams,
   MainItemTrendBoxProps,
   RankingItemDetailResponse,
-  TrendIndexResponse,
   TrendKeywordResponse,
   GetTrendRankingParams,
   TrendRankingPageResponse,
@@ -53,7 +52,9 @@ const GetTrendColor = async () => {
   return response.data;
 };
 
-const GetTrendIndex = async (itemCode: string): Promise<TrendIndexResponse> => {
+const GetTrendIndex = async (
+  itemCode: string,
+): Promise<TrendSnapshotDetailDto> => {
   try {
     const res = await axiosInstance.get(`/trendIndex/${itemCode}`);
     return res.data;

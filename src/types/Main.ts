@@ -82,28 +82,6 @@ export type RankingProduct = {
   itemcode: string;
 };
 
-export type TrendIndexResponse = {
-  isPlatform: boolean;
-  brand: {
-    brandScore: number;
-    brandPctl: number;
-    likes: number | null;
-    search: number | null;
-    marketScore: number | null;
-  };
-  purchase: {
-    purchaseScore: number;
-    purchasePctl: number;
-    sales: number;
-  };
-  category: {
-    categoryScore: number;
-    categoryPctl: number;
-    likes: number | null;
-    reorder: number | null;
-  };
-};
-
 export type RelatedItem = {
   itemCode: string;
   brand: string;
@@ -118,8 +96,8 @@ export type RankingItemDetailResponse = {
   related_items: RelatedItem[];
 };
 
-// 트렌드 지수 고도화 — 랭킹은 /trend, 상품 스냅샷 상세는 /trend/{tempItemId}를
-// 쓴다. 기존 GetTrendIndex와는 별개의 데이터 소스라 필드 구성이 다르다.
+// 트렌드 지수 고도화 — 랭킹은 /trend/{tempItemId}, 상품 상세페이지는
+// /trendIndex/{itemCode}를 쓰는데 둘 다 이 형식으로 통일되어 있다.
 export type TrendRankingItem = {
   position: number;
   temp_item_id: number;
