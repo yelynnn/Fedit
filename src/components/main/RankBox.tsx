@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 import { Icon } from "@iconify/react";
 import TrendIndexBoxMock from "../product/TrendIndexBoxMock";
+import AIAnalysisBox from "../product/AIAnalysisBox";
 import dayjs from "dayjs";
 import MonthModal from "./modal/MonthModal";
 import DateNavNotice from "./DateNavNotice";
@@ -10,6 +11,7 @@ import type {
   TrendRankingPageResponse,
   TrendSnapshotDetailDto,
 } from "@/types/Main";
+import { useProductStore } from "@/stores/ProductStore";
 import { useTypeStore } from "@/stores/TypeStore";
 import {
   useSubscriptionStore,
@@ -43,6 +45,7 @@ const DATA_UNAVAILABLE_NOTICE = (
 );
 
 export default function RankBox() {
+  const { setModalTrendSnapshot } = useProductStore((s) => s);
   const { audienceType } = useTypeStore();
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -50,7 +53,9 @@ export default function RankBox() {
   const [selectedCategory, setSelectedCategory] = useState<string>("상의");
   const visibleCategories =
     audienceType === "male"
-      ? CATEGORIES.filter((category) => !FEMALE_ONLY_CATEGORIES.includes(category))
+      ? CATEGORIES.filter(
+          (category) => !FEMALE_ONLY_CATEGORIES.includes(category),
+        )
       : CATEGORIES;
   // 트렌드 지수 고도화 — /trend(랭킹), /trend/{tempItemId}(스냅샷 상세)로
   // 받아온 데이터. 왼쪽 트렌드 항목 리스트와 우측 트렌드 지수 박스를 이걸로 그린다.
@@ -328,35 +333,21 @@ export default function RankBox() {
             className={isLocked ? "pointer-events-none select-none" : ""}
             style={isLocked ? { opacity: 0.5, filter: "blur(3px)" } : undefined}
           >
-            {snapshotDetail && (
-              <div className="mb-3 overflow-hidden">
-                <span className="block overflow-hidden text-xs font-medium text-tx-alt text-ellipsis truncate">
-                  {snapshotDetail.brand}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="min-w-0 overflow-hidden text-sm font-semibold text-tx-strong text-ellipsis truncate">
-                    {snapshotDetail.product_name}
-                  </span>
-                  {snapshotDetail.product_detail_url && (
-                    <a
-                      href={snapshotDetail.product_detail_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium transition-colors rounded-lg shrink-0 text-tx-alt bg-fill-bg-strong hover:text-tx-neutral"
-                    >
-                      상세페이지
-                      <Icon icon="lucide:external-link" className="w-3 h-3" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
             <div className="px-8 mb-4 -mx-8">
               <TrendIndexBoxMock
                 data={snapshotDetail}
                 isLoading={isSnapshotLoading}
               />
             </div>
+
+            {snapshotDetail && (
+              <AIAnalysisBox
+                content={snapshotDetail.vlm?.ai_description ?? ""}
+                itemcode={String(activeTempItemId ?? "")}
+                isRanking={true}
+                onDetailClick={() => setModalTrendSnapshot(snapshotDetail)}
+              />
+            )}
           </div>
         </div>
       </div>

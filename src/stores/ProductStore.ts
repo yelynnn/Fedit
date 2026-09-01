@@ -1,4 +1,5 @@
 import type { ApiDetail } from "@/types/Product";
+import type { TrendSnapshotDetailDto } from "@/types/Main";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -8,6 +9,11 @@ export interface ProductStore {
 
   modalProductId: string | null;
   setModalProductId: (id: string | null) => void;
+
+  // 랭킹처럼 itemcode 없이 temp_item_id로만 조회한 상품 — /trend에서 이미
+  // 받아온 스냅샷을 그대로 모달에 넣어 보여준다(itemcode 기반 재조회 없음).
+  modalTrendSnapshot: TrendSnapshotDetailDto | null;
+  setModalTrendSnapshot: (snapshot: TrendSnapshotDetailDto | null) => void;
 
   resultLists: ApiDetail[];
   setResultLists: (
@@ -24,6 +30,10 @@ export const useProductStore = create<ProductStore>()(
 
       modalProductId: null,
       setModalProductId: (id) => set({ modalProductId: id }),
+
+      modalTrendSnapshot: null,
+      setModalTrendSnapshot: (snapshot) =>
+        set({ modalTrendSnapshot: snapshot }),
 
       resultLists: [],
       setResultLists: (input) =>

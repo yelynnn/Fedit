@@ -135,11 +135,11 @@ export default function AIAnalysisBox({
       <div className="relative mb-3">
         <p
           ref={textRef}
-          className={`text-sm text-gray-600 leading-relaxed ${
-            isExpanded ? "" : "line-clamp-3"
-          }`}
+          className={`text-sm leading-relaxed ${
+            content ? "text-gray-600" : "text-gray-400"
+          } ${isExpanded ? "" : "line-clamp-3"}`}
         >
-          {content}
+          {content || "아직 AI 분석 결과가 없어요."}
         </p>
         {!isExpanded && isOverflowing && (
           <button

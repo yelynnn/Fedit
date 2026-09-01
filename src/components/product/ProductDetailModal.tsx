@@ -3,19 +3,27 @@ import { useProductStore } from "@/stores/ProductStore";
 import ProductDetailContent from "./ProductDetailContent";
 
 export default function ProductDetailModal() {
-  const { modalProductId, setModalProductId } = useProductStore((s) => s);
+  const { modalProductId, setModalProductId, modalTrendSnapshot, setModalTrendSnapshot } =
+    useProductStore((s) => s);
+  const isOpen = !!modalProductId || !!modalTrendSnapshot;
+
+  const close = () => {
+    setModalProductId(null);
+    setModalTrendSnapshot(null);
+  };
 
   useEffect(() => {
-    if (!modalProductId) return;
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setModalProductId(null);
+      if (e.key === "Escape") close();
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [modalProductId, setModalProductId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   useEffect(() => {
-    if (modalProductId) {
+    if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -23,24 +31,31 @@ export default function ProductDetailModal() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [modalProductId]);
+  }, [isOpen]);
 
-  if (!modalProductId) return null;
+  if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={() => setModalProductId(null)}
+      onClick={close}
     >
       <div
         className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl mx-4 p-8 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <ProductDetailContent
-          itemcodeOverride={modalProductId}
-          onClose={() => setModalProductId(null)}
-          onItemClick={(id) => setModalProductId(id)}
-        />
+        {modalTrendSnapshot ? (
+          <ProductDetailContent
+            previewSnapshot={modalTrendSnapshot}
+            onClose={close}
+          />
+        ) : (
+          <ProductDetailContent
+            itemcodeOverride={modalProductId ?? undefined}
+            onClose={close}
+            onItemClick={(id) => setModalProductId(id)}
+          />
+        )}
       </div>
     </div>
   );
