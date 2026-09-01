@@ -385,14 +385,22 @@ export default function ProductDetailContent({
         detailData && (
           <>
             <section className="flex flex-col gap-5 mb-6 lg:flex-row">
-              <div className="relative flex-shrink-0">
+              <div className="relative flex-shrink-0 w-[400px] h-[530px] rounded-xl bg-fill-bg-strong">
                 <img
                   src={
                     detailData.thumbnail ||
                     detailData.front_image_url ||
                     defaultImg
                   }
-                  className="w-[400px] h-[530px] object-cover rounded-xl bg-fill-bg-strong"
+                  onError={(e) => {
+                    // 썸네일 URL이 깨지면 이미지가 찌그러져 오버레이 버튼이
+                    // 밖으로 튀어나온다 — 기본 이미지로 교체(무한 루프 방지).
+                    const img = e.currentTarget;
+                    if (img.dataset.fallback) return;
+                    img.dataset.fallback = "true";
+                    img.src = defaultImg;
+                  }}
+                  className="w-full h-full object-cover rounded-xl"
                   alt="product"
                 />
 

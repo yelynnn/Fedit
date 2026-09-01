@@ -10,7 +10,9 @@ interface ColorData {
 
 interface ColorBarProps {
   title?: string;
-  brand?: string;
+  // "전체(ALL)" 블록은 브랜드 하나가 아니라, 사용자가 선택한 모든 브랜드를
+  // brand=A&brand=B... 로 반복 전송해야 한다 — 배열로 넘기면 그렇게 처리한다.
+  brand?: string | string[];
   data?: ColorData[];
   onClose?: () => void;
 }
@@ -23,7 +25,10 @@ export default function ColorBar({ title, brand, data, onClose }: ColorBarProps)
 
   const handleRelatedItemClick = async (colorHex: string) => {
     const targetBrand = brand ?? title ?? "";
-    if (!targetBrand || !colorHex) return;
+    const hasBrand = Array.isArray(targetBrand)
+      ? targetBrand.length > 0
+      : !!targetBrand;
+    if (!hasBrand || !colorHex) return;
 
     setModalItems([]);
     setModalOpen(true);

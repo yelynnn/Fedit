@@ -181,7 +181,9 @@ function NewColorAnalysis() {
               ) : (
                 <ColorBar
                   title={block.brand}
-                  brand={block.brand === "전체" ? "ALL" : block.brand}
+                  // "전체" 블록은 브랜드명이 없으니, 사용자가 선택한 모든
+                  // 브랜드(brandList)를 brand=A&brand=B... 로 반복 전송한다.
+                  brand={block.brand === "전체" ? brandList : block.brand}
                   data={block.data}
                   onClose={
                     block.brand !== "전체"
@@ -230,7 +232,7 @@ function NewColorAnalysis() {
       <p className="mt-1 mb-4 text-base font-medium leading-6 text-icon-neutral">
         모든 경쟁사가 소량으로 동시 출시 중인 유행 색상입니다.
       </p>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid items-start grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {trendColors.map((item) => (
           <TrendColorBox key={item.rank} data={item} />
         ))}

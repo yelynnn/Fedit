@@ -2069,7 +2069,6 @@ export default function SettingsPage() {
                       <span className="text-sm font-semibold text-tx-strong">
                         토스페이먼츠
                       </span>
-                      <span className="text-xs text-tx-assistive">준비 중</span>
                     </span>
                     {selectedMethod === "toss" && (
                       <Icon

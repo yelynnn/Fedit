@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
+import { GetColorRelatedProducts, type ColorProductItem } from "@/apis/ColorAPI";
+import RelatedItemModal from "./RelatedItemModal";
+import { useFilterStore } from "@/stores/FilterStore";
 
 interface BrandDetail {
   brandName: string;
@@ -26,8 +29,39 @@ interface Props {
 
 const TrendColorBox = ({ data }: Props) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { brandList } = useFilterStore();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalItems, setModalItems] = useState<ColorProductItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRelatedItemClick = async (brandName: string) => {
+    // "전체"/"ALL" 행은 사용자가 선택한 모든 브랜드를 brand 파라미터로 반복해
+    // 보낸다(color/product?brand=A&brand=B&color_hex=...). 그 외에는 해당
+    // 브랜드 하나만. hex는 이 박스(=해당 색상)의 colorHex를 그대로 쓴다.
+    const isAll =
+      brandName === "전체" || brandName.toUpperCase() === "ALL";
+    const brandParam: string | string[] =
+      isAll && brandList.length > 0 ? brandList : brandName;
+    if (!data.colorHex) return;
+
+    setModalItems([]);
+    setModalOpen(true);
+    setIsLoading(true);
+    try {
+      const items = await GetColorRelatedProducts({
+        brand: brandParam,
+        color_hex: data.colorHex,
+      });
+      setModalItems(items);
+    } catch {
+      setModalItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
+    <>
     <div
       className={`w-full max-w-[400px] rounded-xl p-4 border transition-all ${
         data.isTotal
@@ -55,18 +89,18 @@ const TrendColorBox = ({ data }: Props) => {
             {data.colorName}
           </h3>
 
-          <div className="flex items-center gap-1 px-2 py-1 bg-white rounded-lg">
+          {/* <div className="flex items-center gap-1 px-2 py-1 bg-white rounded-lg">
             <span className="text-sm font-medium text-tx-default">
               {data.score}점
             </span>
             <Icon icon="ph:question-light" className="w-4 h-4 text-gray-400" />
-          </div>
+          </div> */}
         </div>
         <div className="flex flex-col flex-wrap gap-2">
-          <div className="w-fit px-2 py-1 bg-falling-bg rounded-lg text-data-blue text-xs font-semibold">
+          {/* <div className="px-2 py-1 text-xs font-semibold rounded-lg w-fit bg-falling-bg text-data-blue">
             성장 가속도 {data.growthRate}% 증가
-          </div>
-          <div className="w-fit px-2 py-1 bg-falling-bg rounded-lg text-data-blue text-xs font-semibold">
+          </div> */}
+          <div className="px-2 py-1 text-xs font-semibold rounded-lg w-fit bg-falling-bg text-data-blue">
             {data.competitorCount}개 이상 경쟁사에서 동시 출시
           </div>
         </div>
@@ -116,7 +150,10 @@ const TrendColorBox = ({ data }: Props) => {
                   {brand.itemCount}개 아이템
                 </span>
               </div>
-              <button className="px-2 py-1 text-xs font-semibold text-tx-neutral hover:text-tx-neutral">
+              <button
+                onClick={() => handleRelatedItemClick(brand.brandName)}
+                className="flex h-7 shrink-0 items-center justify-center gap-1 rounded-lg px-2 bg-[rgba(11,14,15,0.05)] text-[#3D3F41] text-xs font-semibold leading-[1.33] hover:bg-[rgba(11,14,15,0.08)] transition-colors"
+              >
                 관련 아이템
               </button>
             </div>
@@ -124,6 +161,13 @@ const TrendColorBox = ({ data }: Props) => {
         </div>
       )}
     </div>
+    <RelatedItemModal
+      isOpen={modalOpen}
+      onClose={() => setModalOpen(false)}
+      items={modalItems}
+      isLoading={isLoading}
+    />
+    </>
   );
 };
 

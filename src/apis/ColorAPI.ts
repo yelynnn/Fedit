@@ -53,7 +53,9 @@ export interface ColorProductItem {
 }
 
 const GetColorRelatedProducts = async (params: {
-  brand: string;
+  // 문자열 하나면 단일 브랜드, 배열이면 brand=A&brand=B 형태로 반복 전송한다
+  // ("all" 그래프에서 선택한 모든 브랜드를 조회할 때).
+  brand: string | string[];
   color_hex: string;
 }): Promise<ColorProductItem[]> => {
   const response = await axiosInstance.get("/color/product", {
@@ -61,6 +63,8 @@ const GetColorRelatedProducts = async (params: {
       brand: params.brand,
       color_hex: params.color_hex,
     },
+    // 배열을 brand[]=A 가 아니라 brand=A&brand=B 로 직렬화
+    paramsSerializer: { indexes: null },
   });
   return Array.isArray(response.data) ? response.data : [];
 };

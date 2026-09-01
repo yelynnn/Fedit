@@ -390,37 +390,51 @@ function SingleTodayBar({
 function CategoryCompareBars({
   thisValue,
   categoryValue,
+  categoryLabel = "카테고리 평균",
 }: {
   thisValue: number;
   categoryValue: number;
+  categoryLabel?: string;
 }) {
   const max = Math.max(thisValue, categoryValue, 1);
+  // 막대가 짧아도 값 라벨이 막대 바로 위에 붙도록, 값을 h-16 컨테이너
+  // 안에 넣고 아래 정렬한다. 막대 최대 높이는 값 라벨 자리를 남기려고
+  // 컨테이너(64px)보다 낮은 44px로 잡는다.
+  const BAR_MAX_H = 44;
+  const bar = (value: number, label: string, fillClass: string) => (
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="flex flex-col items-center justify-end w-12 h-16 gap-1">
+        <span className="text-xs font-medium leading-[1.33] text-tx-neutral">
+          {fmtNum(value)}
+        </span>
+        <div
+          className={`w-full rounded-t ${fillClass}`}
+          style={{
+            // 값이 있으면 아무리 작아도 최소 4px는 보이게 한다.
+            height: `${value > 0 ? Math.max(4, (value / max) * BAR_MAX_H) : 0}px`,
+          }}
+        />
+      </div>
+      <span className="text-[11px] text-tx-alt">{label}</span>
+    </div>
+  );
   return (
     <div className="flex items-end gap-5 shrink-0">
-      <div className="flex flex-col items-center gap-1.5">
-        <span className="text-xs font-medium leading-[1.33] text-tx-neutral">
-          {fmtNum(thisValue)}
-        </span>
-        <div className="flex items-end w-12 h-16">
-          <div
-            className="w-full rounded-t bg-fill-primary"
-            style={{ height: `${(thisValue / max) * 100}%` }}
-          />
-        </div>
-        <span className="text-[11px] text-tx-alt">이 상품</span>
-      </div>
-      <div className="flex flex-col items-center gap-1.5">
-        <span className="text-xs font-medium leading-[1.33] text-tx-neutral">
-          {fmtNum(categoryValue)}
-        </span>
-        <div className="flex items-end w-12 h-16">
-          <div
-            className="w-full rounded-t bg-line-alt"
-            style={{ height: `${(categoryValue / max) * 100}%` }}
-          />
-        </div>
-        <span className="text-[11px] text-tx-alt">카테고리 평균</span>
-      </div>
+      {bar(categoryValue, categoryLabel, "bg-line-alt")}
+      {bar(thisValue, "해당 상품", "bg-fill-primary")}
+    </div>
+  );
+}
+
+// 비교 막대 오른쪽에 작게 붙는 "관심도 위치" 퍼센타일 바.
+function InterestPositionBar({ pct }: { pct: number | null }) {
+  if (pct == null) return null;
+  return (
+    <div className="flex min-w-0 max-w-[176px] flex-1 flex-col gap-1.5 pb-[17px]">
+      <span className="text-xs font-semibold leading-[1.33] text-tx-assistive">
+        관심도 위치
+      </span>
+      <PercentileSlider pct={pct} />
     </div>
   );
 }
@@ -437,7 +451,6 @@ type ItemInterestMarketData = NonNullable<
 function ItemInterestMarket({ data }: { data: ItemInterestMarketData }) {
   const {
     interest_pct,
-    interest_label,
     like_count,
     category_avg_like,
     category_momentum_pct,
@@ -445,35 +458,23 @@ function ItemInterestMarket({ data }: { data: ItemInterestMarketData }) {
   } = data;
 
   return (
-    <div className="flex w-full flex-col gap-3">
-      {like_count != null && category_avg_like != null ? (
-        <CategoryCompareBars
-          thisValue={like_count}
-          categoryValue={category_avg_like}
-        />
-      ) : (
-        category_avg_like != null && (
-          <SingleTodayBar value={category_avg_like} label="카테고리 평균" />
-        )
-      )}
-      {/* like_count/category_avg_like가 둘 다 없어(3번째 케이스) 비교 막대가
-        안 뜰 때도, interest_pct만 있으면 브랜드 인지도와 같은 방식(라벨+
-        퍼센타일 바)으로 위치는 보여준다. */}
-      {interest_pct != null && (
-        <div className="flex w-full flex-col gap-2">
-          {interest_label != null && (
-            <div className="flex items-center justify-between w-full text-sm">
-              <span className="text-xs font-semibold leading-[1.33] text-tx-assistive">
-                관심도 위치
-              </span>
-              <span className="font-semibold text-tx-strong">
-                {interest_label}
-              </span>
-            </div>
-          )}
-          <PercentileSlider pct={interest_pct} />
-        </div>
-      )}
+    <div className="flex flex-col w-full gap-3">
+      {/* 비교 막대는 왼쪽, 관심도 위치 바는 그 오른쪽에 작게 나란히 둔다.
+        like_count/category_avg_like가 둘 다 없는 케이스에선 막대 없이
+        관심도 위치 바만 폭을 채운다. */}
+      <div className="flex items-end w-full gap-8">
+        {like_count != null && category_avg_like != null ? (
+          <CategoryCompareBars
+            thisValue={like_count}
+            categoryValue={category_avg_like}
+          />
+        ) : (
+          category_avg_like != null && (
+            <SingleTodayBar value={category_avg_like} label="카테고리 평균" />
+          )
+        )}
+        <InterestPositionBar pct={interest_pct} />
+      </div>
       {category_momentum != null && (
         <p
           className={`flex items-center gap-0.5 text-sm font-semibold ${DIRECTION_STYLE[category_momentum].text}`}
@@ -494,22 +495,119 @@ function buildInsight(
 ): { prefix: string; highlight: string; suffix: string } | null {
   const { integrated_index, brand_index, product_index, purchase_power_index } =
     data;
-  const likePct = product_index.like_change_pct;
-  const rankChange = purchase_power_index.rank_change;
-  const dir = bandDirection(integrated_index.band);
-  const dirWord = dir === "up" ? "상승" : dir === "down" ? "하락" : "유지";
+  const band = integrated_index.band;
+  const bandDir = bandDirection(band);
 
-  if (likePct != null || rankChange != null) {
-    const parts: string[] = [];
-    if (likePct != null)
-      parts.push(`찜${likePct >= 0 ? "+" : ""}${fmtNum(likePct, 1)}%`);
-    if (rankChange != null)
-      parts.push(`랭킹${fmtNum(Math.abs(rankChange))}계단 ${dirWord}`);
+  // 변화량이 들어온 지표를 우선순위대로 모은다 — 찜·랭킹에 한정하지 않고
+  // 값이 있는 건 뭐든 문구에 쓴다. topic(은/는)·subject(이/가) 조사는
+  // 받침에 따라 다르므로 지표마다 직접 들고 있는다. unit "step"은 "N계단",
+  // "pct"는 "N%".
+  type MetricChange = {
+    noun: string;
+    topic: string;
+    subject: string;
+    unit: "pct" | "step";
+    value: number;
+  };
+  const metrics: MetricChange[] = [];
+  const pushPct = (
+    noun: string,
+    topic: string,
+    subject: string,
+    v: number | null,
+  ) => {
+    if (v != null)
+      metrics.push({ noun, topic, subject, unit: "pct", value: v });
+  };
+  // 찜 변화율이 안 오면 이전값→현재값으로 직접 계산해서라도 쓴다.
+  const likePct =
+    product_index.like_change_pct ??
+    (product_index.like_prev != null &&
+    product_index.like_prev > 0 &&
+    product_index.like_count != null
+      ? ((product_index.like_count - product_index.like_prev) /
+          product_index.like_prev) *
+        100
+      : null);
+  pushPct("찜", "은", "이", likePct);
+  if (purchase_power_index.rank_change != null)
+    metrics.push({
+      noun: "랭킹",
+      topic: "은",
+      subject: "이",
+      unit: "step",
+      value: purchase_power_index.rank_change,
+    });
+  pushPct("리뷰 수", "는", "가", purchase_power_index.review_change_pct);
+  pushPct("리오더", "는", "가", purchase_power_index.reorder_change_pct);
 
+  if (metrics.length > 0) {
+    const label = (m: MetricChange): string => {
+      const d = directionOf(m.value);
+      if (m.unit === "step") {
+        return d === "flat"
+          ? `${m.noun} 변동 없음`
+          : `${m.noun} ${fmtNum(Math.abs(m.value))}계단 ${
+              d === "up" ? "상승" : "하락"
+            }`;
+      }
+      return `${m.noun} ${m.value >= 0 ? "+" : ""}${fmtNum(m.value, 1)}%`;
+    };
+    // 문구가 너무 길어지지 않게 최대 3개까지만 나열한다.
+    const joined = metrics.slice(0, 3).map(label).join("·");
+
+    // 상승/하락 밴드: 변화 지표를 그대로 나열하고 밴드 진입 문구로 마무리.
+    if (bandDir !== "flat") {
+      return {
+        prefix: "하루 만에 ",
+        highlight: joined,
+        suffix: `으로 ${band} 구간에 진입했어요.`,
+      };
+    }
+
+    // 유지 밴드: 가장 크게 오른 지표와 가장 크게 내린 지표를 대비시켜
+    // "무엇이 늘었는데 무엇이 줄어서 유지인지"를 설명한다.
+    const byMagnitude = (a: MetricChange, b: MetricChange) =>
+      Math.abs(b.value) - Math.abs(a.value);
+    const up = metrics
+      .filter((m) => directionOf(m.value) === "up")
+      .sort(byMagnitude)[0];
+    const down = metrics
+      .filter((m) => directionOf(m.value) === "down")
+      .sort(byMagnitude)[0];
+
+    const openClause = (m: MetricChange): string =>
+      m.unit === "step"
+        ? `${m.noun}${m.subject} ${fmtNum(Math.abs(m.value))}계단 올랐지만`
+        : `${m.noun}${m.topic} ${fmtNum(Math.abs(m.value), 1)}% 늘었지만`;
+    const closeClause = (m: MetricChange): string =>
+      m.unit === "step"
+        ? `${m.noun}${m.subject} ${fmtNum(Math.abs(m.value))}계단 내려`
+        : `${m.noun}${m.topic} ${fmtNum(Math.abs(m.value), 1)}% 줄어`;
+
+    if (up && down) {
+      return {
+        prefix: `${openClause(up)} `,
+        highlight: closeClause(down),
+        suffix: ` ${band} 구간이에요.`,
+      };
+    }
+
+    // 대비할 상승/하락 쌍이 없으면(둘 다 같은 방향이거나 한쪽만 있음) 지표만 제시.
     return {
-      prefix: "하루 만에 ",
-      highlight: parts.join("·"),
-      suffix: `으로 ${integrated_index.band} 구간에 진입했어요.`,
+      prefix: "",
+      highlight: joined,
+      suffix: ` 수준으로 ${band} 구간이에요.`,
+    };
+  }
+
+  // 유지 밴드인데 쓸 변화 지표가 하나도 없으면, 억지로 찜 수를 들이대지 말고
+  // "이번 주는 변동이 크지 않다"는 사실 그대로 전한다.
+  if (bandDir === "flat") {
+    return {
+      prefix: `이번 주는 지표 변화가 크지 않아 ${band} 구간이에요.`,
+      highlight: "",
+      suffix: "",
     };
   }
 
@@ -655,12 +753,16 @@ function PurchaseMarketFallback({
             badgeValue={data.category_interest_change_pct}
           />
         )}
-        {data?.avg_review_weekly != null && (
-          <ChipStat
-            label="평균 리뷰 수"
-            value={`${fmtNum(data.avg_review_weekly)}건`}
-          />
-        )}
+        {/* 값이 없거나 0이면 칩은 유지하되 "데이터 수집 중"으로 표시한다. */}
+        <ChipStat
+          label="평균 리뷰 수"
+          value={
+            data?.avg_review_weekly
+              ? `${fmtNum(data.avg_review_weekly)}건`
+              : "데이터 수집 중"
+          }
+          empty={!data?.avg_review_weekly}
+        />
         {data?.similar_weekly_sales && (
           <ChipStat
             label="유사 상품 판매량"
@@ -668,7 +770,7 @@ function PurchaseMarketFallback({
           />
         )}
         {/* 상품 자체 판매 데이터는 market 케이스에선 있을 수가 없어 항상 표시 */}
-        <ChipStat label="해당 상품 판매량" value="데이터 수집 중" empty />
+        <ChipStat label="상품 판매량" value="데이터 수집 중" empty />
       </div>
     </>
   );
@@ -692,6 +794,17 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
     data.similar_estimate?.similar_count == null
       ? "measured"
       : product_index.basis;
+  // similar 카드에서 baseline(어제값)이 없어 추이 막대를 못 그릴 때는,
+  // 유사상품 평균(cohort_avg) vs 해당 상품(like_count) 비교 막대로 대체한다.
+  const showSimilarCompareBars =
+    itemInterestBasis === "similar" &&
+    product_index.like_prev == null &&
+    product_index.like_count != null &&
+    data.similar_estimate?.like?.cohort_avg != null;
+  // "상위권" 같은 관심도 등급 값이 아예 없으면 "-" 짝대기 대신 안내 문구를 띄운다.
+  const hasInterestLabel =
+    product_index.interest_label != null &&
+    product_index.interest_label !== "-";
   const purchaseHasSimilarEvidence =
     data.similar_estimate?.weekly_review != null ||
     data.similar_estimate?.reorder_avg != null ||
@@ -716,6 +829,18 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
   // 피하기 위해서다. API가 이미 수치까지 담은 완성 문장을 주면 그걸 그대로 쓴다.
   const apiInsightHasDetail = apiInsight != null && /%|계단/.test(apiInsight);
   const useComputedInsight = !apiInsightHasDetail && computedInsight != null;
+  // 통합 지수를 유사상품 흐름으로 추정한 경우엔, 흰 인사이트 박스를
+  // "직접 판매 데이터가 없어 유사상품 N개의 흐름으로 추정했어요. 이 유형은
+  // 최근 OO세예요." 문구로 대체한다. N/추세 단어는 상품 데이터에서 채운다.
+  const similarBasisCount = data.similar_estimate?.similar_count ?? null;
+  const showSimilarBasisInsight =
+    integrated_index.basis === "similar" && similarBasisCount != null;
+  const similarBasisTrendWord =
+    overallDir === "up"
+      ? "상승세"
+      : overallDir === "down"
+        ? "하락세"
+        : "보합세";
 
   return (
     <div className="w-full overflow-hidden rounded-[20px] border border-line-alt">
@@ -765,17 +890,35 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
                 </p>
               )}
 
-              {(apiInsight || computedInsight) && (
+              {(showSimilarBasisInsight || apiInsight || computedInsight) && (
                 <div className="flex items-center w-full px-3 py-3 my-2 border rounded-md min-h-10 border-line-alt bg-fill-bg">
                   <p className="text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-neutral">
-                    {useComputedInsight ? (
+                    {showSimilarBasisInsight ? (
                       <>
-                        {computedInsight!.prefix}
+                        직접 판매 데이터가 없어 유사상품{" "}
                         <span
                           className={`rounded px-1 font-semibold ${overallStyle.subtleBg}`}
                         >
-                          {computedInsight!.highlight}
+                          {fmtNum(similarBasisCount)}개
                         </span>
+                        의 흐름으로 추정했어요. 이 유형은 최근{" "}
+                        <span
+                          className={`rounded px-1 font-semibold ${overallStyle.subtleBg}`}
+                        >
+                          {similarBasisTrendWord}
+                        </span>
+                        예요.
+                      </>
+                    ) : useComputedInsight ? (
+                      <>
+                        {computedInsight!.prefix}
+                        {computedInsight!.highlight && (
+                          <span
+                            className={`rounded px-1 font-semibold ${overallStyle.subtleBg}`}
+                          >
+                            {computedInsight!.highlight}
+                          </span>
+                        )}
                         {computedInsight!.suffix}
                       </>
                     ) : (
@@ -883,18 +1026,27 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
           </div>
 
           <div className="flex w-full flex-col gap-1.5">
-            <p className="w-full text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
-              {product_index.interest_label ?? "-"}
-            </p>
-            {itemInterestBasis === "similar" ? (
-              data.similar_estimate?.similar_count != null && (
-                <p className="text-xs font-semibold leading-[1.33] text-falling">
-                  유사상품 {fmtNum(data.similar_estimate.similar_count)}개
-                  평균 분포 기준
+            {hasInterestLabel ? (
+              <>
+                <p className="w-full text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
+                  {product_index.interest_label}
                 </p>
-              )
+                {itemInterestBasis === "similar" ? (
+                  data.similar_estimate?.similar_count != null && (
+                    <p className="text-xs font-semibold leading-[1.33] text-falling">
+                      유사상품 {fmtNum(data.similar_estimate.similar_count)}개
+                      평균 분포 기준
+                    </p>
+                  )
+                ) : (
+                  <HeadlineChange value={product_index.like_change_pct} />
+                )}
+              </>
             ) : (
-              <HeadlineChange value={product_index.like_change_pct} />
+              <p className="mt-2 w-full text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-alt">
+                아직 해당 상품의 반응 데이터가 모이기 전이라, <br />
+                유사 스타일의 시장 흐름을 먼저 보여드려요.{" "}
+              </p>
             )}
           </div>
           <div className="flex flex-col justify-end flex-1 w-full gap-4">
@@ -922,11 +1074,22 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
                     }
                   />
                 </div>
+              ) : showSimilarCompareBars ? (
+                <div className="flex items-end w-full gap-8">
+                  <CategoryCompareBars
+                    thisValue={product_index.like_count as number}
+                    categoryValue={
+                      data.similar_estimate!.like!.cohort_avg as number
+                    }
+                    categoryLabel="유사상품 평균"
+                  />
+                  <InterestPositionBar pct={product_index.interest_pct} />
+                </div>
               ) : (
                 product_index.like_count != null && (
                   <SingleTodayBar
                     value={product_index.like_count}
-                    label="신규"
+                    label="해당 상품"
                   />
                 )
               ))}
@@ -940,9 +1103,10 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
               value={fmtNum(product_index.like_count)}
               badgeValue={product_index.like_change_pct}
             />
-            {/* 유사상품들의 평균 찜 수 — 위 막대(이 상품 값)와 절대 섞지
-              않고 참고용으로만 별도 표시한다. */}
+            {/* 유사상품들의 평균 찜 수 — 비교 막대에 이미 들어간 경우
+              (showSimilarCompareBars)엔 중복되니 칩은 생략한다. */}
             {itemInterestBasis === "similar" &&
+              !showSimilarCompareBars &&
               data.similar_estimate?.like?.cohort_avg != null && (
                 <ChipStat
                   label="유사상품 평균 찜 수"
@@ -977,7 +1141,7 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
                   showPrefix={false}
                 />
               </div>
-              <div className="flex flex-col w-full flex-1 gap-4">
+              <div className="flex flex-col justify-end flex-1 w-full gap-4">
                 <div className="flex flex-col w-full gap-2">
                   <RankLabelRow
                     label="화력 순위"
@@ -990,7 +1154,11 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
                 <div className="flex flex-col w-full gap-1.5">
                   <ChipStat
                     label="리뷰 수"
-                    value={fmtNum(purchase_power_index.review_count)}
+                    value={
+                      purchase_power_index.review_count
+                        ? fmtNum(purchase_power_index.review_count)
+                        : "-"
+                    }
                     badgeValue={purchase_power_index.review_change_pct}
                   />
                   <ChipStat
