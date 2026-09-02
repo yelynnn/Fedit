@@ -505,25 +505,18 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
             >
               <div className="flex flex-wrap gap-2">
                 {activeTab === "selected" &&
-                  platformList.map((code) => {
-                    const label = Object.keys(PLATFORM_LABEL_TO_CODE).find(
-                      (l) => PLATFORM_LABEL_TO_CODE[l] === code,
-                    );
-                    return (
-                      <button
-                        key={`platform-${code}`}
-                        type="button"
-                        onClick={() =>
-                          setPlatformList(
-                            platformList.filter((p) => p !== code),
-                          )
-                        }
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-fill-primary-hover type-body-medium text-tx-inverse"
-                      >
-                        {label} 전체 ({platformBrandCount(code)})
-                      </button>
-                    );
-                  })}
+                  platformList.map((code) => (
+                    <button
+                      key={`platform-${code}`}
+                      type="button"
+                      onClick={() =>
+                        setPlatformList(platformList.filter((p) => p !== code))
+                      }
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-fill-primary-hover type-body-medium text-tx-inverse"
+                    >
+                      전체 ({platformBrandCount(code)})
+                    </button>
+                  ))}
                 {visibleBrands.map((brand) => {
                   const disabled = isBrandDisabled(brand);
                   // 잠긴 칩은 플랫폼 기본값(무신사 전체 등)에 포함돼 있어도

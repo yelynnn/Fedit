@@ -448,7 +448,7 @@ function BrandTab({ isProductTab }: Props) {
                 type="button"
                 className="font-semibold inline-flex px-3 h-10 rounded-lg  bg-fill-primary text-white items-center justify-center text-sm shrink-0"
               >
-                {PLATFORM_LABELS[platform] ?? platform} 전체
+                전체
               </button>
             ))}
             {brandList.map((brand) => (
