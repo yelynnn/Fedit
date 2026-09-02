@@ -103,7 +103,7 @@ const PLAN_DEFS: {
     originalPrice: null,
     discount: null,
     price: "가격 문의",
-    sub: "브랜드 맞춤 견적",
+    sub: "브랜드별 맞춤형 AI 분석 구축",
     features: [
       { ok: true, text: "모든 브랜드 모니터링 제공" },
       { ok: true, text: "유형/색상/패션쇼 분석 지원" },
