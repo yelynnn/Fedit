@@ -15,8 +15,22 @@ export const getEffectivePlan = (
 ): EffectivePlan => {
   if (!subscription || subscription.status === "not_started") return "none";
   if (subscription.status === "expired") return "expired";
+  // 무료 체험(trial) 중에는 plan이 "basic"으로 오므로 그대로 반환한다 —
+  // 체험 사용자는 Basic 기능/게이팅을 그대로 받는다.
   return subscription.plan;
 };
+
+// 3일 무료 체험(Basic) 이용 중인지. 현재 요금제 표시·결제 유도 버튼 분기에서
+// "이미 결제한 Basic"과 구분하려고 쓴다.
+export const isTrial = (subscription: Subscription | null): boolean =>
+  subscription?.status === "trial";
+
+// 무료 체험이 끝나는 날(ISO). 백엔드가 trialEndsAt를 아직 안 내려주면
+// nextBillingDate로 폴백한다.
+export const getTrialEndsAt = (
+  subscription: Subscription | null,
+): string | null =>
+  subscription?.trialEndsAt ?? subscription?.nextBillingDate ?? null;
 
 // "미선택"/"만료"/"무료"를 구분할 필요 없이 그냥 무료 등급으로 취급해도 되는
 // 곳(브랜드 제한, 결제 랭크 비교 등)에서 쓰는 정규화 헬퍼. basic_secret은

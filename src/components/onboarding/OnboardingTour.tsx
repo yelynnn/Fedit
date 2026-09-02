@@ -1,6 +1,7 @@
 import { useLayoutEffect, useState, type CSSProperties } from "react";
 import { useUIStore } from "@/stores/UIStore";
 import { useFilterStore } from "@/stores/FilterStore";
+import { REQUIRED_COUNT } from "@/components/billing/InterestBrandModal";
 import sparkleIcon from "@/assets/etc/sparkleicon.svg";
 
 type Placement = "bottom" | "right";
@@ -23,7 +24,7 @@ const STEP_1_NOT_SELECTED: Step = {
   placement: "bottom",
   title: "분석할 브랜드 범위예요",
   description:
-    "지금은 무신사 기본 데이터예요. 관심 브랜드 10개를 선택하면 이 화면이 내 브랜드 기준으로 바뀌어요.",
+    `지금은 무신사 기본 데이터예요. 관심 브랜드 ${REQUIRED_COUNT}개를 선택하면 이 화면이 내 브랜드 기준으로 바뀌어요.`,
 };
 
 const STEP_1_SELECTED: Step = {
@@ -31,7 +32,7 @@ const STEP_1_SELECTED: Step = {
   placement: "bottom",
   title: "분석할 브랜드 범위예요",
   description:
-    "선택한 10개 브랜드를 기준으로 모든 랭킹·분석이 채워져요. 브랜드는 월 1회 변경할 수 있어요.",
+    `선택한 ${REQUIRED_COUNT}개 브랜드를 기준으로 모든 랭킹·분석이 채워져요. 브랜드는 월 1회 변경할 수 있어요.`,
 };
 
 const STEP_1_FREE_SIGNUP: Step = {
@@ -106,7 +107,7 @@ export default function OnboardingTour() {
       ? STEP_1_FREE_SIGNUP
       : source === "pro"
         ? STEP_1_PRO
-        : interestBrandPicks.length >= 10
+        : interestBrandPicks.length >= REQUIRED_COUNT
           ? STEP_1_SELECTED
           : STEP_1_NOT_SELECTED;
   const steps: Step[] = [step1, ...REST_STEPS];

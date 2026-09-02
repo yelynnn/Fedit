@@ -57,7 +57,7 @@ export type FilterStore = {
   setPlatformList: (platforms: string[]) => void;
   resetPlatform: () => void;
 
-  // 서버에 저장된 "관심 브랜드 10개"(고정값). brandList는 지금 화면에서
+  // 서버에 저장된 "관심 브랜드"(고정값). brandList는 지금 화면에서
   // 필터링 중인 값이라 자유롭게 늘었다 줄었다 하지만, interestBrandPicks는
   // 저장/변경 시에만 바뀐다 — "이 브랜드를 볼 수 있는지" 허용 여부 판단은
   // brandList가 아니라 반드시 이 값을 기준으로 해야 한다.

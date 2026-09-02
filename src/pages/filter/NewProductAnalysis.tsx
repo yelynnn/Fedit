@@ -16,6 +16,7 @@ import {
 import { useUIStore } from "@/stores/UIStore";
 import errorIcon from "@/assets/etc/error.svg";
 import SubscriptionLockOverlay from "@/components/common/SubscriptionLockOverlay";
+import { REQUIRED_COUNT } from "@/components/billing/InterestBrandModal";
 
 import { GetProductList } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
@@ -63,12 +64,12 @@ function NewProductAnalysis() {
   const isDevBannerForce =
     import.meta.env.DEV &&
     new URLSearchParams(window.location.search).get("showBrandModal") === "1";
-  // Basic 플랜인데 저장된 관심 브랜드 10개가 다 채워지지 않았으면 항상 노출.
+  // Basic 플랜인데 저장된 관심 브랜드가 다 채워지지 않았으면 항상 노출.
   // (지금 화면에서 필터링 중인 brandList가 아니라 저장된 픽 기준으로 판단 —
-  // 안 그러면 10개 중 일부만 보려고 체크를 풀었을 때도 배너가 다시 뜬다.)
+  // 안 그러면 일부만 보려고 체크를 풀었을 때도 배너가 다시 뜬다.)
   const showBrandNotice =
     (isDevBannerForce || isBasicPlan(subscription?.plan)) &&
-    interestBrandPicks.length < 10;
+    interestBrandPicks.length < REQUIRED_COUNT;
 
   const fetchData = useCallback(
     async (cursor: string | null = null) => {
@@ -205,7 +206,8 @@ function NewProductAnalysis() {
               <img src={errorIcon} alt="" className="h-5 w-5 flex-shrink-0" />
               <span className="type-title-small truncate text-tx-neutral">
                 아직 브랜드를 고르지 않았어요. 지금은 무신사 기본 데이터를 보고
-                있어요. 관심 브랜드 10개를 고르면 분석이 더 정확해져요.
+                있어요. 관심 브랜드 {REQUIRED_COUNT}개를 고르면 분석이 더
+                정확해져요.
               </span>
             </div>
             <button

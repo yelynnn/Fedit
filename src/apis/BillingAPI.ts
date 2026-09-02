@@ -6,6 +6,9 @@ import { axiosInstance } from "./AxiosInstance";
 export type PlanType = "basic" | "pro" | "basic_secret";
 export type SubscriptionStatus =
   | "not_started"
+  // "trial": Basic 기능을 3일간 무료로 쓰는 체험 기간. plan은 "basic"으로
+  // 내려오고, 결제로 전환하면 "active"가 된다.
+  | "trial"
   | "active"
   | "past_due"
   | "canceled"
@@ -17,6 +20,9 @@ export interface Subscription {
   amount: number;
   hasBillingKey: boolean;
   nextBillingDate: string | null;
+  // status === "trial"일 때 무료 체험이 끝나는 날(ISO). 백엔드가 아직
+  // 안 내려주면 nextBillingDate로 폴백한다.
+  trialEndsAt?: string | null;
   cancelAtPeriodEnd?: boolean;
   downgradePending?: boolean;
 }

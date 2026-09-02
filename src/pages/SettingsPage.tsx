@@ -23,18 +23,16 @@ import {
   useSubscriptionStore,
   getEffectivePlan,
   toBillingPlan,
+  isTrial,
+  getTrialEndsAt,
 } from "@/stores/SubscriptionStore";
 import cancelIcon from "@/assets/planCard/cancel.svg";
-import kakaoPayIcon from "@/assets/etc/kakaoIcon.png";
-import tossIcon from "@/assets/etc/tossIcon.png";
-import { RequestUpgrade, GetUpgradeStatus } from "@/apis/KakaoAPI";
-import InterestBrandModal from "@/components/billing/InterestBrandModal";
+import InterestBrandModal, {
+  REQUIRED_COUNT,
+} from "@/components/billing/InterestBrandModal";
 import BrandApplyPanel from "@/components/settings/BrandApplyPanel";
 import { GetBrandList, GetBrandPicks } from "@/apis/AnalysisAPI";
-import {
-  isSecretEntry as checkSecretEntry,
-  clearSecretEntry,
-} from "@/lib/secretEntry";
+import { isSecretEntry as checkSecretEntry } from "@/lib/secretEntry";
 import { setPendingBasicDowngrade } from "@/lib/pendingDowngrade";
 
 const GUIDE_TABS: ("전체" | GuideCategory)[] = ["전체", ...GUIDE_CATEGORIES];
@@ -51,31 +49,36 @@ type Section =
 
 // basic_secret은 비밀 링크 전용 플랜이라 일반 요금제 비교표에는 노출하지 않는다.
 const PLAN_DEFS: {
-  key: "free" | "basic" | "pro";
+  key: "free" | "basic" | "pro" | "enterprise";
   label: string;
   badge: string | null;
   originalPrice: string | null;
   discount: string | null;
   price: string;
   sub: string;
+  // 상위 플랜을 그대로 포함할 때 — "{inherits} 플랜의 모든 기능 포함" 한 줄로
+  // 요약하고, features에는 추가되는 항목만 적는다.
+  inherits?: string;
   features: { ok: boolean; text: string }[];
 }[] = [
-  {
-    key: "free",
-    label: "무료 체험",
-    badge: null,
-    originalPrice: null,
-    discount: null,
-    price: "0원",
-    sub: "14일 · Basic 기능 일부 (브랜드 제한)",
-    features: [
-      { ok: true, text: "관심 브랜드 최대 3개 모니터링" },
-      { ok: true, text: "플랫폼별 키워드 분석 제공" },
-      { ok: true, text: "데일리 트렌드 뉴스레터 제공" },
-      { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
-      { ok: false, text: "신규 브랜드 분석 신청 미지원" },
-    ],
-  },
+  // 무료 체험은 이제 별도 요금제가 아니라 "Basic 3일 무료 체험"이라 비교표
+  // 열에서는 뺀다. Basic 열 버튼이 체험 시작을 겸한다.
+  // {
+  //   key: "free",
+  //   label: "무료 체험",
+  //   badge: null,
+  //   originalPrice: null,
+  //   discount: null,
+  //   price: "0원",
+  //   sub: "14일 · Basic 기능 일부 (브랜드 제한)",
+  //   features: [
+  //     { ok: true, text: "관심 브랜드 최대 3개 모니터링" },
+  //     { ok: true, text: "플랫폼별 키워드 분석 제공" },
+  //     { ok: true, text: "데일리 트렌드 뉴스레터 제공" },
+  //     { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
+  //     { ok: false, text: "신규 브랜드 분석 신청 미지원" },
+  //   ],
+  // },
   {
     key: "basic",
     label: "Basic",
@@ -87,7 +90,7 @@ const PLAN_DEFS: {
     features: [
       {
         ok: true,
-        text: "관심 브랜드 최대 10개 모니터링",
+        text: `관심 브랜드 최대 ${REQUIRED_COUNT}개 모니터링`,
       },
       { ok: true, text: "플랫폼별 키워드 분석 제공" },
       { ok: true, text: "엑셀 다운로드 월 3회" },
@@ -114,14 +117,32 @@ const PLAN_DEFS: {
       { ok: true, text: "자사 맞춤형 AI Agent 제공" },
     ],
   },
+  {
+    key: "enterprise",
+    label: "Enterprise",
+    badge: null,
+    originalPrice: null,
+    discount: null,
+    price: "가격 문의",
+    sub: "팀 단위 도입 · 맞춤 구축",
+    inherits: "Pro",
+    features: [
+      { ok: true, text: "신규 브랜드 분석 맞춤 지원" },
+      { ok: true, text: "자사 맞춤형 AI Agent 구축" },
+      { ok: true, text: "팀 시트·관리자 기능으로 대규모 팀 관리" },
+    ],
+  },
 ];
 
 // basic_secret은 Basic과 랭크가 같다(가격만 다른 동일 기능 플랜).
-const PLAN_RANK: Record<"free" | PlanType, number> = {
+// enterprise는 결제 대상이 아니지만 비교표 정렬(다운/업그레이드 판정)에 쓰여
+// 최상위 랭크를 준다.
+const PLAN_RANK: Record<"free" | PlanType | "enterprise", number> = {
   free: 0,
   basic: 1,
   basic_secret: 1,
   pro: 2,
+  enterprise: 3,
 };
 
 // "Basic으로", "Pro로" — 플랜명 발음(받침 유무)에 맞춘 조사
@@ -130,16 +151,6 @@ const PLAN_PARTICLE: Record<PlanType, string> = {
   pro: "로",
   basic_secret: "으로",
 };
-
-const PLAN_AMOUNT: Record<PlanType, number> = {
-  basic: 29000,
-  pro: 59000,
-  basic_secret: 19000,
-};
-
-// 카카오페이 코드송금 링크 — 개발자센터 대시보드에서 관리자가 1회 수동 발급한
-// 고정 링크라 요청마다 동적으로 내려오지 않는다. 링크가 재발급되면 이 값만 교체하면 된다.
-const KAKAO_PAY_LINK_URL = "https://link.kakaopay.com/__/WXeNpEp";
 
 const NAV_GROUPS: {
   title: string;
@@ -241,15 +252,6 @@ export default function SettingsPage() {
   // basic_secret은 설정 화면의 일반 결제 플로우로는 선택할 수 없는 플랜(비밀
   // 링크 전용)이라 여기서 다루는 대상에서 제외한다.
   const [pendingPlan, setPendingPlan] = useState<"basic" | "pro" | null>(null);
-  const [paymentStep, setPaymentStep] = useState<
-    "agree" | "method" | "pending" | "failed"
-  >("agree");
-  const [selectedMethod, setSelectedMethod] = useState<"toss" | "kakao" | null>(
-    null,
-  );
-  const [upgradeRequestId, setUpgradeRequestId] = useState<number | null>(null);
-  const [isRequestingUpgrade, setIsRequestingUpgrade] = useState(false);
-  const [depositorName, setDepositorName] = useState("");
 
   // Pro는 결제 플로우 없이 항상 외부 문의 페이지로 연결한다.
   const goToInquiry = () => {
@@ -263,10 +265,6 @@ export default function SettingsPage() {
   const closePendingPlanModal = () => {
     setPendingPlan(null);
     setAgreedCancelTerms(false);
-    setPaymentStep("agree");
-    setSelectedMethod(null);
-    setUpgradeRequestId(null);
-    setDepositorName("");
   };
 
   const {
@@ -294,13 +292,16 @@ export default function SettingsPage() {
   // currentPlan(둘 다 free로 취급)을 그대로 쓴다.
   const effectivePlan = getEffectivePlan(subscription);
   const currentPlan: "free" | PlanType = toBillingPlan(effectivePlan);
+  // 3일 무료 체험(Basic) 이용 중인지 + 체험 종료일. 현재 요금제 표시와
+  // "결제하기" 유도 버튼을 "이미 결제한 Basic"과 다르게 보여주려고 쓴다.
+  const trialing = isTrial(subscription);
+  const trialEndsAt = getTrialEndsAt(subscription);
 
   // 비밀 링크로 들어온 경우, Basic 카드는 "첫 달 19,000원" 특가로 바꿔서
   // 보여준다. Pro는 가격은 그대로지만(정가 그대로 결제) 배지만 "비밀 링크
-  // 한정"으로 같이 표시한다. 실제 결제 요청에 보낼 plan_code(및 그 금액)는
-  // 이거랑 별개로 handleStartKakaoPayment 안에서 pendingPlan === "basic"일
-  // 때만 "basic_secret"으로 바꿔서 보낸다 — Pro는 비밀 링크로 들어와도
-  // 정가 그대로다.
+  // 한정"으로 같이 표시한다. 실제 결제 요청에 보낼 plan_code는 이거랑 별개로
+  // 아래 checkoutPlan에서 pendingPlan === "basic"일 때만 "basic_secret"으로
+  // 바꿔서 보낸다 — Pro는 비밀 링크로 들어와도 정가 그대로다.
   const planDefs = isSecretEntry
     ? PLAN_DEFS.map((plan) =>
         plan.key === "basic"
@@ -316,9 +317,10 @@ export default function SettingsPage() {
       )
     : PLAN_DEFS;
 
-  // 카카오페이 결제 요청에 실제로 실어 보낼 plan_code — Pro는 비밀 링크로
-  // 들어와도 정가(pro/59,000원) 그대로 요청한다.
-  const kakaoPlanCode: PlanType | null =
+  // 결제 요청에 실제로 실어 보낼 plan_code — 비밀 링크 유입 + Basic이면
+  // basic_secret(첫 달 특가)으로 바꿔 보낸다. Pro는 비밀 링크로 들어와도
+  // 정가(pro/59,000원) 그대로 요청한다.
+  const checkoutPlan: PlanType | null =
     pendingPlan === "basic" && isSecretEntry ? "basic_secret" : pendingPlan;
 
   // ── 관심 브랜드 설정 ──
@@ -443,72 +445,6 @@ export default function SettingsPage() {
       setBillingLoading(null);
     }
   };
-
-  const handleStartKakaoPayment = async () => {
-    if (!kakaoPlanCode || isRequestingUpgrade || !depositorName.trim()) return;
-    setIsRequestingUpgrade(true);
-    try {
-      // 링크는 고정 링크라 응답을 기다릴 필요 없이 바로 새 창으로 연다
-      // (팝업 차단을 피하려면 클릭 핸들러와 최대한 가깝게 호출해야 한다).
-      window.open(KAKAO_PAY_LINK_URL, "_blank");
-      const { request_id } = await RequestUpgrade(
-        kakaoPlanCode,
-        PLAN_AMOUNT[kakaoPlanCode],
-        depositorName.trim(),
-      );
-      setUpgradeRequestId(request_id);
-      setPaymentStep("pending");
-    } catch (error: any) {
-      alert(error?.message || "결제 요청에 실패했습니다.");
-    } finally {
-      setIsRequestingUpgrade(false);
-    }
-  };
-
-  // 카카오페이 입금 확인 폴링 — 자동 확인이 아니라 관리자가 입금 내역을 대조해
-  // 수동 승인하는 구조라 30초 간격으로 조회한다. status는 pending/completed 외에도
-  // expired·rejected 등으로 확장될 수 있어, pending/completed가 아니면 전부 실패
-  // 화면으로 처리한다 (백엔드 권장 방식).
-  useEffect(() => {
-    if (paymentStep !== "pending" || !upgradeRequestId) return;
-    const plan = pendingPlan;
-    let cancelled = false;
-
-    const interval = setInterval(async () => {
-      try {
-        const { status } = await GetUpgradeStatus(upgradeRequestId);
-        if (cancelled) return;
-        if (status === "completed") {
-          clearInterval(interval);
-          await fetchSubscription();
-          closePendingPlanModal();
-          clearSecretEntry();
-          if (plan === "basic") {
-            closeSettingsModal();
-            openInterestBrandModal();
-          } else if (plan === "pro") {
-            closeSettingsModal();
-            setSelectedTab("상품 분석");
-            openOnboardingTour("pro");
-          }
-        } else if (status !== "pending") {
-          clearInterval(interval);
-          setPaymentStep("failed");
-        }
-      } catch {
-        if (!cancelled) {
-          clearInterval(interval);
-          setPaymentStep("failed");
-        }
-      }
-    }, 30000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentStep, upgradeRequestId]);
 
   const handleCancelSubscription = async () => {
     if (isCanceling) return;
@@ -1350,25 +1286,28 @@ export default function SettingsPage() {
                     ) : (
                       <>
                         <p className="text-base font-semibold text-tx-strong">
-                          {effectivePlan === "none"
+                          {effectivePlan === "none" ||
+                          effectivePlan === "expired"
                             ? "요금제 미선택"
-                            : effectivePlan === "expired"
-                              ? "이용 만료"
-                              : PLAN_DEFS.find((p) => p.key === currentPlan)
-                                  ?.label}
+                            : PLAN_DEFS.find((p) => p.key === currentPlan)
+                                ?.label}
                         </p>
-                        {effectivePlan === "none" ? (
+                        {effectivePlan === "none" ||
+                        effectivePlan === "expired" ? (
+                          // 요금제 미선택도, 이용 만료도(백엔드가 체험 만료와
+                          // 유료 만료를 구분해 주지 못해서) 동일한 회색 안내로
+                          // 통일한다.
                           <p className="text-sm text-tx-alt mt-0.5">
                             아직 선택한 요금제가 없어요. 원하는 플랜을
                             골라주세요.
                           </p>
-                        ) : effectivePlan === "expired" ? (
-                          <p className="flex items-center gap-1 mt-0.5 text-sm text-status-error">
-                            <Icon
-                              icon="ph:warning-circle"
-                              className="w-4 h-4"
-                            />
-                            이용 기간이 만료됐어요. 요금제를 다시 선택해주세요.
+                        ) : trialing ? (
+                          <p className="flex items-center gap-1 mt-0.5 text-sm text-tx-alt">
+                            <Icon icon="ph:info" className="w-4 h-4" />
+                            무료 체험 중
+                            {trialEndsAt
+                              ? ` · ${formatMonthDay(trialEndsAt)}까지`
+                              : ""}
                           </p>
                         ) : currentPlan === "free" ? (
                           <p className="text-sm text-tx-alt mt-0.5">
@@ -1407,15 +1346,32 @@ export default function SettingsPage() {
                   {currentPlan !== "pro" && (
                     <button
                       onClick={() => {
-                        if (currentPlan === "free") {
+                        if (effectivePlan === "none") {
+                          // 아직 체험 미시작 → 3일 무료 체험 시작
+                          if (!isStartingTrial) handleStartTrial();
+                        } else if (trialing || currentPlan === "free") {
+                          // 체험 중이거나 레거시 free → 결제로 전환
                           setPendingPlan("basic");
                         } else {
                           goToInquiry();
                         }
                       }}
-                      className="px-5 py-2 bg-[#111827] text-white text-sm font-semibold rounded-xl hover:bg-black transition-colors"
+                      disabled={isStartingTrial}
+                      className={`px-5 py-2 text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 ${
+                        effectivePlan === "none" ||
+                        effectivePlan === "expired" ||
+                        trialing
+                          ? "border border-[#E4E4E4] bg-white text-tx-neutral hover:bg-surface-base"
+                          : "bg-[#111827] text-white hover:bg-black"
+                      }`}
                     >
-                      {currentPlan === "free" ? "업그레이드" : "문의하기"}
+                      {effectivePlan === "none"
+                        ? "3일 무료 체험 시작하기"
+                        : trialing
+                          ? "결제하기"
+                          : currentPlan === "free"
+                            ? "업그레이드"
+                            : "문의하기"}
                     </button>
                   )}
                 </div>
@@ -1432,33 +1388,50 @@ export default function SettingsPage() {
                     // Free는 currentPlan(무료체험 미시작도 "free"로 뭉개진 값)이
                     // 아니라 effectivePlan으로 실제 무료체험 이용 중인지를 봐야
                     // "요금제 미선택" 상태에서 현재 플랜으로 잘못 표시되지 않는다.
-                    const isCurrent =
-                      plan.key === "free"
+                    // Basic 체험 중에는 이 열을 "현재 플랜"이 아니라 "결제하기"로
+                    // 노출한다(체험 → 유료 전환 유도).
+                    const isTrialBasic = plan.key === "basic" && trialing;
+                    const isCurrent = isTrialBasic
+                      ? false
+                      : plan.key === "free"
                         ? effectivePlan === "free"
                         : plan.key === currentPlan;
                     const isDowngrade =
                       PLAN_RANK[plan.key] < PLAN_RANK[currentPlan];
+                    // effectivePlan === "none": 아직 무료 체험도 시작 안 한 상태.
                     const isTrialAvailable = effectivePlan === "none";
+                    // Pro·Enterprise는 결제 대상이 아니라 항상 "문의하기".
+                    const isContactOnly =
+                      plan.key === "pro" || plan.key === "enterprise";
+                    // Basic 열은 체험 미시작이면 "3일 무료 체험", 그 외엔 결제.
+                    const isBasicTrialStart =
+                      plan.key === "basic" && isTrialAvailable;
                     const btnLabel = isCurrent
                       ? "현재 플랜"
-                      : plan.key === "free"
-                        ? isTrialAvailable
-                          ? "무료체험 시작하기"
-                          : "무료 체험"
-                        : plan.key === "pro"
-                          ? "문의하기"
-                          : isSecretEntry
-                            ? "비밀 특가로 시작하기"
-                            : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`;
+                      : isContactOnly
+                        ? "문의하기"
+                        : isBasicTrialStart
+                          ? "3일 무료 체험 시작하기"
+                          : isTrialBasic
+                            ? "결제하기"
+                            : plan.key === "free"
+                              ? isTrialAvailable
+                                ? "무료체험 시작하기"
+                                : "무료 체험"
+                              : plan.key === "basic"
+                                ? isSecretEntry
+                                  ? "비밀 특가로 시작하기"
+                                  : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`
+                                : "문의하기";
                     const isLoading =
                       billingLoading === plan.key ||
-                      (plan.key === "free" && isStartingTrial);
+                      (isBasicTrialStart && isStartingTrial);
                     const isFreeDisabled =
                       plan.key === "free" && !isTrialAvailable;
                     return (
                       <div
                         key={plan.label}
-                        className={`flex flex-col flex-1 ${index === 1 ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
+                        className={`flex flex-col flex-1 ${plan.key === "basic" ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
                         style={{ padding: "20px 16px", gap: 20 }}
                       >
                         {/* 플랜명 + 배지 */}
@@ -1515,7 +1488,9 @@ export default function SettingsPage() {
                               </span>
                             )}
                           </p>
-                          {(plan.key === "free" || plan.key === "pro") && (
+                          {(plan.key === "free" ||
+                            plan.key === "pro" ||
+                            plan.key === "enterprise") && (
                             <p className="text-[12px] font-medium leading-[133%] text-[#6F7173]">
                               {plan.sub}
                             </p>
@@ -1527,19 +1502,23 @@ export default function SettingsPage() {
                           disabled={
                             isCurrent ||
                             isFreeDisabled ||
-                            (plan.key !== "pro" && !!billingLoading) ||
+                            (!isContactOnly && !!billingLoading) ||
                             isStartingTrial
                           }
                           onClick={() => {
+                            if (isContactOnly) {
+                              goToInquiry();
+                              return;
+                            }
+                            if (isBasicTrialStart) {
+                              handleStartTrial();
+                              return;
+                            }
                             if (plan.key === "free") {
                               if (isTrialAvailable) handleStartTrial();
                               return;
                             }
-                            if (plan.key === "pro") {
-                              goToInquiry();
-                              return;
-                            }
-                            setPendingPlan(plan.key);
+                            if (plan.key === "basic") setPendingPlan("basic");
                           }}
                           className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
                             isCurrent || isFreeDisabled
@@ -1559,6 +1538,17 @@ export default function SettingsPage() {
 
                         {/* 기능 목록 */}
                         <ul className="flex flex-col gap-3">
+                          {plan.inherits && (
+                            <li className="flex items-start gap-2">
+                              <Icon
+                                icon="ph:sparkle-fill"
+                                className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#1A75FF]"
+                              />
+                              <span className="text-[14px] font-semibold leading-[143%] tracking-[-0.07px] text-[#242628]">
+                                {plan.inherits} 플랜의 모든 기능 포함
+                              </span>
+                            </li>
+                          )}
                           {plan.features.map((f) => (
                             <li key={f.text} className="flex items-start gap-2">
                               <Icon
@@ -1576,6 +1566,7 @@ export default function SettingsPage() {
 
                         {isCurrent &&
                           plan.key !== "free" &&
+                          !trialing &&
                           (subscription?.cancelAtPeriodEnd ? (
                             <p className="pt-2 mt-auto text-xs font-medium text-tx-assistive">
                               {subscription?.nextBillingDate ?? "-"}까지 이용
@@ -1938,259 +1929,55 @@ export default function SettingsPage() {
             onClick={closePendingPlanModal}
           />
           <div className="relative w-full max-w-[440px] p-8 bg-white shadow-xl rounded-2xl">
-            {paymentStep === "agree" ? (
-              <>
-                <h2 className="mb-2 text-xl font-semibold text-tx-strong">
-                  {planDefs.find((p) => p.key === pendingPlan)?.label} 요금제로
-                  시작할게요
-                </h2>
-                <p className="mb-6 text-sm leading-relaxed text-tx-alt">
-                  {planDefs.find((p) => p.key === pendingPlan)?.price}
-                  {planDefs.find((p) => p.key === pendingPlan)?.sub}에
-                  정기결제가 시작됩니다. 진행 전 아래 내용을 확인해주세요.
-                </p>
+            <h2 className="mb-2 text-xl font-semibold text-tx-strong">
+              {planDefs.find((p) => p.key === pendingPlan)?.label} 요금제로
+              시작할게요
+            </h2>
+            <p className="mb-6 text-sm leading-relaxed text-tx-alt">
+              {planDefs.find((p) => p.key === pendingPlan)?.price}
+              {planDefs.find((p) => p.key === pendingPlan)?.sub}에 정기결제가
+              시작됩니다. 진행 전 아래 내용을 확인해주세요.
+            </p>
 
-                <label className="flex items-start gap-2 p-4 mb-6 cursor-pointer select-none bg-surface-base rounded-xl">
-                  <input
-                    type="checkbox"
-                    checked={agreedCancelTerms}
-                    onChange={(e) => setAgreedCancelTerms(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 accent-tx-neutral flex-shrink-0"
-                  />
-                  <span className="text-sm text-tx-alt">
-                    정기결제(자동 결제) 및 해지 방법, 환불 정책을 확인했으며
-                    이에 동의합니다.{" "}
-                    <Link
-                      to="/terms/cancellation"
-                      onClick={(e) => e.stopPropagation()}
-                      className="font-semibold underline text-tx-neutral hover:text-tx-strong"
-                    >
-                      자세히 보기
-                    </Link>
-                  </span>
-                </label>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={closePendingPlanModal}
-                    className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={() => setPaymentStep("method")}
-                    disabled={!agreedCancelTerms}
-                    className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    결제 진행하기
-                  </button>
-                </div>
-              </>
-            ) : paymentStep === "method" ? (
-              <>
-                <button
-                  onClick={() => setPaymentStep("agree")}
-                  className="flex items-center gap-1 mb-2 text-sm font-medium text-tx-alt hover:text-tx-neutral"
+            <label className="flex items-start gap-2 p-4 mb-6 cursor-pointer select-none bg-surface-base rounded-xl">
+              <input
+                type="checkbox"
+                checked={agreedCancelTerms}
+                onChange={(e) => setAgreedCancelTerms(e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-tx-neutral flex-shrink-0"
+              />
+              <span className="text-sm text-tx-alt">
+                정기결제(자동 결제) 및 해지 방법, 환불 정책을 확인했으며 이에
+                동의합니다.{" "}
+                <Link
+                  to="/terms/cancellation"
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-semibold underline text-tx-neutral hover:text-tx-strong"
                 >
-                  <Icon icon="ph:arrow-left" className="w-4 h-4" />
-                  이전
-                </button>
-                <h2 className="mb-2 text-xl font-semibold text-tx-strong">
-                  결제 수단을 선택해주세요
-                </h2>
-                <p className="mb-6 text-sm leading-relaxed text-tx-alt">
-                  {planDefs.find((p) => p.key === pendingPlan)?.label} 요금제
-                  {planDefs.find((p) => p.key === pendingPlan)?.price}
-                  {planDefs.find((p) => p.key === pendingPlan)?.sub}
-                </p>
+                  자세히 보기
+                </Link>
+              </span>
+            </label>
 
-                <div className="flex flex-col gap-3 mb-6">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMethod("kakao")}
-                    className={`flex items-center justify-between w-full p-4 border rounded-xl transition-colors ${
-                      selectedMethod === "kakao"
-                        ? "border-1 border-tx-neutral bg-surface-base"
-                        : "border-line-divider hover:border-tx-alt"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <img
-                        src={kakaoPayIcon}
-                        alt="카카오페이"
-                        className="object-contain w-auto h-6"
-                      />
-                      <span className="text-sm font-semibold text-tx-strong">
-                        카카오페이
-                      </span>
-                    </span>
-                    {selectedMethod === "kakao" && (
-                      <Icon
-                        icon="ph:check-circle-fill"
-                        className="w-5 h-5 text-tx-neutral"
-                      />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMethod("toss")}
-                    className={`flex items-center justify-between w-full p-4 border rounded-xl transition-colors ${
-                      selectedMethod === "toss"
-                        ? "border-1 border-tx-neutral bg-surface-base"
-                        : "border-line-divider hover:border-tx-alt"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <img
-                        src={tossIcon}
-                        alt="토스페이먼츠"
-                        className="object-contain w-auto h-7"
-                      />
-                      <span className="text-sm font-semibold text-tx-strong">
-                        토스페이먼츠
-                      </span>
-                    </span>
-                    {selectedMethod === "toss" && (
-                      <Icon
-                        icon="ph:check-circle-fill"
-                        className="w-5 h-5 text-tx-neutral"
-                      />
-                    )}
-                  </button>
-                </div>
-
-                {selectedMethod === "kakao" && (
-                  <div className="flex flex-col gap-3 mb-6">
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-[#FFF6DD]">
-                      <Icon
-                        icon="ph:info"
-                        className="flex-shrink-0 w-4 h-4 mt-0.5 text-[#B8860B]"
-                      />
-                      <p className="text-xs leading-relaxed text-[#7A5C00]">
-                        결제하기를 누르면 카카오페이 송금 링크가 새 창으로
-                        열려요. 정확히{" "}
-                        <b>
-                          {PLAN_AMOUNT[
-                            kakaoPlanCode ?? "basic"
-                          ].toLocaleString()}
-                          원
-                        </b>
-                        을 아래 입금자명과 동일한 이름으로 송금해주세요.
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block mb-1.5 text-sm font-semibold text-tx-strong">
-                        입금자명
-                      </label>
-                      <input
-                        type="text"
-                        value={depositorName}
-                        onChange={(e) => setDepositorName(e.target.value)}
-                        placeholder="카카오페이 송금 시 사용할 이름을 입력해주세요"
-                        className="w-full px-4 py-3 text-sm border rounded-xl border-line-divider text-tx-neutral placeholder-tx-assistive focus:outline-none focus:border-tx-neutral"
-                      />
-                      <p className="mt-1.5 text-xs text-tx-assistive">
-                        입력하신 이름과 실제 송금자명이 일치해야 확인이
-                        가능해요.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={closePendingPlanModal}
-                    className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (selectedMethod === "kakao") {
-                        handleStartKakaoPayment();
-                      } else if (selectedMethod === "toss") {
-                        const plan = pendingPlan;
-                        closePendingPlanModal();
-                        handleSelectPlan(plan);
-                      }
-                    }}
-                    disabled={
-                      !selectedMethod ||
-                      isRequestingUpgrade ||
-                      (selectedMethod === "kakao" && !depositorName.trim())
-                    }
-                    className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isRequestingUpgrade ? "연결 중..." : "결제하기"}
-                  </button>
-                </div>
-              </>
-            ) : paymentStep === "pending" ? (
-              <>
-                <div className="flex flex-col items-center py-6 text-center">
-                  <Icon
-                    icon="ph:hourglass-medium"
-                    className="w-10 h-10 mb-4 text-tx-neutral"
-                  />
-                  <h2 className="mb-2 text-xl font-semibold text-tx-strong">
-                    입금 확인 중이에요
-                  </h2>
-                  <p className="text-sm leading-relaxed text-tx-alt">
-                    새로 열린 카카오페이 창에서 송금을 완료해주세요.
-                    <br />
-                    담당자가 입금 내역을 확인하는 대로, 영업시간 기준 빠르게
-                    확인 후 승인해드릴게요.
-                  </p>
-                  <button
-                    onClick={() => window.open(KAKAO_PAY_LINK_URL, "_blank")}
-                    className="mt-4 text-sm font-semibold underline text-tx-neutral hover:text-tx-strong"
-                  >
-                    결제 링크 다시 열기
-                  </button>
-                </div>
-                <button
-                  onClick={closePendingPlanModal}
-                  className="w-full py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
-                >
-                  닫기
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="flex flex-col items-center py-6 text-center">
-                  <Icon
-                    icon="ph:x-circle"
-                    className="w-10 h-10 mb-4 text-status-error"
-                  />
-                  <h2 className="mb-2 text-xl font-semibold text-tx-strong">
-                    결제가 확인되지 않았어요
-                  </h2>
-                  <p className="text-sm leading-relaxed text-tx-alt">
-                    입금 확인이 되지 않았거나 요청이 만료되었습니다.
-                    <br />
-                    다시 시도해주세요.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={closePendingPlanModal}
-                    className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={() => {
-                      setUpgradeRequestId(null);
-                      setPaymentStep("method");
-                    }}
-                    className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover"
-                  >
-                    다시 시도하기
-                  </button>
-                </div>
-              </>
-            )}
+            <div className="flex gap-3">
+              <button
+                onClick={closePendingPlanModal}
+                className="flex-1 py-3 text-sm font-semibold transition-colors border border-line-divider rounded-xl text-tx-neutral hover:bg-surface-base"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  const plan = checkoutPlan;
+                  closePendingPlanModal();
+                  if (plan) handleSelectPlan(plan);
+                }}
+                disabled={!agreedCancelTerms || !!billingLoading}
+                className="flex-1 py-3 text-sm font-semibold text-white transition-colors bg-fill-primary rounded-xl hover:bg-fill-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {billingLoading ? "연결 중..." : "결제 진행하기"}
+              </button>
+            </div>
           </div>
         </div>
       )}

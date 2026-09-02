@@ -92,19 +92,19 @@ export function NewFilterTabPanels() {
   // Basic 플랜이 될 때마다 서버에 저장된 관심 브랜드 픽을 받아온다.
   // (예: Basic→Pro→Basic처럼 플랜을 왔다갔다 해도, 다시 Basic이 될 때마다
   // 로컬에 남아있던 값이 아니라 항상 서버 기준 최신 픽으로 맞춘다.)
-  // interestBrandPicks(허용된 고정 10개)는 항상 갱신한다. brandList/
-  // platformList(지금 화면에서 필터링 중인 값)는 새로고침 때마다 무조건
-  // 픽 10개로 덮어쓰지 않는다 — brandList나 platformList에 이미 뭔가
-  // 담겨 있으면(10개 중 일부만 남겨뒀든, 무신사 탭에서 추가로 더 골라
-  // 11개가 됐든) 사용자가 의도적으로 고른 것으로 보고 그대로 둔다. 완전히
-  // 비어있을 때만 픽 10개로 채운다. 안 그러면 새로고침할 때마다 사용자가
-  // 좁혀두거나 더해둔 선택이 계속 10개로 초기화돼버린다.
+  // interestBrandPicks(허용된 고정 개수, REQUIRED_COUNT)는 항상 갱신한다.
+  // brandList/platformList(지금 화면에서 필터링 중인 값)는 새로고침 때마다
+  // 무조건 픽으로 덮어쓰지 않는다 — brandList나 platformList에 이미 뭔가
+  // 담겨 있으면(일부만 남겨뒀든, 무신사 탭에서 추가로 더 골라 픽보다 많아
+  // 졌든) 사용자가 의도적으로 고른 것으로 보고 그대로 둔다. 완전히
+  // 비어있을 때만 픽으로 채운다. 안 그러면 새로고침할 때마다 사용자가
+  // 좁혀두거나 더해둔 선택이 계속 초기화돼버린다.
   // 아직 백엔드 엔드포인트가 없으면 실패하고, 기존 로컬 값을 그대로 둔다.
   // 관심 브랜드 선택 모달(온보딩/설정 어느 쪽이든)이 열려있는 동안에는
   // 사용자가 칩을 고르는 중이라 brandList를 건드리면 안 되므로 건너뛴다.
   //
   // Basic이 아니게 되면(Free/Pro) interestBrandPicks를 비워서 예전 Basic
-  // 관심 브랜드 10개가 다른 플랜에서까지 "선택 가능"한 상태로 남지 않게
+  // 관심 브랜드가 다른 플랜에서까지 "선택 가능"한 상태로 남지 않게
   // 한다. Free이거나 Basic인데 아직 관심 브랜드를 다 고르지 않았다면
   // platformList를 무신사(musinsa)로 채운다 — 개별 브랜드명을 다 나열하면
   // (120개 안팎) 요청 헤더가 너무 커지니, 플랫폼 코드 하나로 대신 보낸다.
@@ -129,8 +129,8 @@ export function NewFilterTabPanels() {
     GetBrandPicks()
       .then((picks) => {
         if (ignore) return;
-        // 관심 브랜드는 정확히 REQUIRED_COUNT(10)개를 골라야 "완료"로 친다
-        // (InterestBrandModal의 저장 조건과 동일). 10개 미만으로 남아있는
+        // 관심 브랜드는 정확히 REQUIRED_COUNT개를 골라야 "완료"로 친다
+        // (InterestBrandModal의 저장 조건과 동일). 그보다 적게 남아있는
         // 값은 완료 전 이탈 등으로 생긴 잔여 데이터이므로, 다 고른 것처럼
         // 취급해 그 브랜드들만 계속 선택 가능한 상태로 남기지 않는다.
         const isComplete = picks.length === REQUIRED_COUNT;

@@ -7,7 +7,7 @@ import { GetBrandList, GetBrandPicks, PutBrandPicks } from "@/apis/AnalysisAPI";
 import pointIcon from "@/assets/etc/pointIcon.svg";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 
-export const REQUIRED_COUNT = 10;
+export const REQUIRED_COUNT = 5;
 
 type ApiCategory = { label: string; brands: string[] };
 
@@ -242,11 +242,11 @@ export default function InterestBrandModal({
               )}
             </span>
             <h1 className="text-[24px] font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
-              관심 브랜드 10개를 선택해주세요
+              관심 브랜드 {REQUIRED_COUNT}개를 선택해주세요
             </h1>
             {mode === "change" ? (
               <p className="text-[15px] leading-[150%] text-[#6F7173]">
-                이번 주기에 트렌드 분석할 브랜드 10개를 골라주세요.
+                이번 주기에 트렌드 분석할 브랜드 {REQUIRED_COUNT}개를 골라주세요.
                 <br />
                 저장하면 다음 결제일{" "}
                 <b className="font-semibold text-[#3D3F41]">{nextCycleLabel}</b>
@@ -254,7 +254,8 @@ export default function InterestBrandModal({
               </p>
             ) : (
               <p className="text-[15px] leading-[150%] text-[#6F7173]">
-                선택한 10개 브랜드를 기준으로 트렌드와 분석을 보여드려요.
+                선택한 {REQUIRED_COUNT}개 브랜드를 기준으로 트렌드와 분석을
+                보여드려요.
                 <br />
                 브랜드는 가입 후{" "}
                 <b className="font-semibold text-[#3D3F41]">월 1회</b> 변경할 수
@@ -484,8 +485,8 @@ export default function InterestBrandModal({
               </div>
               <h2 className="text-center text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-tx-strong">
                 {mode === "change"
-                  ? "이 10개 브랜드로 변경할까요?"
-                  : "이 10개 브랜드로 분석을 시작할까요?"}
+                  ? `이 ${REQUIRED_COUNT}개 브랜드로 변경할까요?`
+                  : `이 ${REQUIRED_COUNT}개 브랜드로 분석을 시작할까요?`}
               </h2>
               <div className="w-full rounded-xl bg-fill-bg-strong p-4 text-[14px] leading-[150%] text-tx-neutral">
                 저장하면{" "}

@@ -3,7 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { PostConfirmBilling, type PlanType } from "@/apis/BillingAPI";
 import { useUIStore } from "@/stores/UIStore";
-import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import {
+  useSubscriptionStore,
+  isBasicPlan,
+} from "@/stores/SubscriptionStore";
 import { useFilterStore } from "@/stores/FilterStore";
 
 const PLAN_LABELS: Record<PlanType, string> = {
@@ -41,7 +44,7 @@ function BillingSuccessPage() {
     PostConfirmBilling({ authKey, customerKey, plan })
       .then((subscription) => {
         setSubscription(subscription);
-        if (plan === "basic") {
+        if (isBasicPlan(plan)) {
           openInterestBrandModal();
         } else if (plan === "pro") {
           setSelectedTab("상품 분석");
