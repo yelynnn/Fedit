@@ -33,6 +33,29 @@ const MALE_PLATFORM_OVERRIDE: Record<string, string> = {
   wconcept: "4910",
 };
 
+// 성별별로 분석 데이터가 누적되기 시작한 첫 달(YYYY-MM). 여성은 2026년 7월,
+// 남성은 2026년 8월부터 쌓인다. 이 달부터 "지난달"까지가 월 선택/이전달
+// 이동으로 열람 가능하다(이번 달은 아직 집계 중이라 제외).
+const DATA_START_MONTH: Record<string, string> = {
+  female: "2026-07",
+  male: "2026-08",
+};
+
+// 데이터 시작월 ~ 지난달 범위의 YYYY-MM 목록(최신월이 앞). 시작월이 아직
+// 지난달에 못 미치면 빈 배열 → 월 이동/선택이 막힌다.
+const buildDateListOptions = (audienceType: string): string[] => {
+  const start = dayjs(
+    `${DATA_START_MONTH[audienceType] ?? DATA_START_MONTH.female}-01`,
+  );
+  const list: string[] = [];
+  let cursor = dayjs().subtract(1, "month").startOf("month");
+  while (!cursor.isBefore(start, "month")) {
+    list.push(cursor.format("YYYY-MM"));
+    cursor = cursor.subtract(1, "month");
+  }
+  return list;
+};
+
 // 여성은 7월 데이터부터, 남성은 8월 데이터부터 누적돼서 안내 문구의
 // 기준월이 다르다.
 const getDataUnavailableNotice = (audienceType: string) => (
@@ -57,9 +80,8 @@ function DashBoardPage() {
   const nextMonth = currentDate.add(1, "month");
   const [isMonthModalOpen, setMonthModalOpen] = useState(false);
 
-  // 여성은 7월, 남성은 8월 분석 데이터부터 누적돼서 이전달 이동/월 선택
-  // 모달이 열리지만, 그보다 더 이전달은 아직 없어서 그때만 버튼 바로
-  // 아래에 안내 토스트를 보여준다.
+  // 데이터 시작월보다 더 이전달로 이동하려 하면(또는 아직 이전달 자체가
+  // 없으면) 버튼 바로 아래에 안내 토스트를 보여준다.
   const [dateNoticeTarget, setDateNoticeTarget] = useState<
     "modal" | "prev" | "next" | null
   >(null);
@@ -71,8 +93,14 @@ function DashBoardPage() {
     );
   };
 
-  // 남성은 8월 데이터부터 쌓이기 시작해서 아직 선택 가능한 이전달이 없다.
-  const dateListOptions = audienceType === "male" ? [] : ["2026-07"];
+  const dateListOptions = buildDateListOptions(audienceType);
+
+  // 데이터 시작월(여 2026-07 / 남 2026-08). 이전달 화살표는 이 달보다 더
+  // 이전으로는 갈 수 없어서, 그때만 버튼을 비활성화한다.
+  const dataStartMonth = dayjs(
+    `${DATA_START_MONTH[audienceType] ?? DATA_START_MONTH.female}-01`,
+  );
+  const canGoPrev = !prevMonth.isBefore(dataStartMonth, "month");
 
   const goToMonth = (value: string) => {
     setSelectedMonth(value);
@@ -80,13 +108,8 @@ function DashBoardPage() {
   };
 
   const handlePrevMonth = () => {
-    const target = currentDate.subtract(1, "month");
-    const value = target.format("YYYY-MM");
-    if (!dateListOptions.includes(value)) {
-      handleDateNavBlocked("prev");
-      return;
-    }
-    goToMonth(value);
+    if (!canGoPrev) return;
+    goToMonth(prevMonth.format("YYYY-MM"));
   };
 
   const handleNextMonth = () => {
@@ -227,16 +250,16 @@ function DashBoardPage() {
             <div className="relative">
               <button
                 onClick={handlePrevMonth}
-                className="flex items-center gap-1 transition-colors hover:text-[#151515]"
+                disabled={!canGoPrev}
+                className={`flex items-center gap-1 transition-colors ${
+                  canGoPrev
+                    ? "hover:text-[#151515]"
+                    : "text-icon-alt cursor-not-allowed"
+                }`}
               >
                 <Icon icon="ph:caret-left" className="w-4 h-4" />
                 {prevMonth.month() + 1}월
               </button>
-              {dateNoticeTarget === "prev" && (
-                <DateNavNotice>
-                  {getDataUnavailableNotice(audienceType)}
-                </DateNavNotice>
-              )}
             </div>
 
             <div className="w-[1px] h-3 bg-line-alt"></div>
