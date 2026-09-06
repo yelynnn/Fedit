@@ -7,7 +7,11 @@ import {
   GetProductByItemCode,
   GetRelatedItemInfo,
 } from "@/apis/AnalysisAPI";
-import { GetTrendIndex } from "@/apis/DashBoardAPI";
+import {
+  GetTrendIndex,
+  GetTrendSimilar,
+  GetTrendSnapshot,
+} from "@/apis/DashBoardAPI";
 import {
   PostCreateBoard,
   PostAddBoardItem,
@@ -17,7 +21,10 @@ import {
   type BoardListItem,
 } from "@/apis/BoardAPI";
 import type { ApiDetail } from "@/types/Product";
-import type { TrendSnapshotDetailDto } from "@/types/Main";
+import type {
+  TrendSnapshotDetailDto,
+  TrendSimilarItemDto,
+} from "@/types/Main";
 import DetailItem from "./DetailItem";
 import defaultImg from "@/assets/logo/defaultImg.svg";
 import AIAnalysisBox from "./AIAnalysisBox";
@@ -99,11 +106,18 @@ export default function ProductDetailContent({
   onItemClick,
   previewSnapshot,
 }: Props = {}) {
-  const { setSelectedProductId, selectedProductId } = useProductStore((s) => s);
+  const {
+    setSelectedProductId,
+    selectedProductId,
+    setModalProductId,
+    setModalTrendSnapshot,
+  } = useProductStore((s) => s);
   const effectiveId = itemcodeOverride ?? selectedProductId;
   const [detailData, setDetailData] = useState<ApiDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [related, setRelated] = useState<RelatedItem[]>([]);
+  // 랭킹 상품(previewSnapshot) 상세일 때만 /trend/{id}/similar로 채운다.
+  const [trendSimilar, setTrendSimilar] = useState<TrendSimilarItemDto[]>([]);
   const [trendSnapshot, setTrendSnapshot] =
     useState<TrendSnapshotDetailDto | null>(null);
   const [isTrendLoading, setIsTrendLoading] = useState(false);
@@ -255,7 +269,24 @@ export default function ProductDetailContent({
 
   useEffect(() => {
     updateRelatedScrollButtons();
-  }, [related]);
+  }, [related, trendSimilar]);
+
+  // 랭킹 유사 상품 카드 클릭 — source에 따라 다른 상세로 갈아끼운다.
+  // RANKING → /trend/{trend_id} 스냅샷 모달, PRODUCT → /product/{item_code} 모달.
+  const handleTrendSimilarClick = async (item: TrendSimilarItemDto) => {
+    if (item.source === "RANKING") {
+      if (item.trend_id == null) return;
+      try {
+        const snapshot = await GetTrendSnapshot(item.trend_id);
+        if (snapshot) setModalTrendSnapshot(snapshot);
+      } catch {
+        // 무시 — 모달을 열지 않는다.
+      }
+    } else if (item.item_code) {
+      setModalTrendSnapshot(null);
+      setModalProductId(item.item_code);
+    }
+  };
 
   const handleUndoSave = async () => {
     if (!effectiveId || !selectedBoard) return;
@@ -323,6 +354,27 @@ export default function ProductDetailContent({
     };
   }, [effectiveId]);
 
+  // 랭킹 상품 상세(previewSnapshot)는 /trend/{id}/similar로 유사 상품을 받는다.
+  // 상세와 분리해서 지연 호출 — 임베딩 검색 왕복이 있어 느릴 수 있다. 빈
+  // 배열([])이면 아직 VLM 분석 전이라 섹션 자체를 숨긴다.
+  useEffect(() => {
+    if (!previewSnapshot) {
+      setTrendSimilar([]);
+      return;
+    }
+    let canceled = false;
+    GetTrendSimilar(previewSnapshot.temp_item_id, 10)
+      .then((res) => {
+        if (!canceled) setTrendSimilar(res ?? []);
+      })
+      .catch(() => {
+        if (!canceled) setTrendSimilar([]);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [previewSnapshot]);
+
   useEffect(() => {
     if (previewSnapshot) {
       setTrendSnapshot(previewSnapshot);
@@ -364,6 +416,33 @@ export default function ProductDetailContent({
       ? dayjs(detailData.release_date).format("YYYY.MM.DD")
       : detailData.release_date;
   }, [detailData]);
+
+  // "유사한 스타일 아이템" 섹션은 정식 상품(itemcode)이든 랭킹 상품
+  // (previewSnapshot)이든 이미지만 나열하는 동일한 UI를 쓴다. 데이터 소스와
+  // 클릭 동작만 갈린다.
+  const similarItems = previewSnapshot
+    ? trendSimilar.map((item, idx) => ({
+        key:
+          item.source === "RANKING"
+            ? `r-${item.trend_id ?? idx}`
+            : `p-${item.item_code ?? idx}`,
+        image: item.thumbnail || defaultImg,
+        onClick: () => handleTrendSimilarClick(item),
+      }))
+    : related.map((r, idx) => ({
+        key: r.itemcode || String(idx),
+        image: r.product_image_url || defaultImg,
+        onClick: () =>
+          r.itemcode &&
+          (onItemClick
+            ? onItemClick(r.itemcode)
+            : setSelectedProductId(r.itemcode)),
+      }));
+  // 랭킹 상품은 유사 상품이 비면(아직 VLM 분석 전) 섹션을 숨기고, 정식
+  // 상품은 기존처럼 섹션 자체는 항상 노출한다.
+  const showSimilarSection = previewSnapshot
+    ? similarItems.length > 0
+    : true;
 
   // const getPlatformLabel = (platform: string) => {
   //   const p = platform.toLowerCase();
@@ -639,7 +718,7 @@ export default function ProductDetailContent({
               data={trendSnapshot}
               isLoading={isTrendLoading}
             />
-            {!previewSnapshot && (
+            {showSimilarSection && (
               <>
                 <div className="h-[1px] w-full bg-line-alt my-5" />
                 <div className="flex flex-col gap-3">
@@ -663,20 +742,15 @@ export default function ProductDetailContent({
                       onScroll={updateRelatedScrollButtons}
                       className="flex gap-3 overflow-x-auto pb-2 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                     >
-                      {related.map((r, idx) => (
+                      {similarItems.map((s, idx) => (
                         <button
-                          key={r.itemcode || idx}
+                          key={s.key}
                           type="button"
                           className="flex-shrink-0"
-                          onClick={() =>
-                            r.itemcode &&
-                            (onItemClick
-                              ? onItemClick(r.itemcode)
-                              : setSelectedProductId(r.itemcode))
-                          }
+                          onClick={s.onClick}
                         >
                           <img
-                            src={r.product_image_url || defaultImg}
+                            src={s.image}
                             alt={`related-${idx}`}
                             className="object-cover rounded-lg w-42 h-42"
                           />

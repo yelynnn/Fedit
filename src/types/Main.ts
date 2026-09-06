@@ -271,3 +271,23 @@ export type TrendSnapshotDetailDto = {
     own_sales_status: "collecting" | null;
   } | null;
 };
+
+// 트렌드 지수 고도화 — 랭킹 상품 상세(/trend/{id})의 "유사 상품" 섹션.
+// GET /trend/{id}/similar 로 별도 조회하며, 유사도(score) 내림차순으로 이미
+// 정렬돼 있고 자기 자신은 빠져있다. 빈 배열이면 아직 VLM 분석 전이라 섹션
+// 자체를 숨긴다.
+export type TrendSimilarItemDto = {
+  // "RANKING": 다른 랭킹 상품 → 클릭 시 /trend/{trend_id} 스냅샷
+  // "PRODUCT": 정식 상품 카탈로그 → 클릭 시 /product/{item_code} 상세
+  source: "RANKING" | "PRODUCT";
+  // source="RANKING"일 때만 값이 있다.
+  trend_id: number | null;
+  // source="PRODUCT"일 때만 값이 있다.
+  item_code: string | null;
+  brand: string;
+  product_name: string;
+  // null 가능 → placeholder 처리.
+  thumbnail: string | null;
+  // 코사인 유사도 0~1(bge-m3). 현재 UI에는 노출하지 않는다.
+  score: number;
+};

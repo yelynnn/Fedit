@@ -6,6 +6,7 @@ import type {
   GetTrendRankingParams,
   TrendRankingPageResponse,
   TrendSnapshotDetailDto,
+  TrendSimilarItemDto,
 } from "@/types/Main";
 import { axiosInstance } from "./AxiosInstance";
 
@@ -143,6 +144,32 @@ const GetTrendSnapshot = async (
   }
 };
 
+// 트렌드 지수 고도화 — 랭킹 상품 상세의 "유사 상품" 섹션. /trend/{id}와
+// 분리해서 지연 호출한다(임베딩 검색 왕복이 있어 상세보다 느릴 수 있음).
+// id는 GetTrendSnapshot과 동일하게 /trend/{id}에 넣는 값(temp_item_id).
+// 빈 배열([]) = 아직 VLM 분석 전이라 섹션 자체를 숨기면 된다. 잘못된 id는
+// 404(TREND_SNAPSHOT_NOT_FOUND)라 다른 /trend/* 호출과 맞춰 에러로 던진다.
+const GetTrendSimilar = async (
+  tempItemId: number,
+  limit = 10,
+): Promise<TrendSimilarItemDto[]> => {
+  try {
+    const res = await axiosInstance.get(`/trend/${tempItemId}/similar`, {
+      params: { limit },
+    });
+    return res.data ?? [];
+  } catch (error: any) {
+    if (error?.response) {
+      const e = new Error(
+        error.response?.data?.message || "요청 실패",
+      ) as Error & { status?: number };
+      e.status = error.response.status;
+      throw e;
+    }
+    throw error;
+  }
+};
+
 export {
   GetTrendKeyword,
   GetTrendGraph,
@@ -152,4 +179,5 @@ export {
   GetTrendIndex,
   GetTrendRanking,
   GetTrendSnapshot,
+  GetTrendSimilar,
 };

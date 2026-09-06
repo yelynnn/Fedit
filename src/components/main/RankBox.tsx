@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react";
 import { Icon } from "@iconify/react";
 import TrendIndexBoxMock from "../product/TrendIndexBoxMock";
 import AIAnalysisBox from "../product/AIAnalysisBox";
+import RankSimilarBox from "./RankSimilarBox";
 import dayjs from "dayjs";
 import MonthModal from "./modal/MonthModal";
 import DateNavNotice from "./DateNavNotice";
@@ -341,12 +342,15 @@ export default function RankBox() {
             </div>
 
             {snapshotDetail && (
-              <AIAnalysisBox
-                content={snapshotDetail.vlm?.ai_description ?? ""}
-                itemcode={String(activeTempItemId ?? "")}
-                isRanking={true}
-                onDetailClick={() => setModalTrendSnapshot(snapshotDetail)}
-              />
+              <>
+                <AIAnalysisBox
+                  content={snapshotDetail.vlm?.ai_description ?? ""}
+                  itemcode={String(activeTempItemId ?? "")}
+                  isRanking={true}
+                  onDetailClick={() => setModalTrendSnapshot(snapshotDetail)}
+                />
+                <RankSimilarBox tempItemId={activeTempItemId} />
+              </>
             )}
           </div>
         </div>
