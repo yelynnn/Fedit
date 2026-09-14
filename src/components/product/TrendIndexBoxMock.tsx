@@ -8,6 +8,10 @@ interface TrendIndexBoxMockProps {
   isLoading?: boolean;
 }
 
+// 값이 0이 아닌 이상 막대가 눈에 띄게 — 비교값이 훨씬 커서 비율이 작아져도
+// 최소 이 높이(px)는 보장한다.
+const MIN_BAR_H = 15;
+
 type Direction = "up" | "down" | "flat";
 
 const DIRECTION_STYLE: Record<
@@ -256,28 +260,34 @@ function TodayVsYesterdayBars({
 }) {
   if (prev == null || current == null) return null;
   const max = Math.max(prev, current, 1);
+  // 막대 최대 높이는 숫자 라벨 자리를 남기려고 컨테이너(h-16=64px)보다
+  // 낮은 44px로 잡는다(CategoryCompareBars와 동일한 방식) — 값이 작아 막대가
+  // 짧아져도 숫자가 컨테이너 맨 위가 아니라 막대 바로 위 8px에 붙는다.
+  const BAR_MAX_H = 44;
+  const barHeight = (value: number) =>
+    value > 0 ? `${Math.max(MIN_BAR_H, (value / max) * BAR_MAX_H)}px` : "0px";
   return (
     <div className="flex items-end gap-5 shrink-0">
       <div className="flex flex-col items-center gap-1.5">
-        <span className="text-xs font-medium leading-[1.33] text-tx-neutral">
-          {fmtNum(prev)}
-        </span>
-        <div className="flex items-end w-12 h-16">
+        <div className="flex flex-col items-center justify-end w-12 h-16 gap-1.5">
+          <span className="text-xs font-medium leading-[1.33] text-tx-neutral">
+            {fmtNum(prev)}
+          </span>
           <div
             className="w-full rounded-t bg-line-alt"
-            style={{ height: `${(prev / max) * 100}%` }}
+            style={{ height: barHeight(prev) }}
           />
         </div>
         <span className="text-[11px] text-tx-alt">{pastDayLabel(gapDays)}</span>
       </div>
       <div className="flex flex-col items-center gap-1.5">
-        <span className="text-xs font-medium leading-[1.33] text-tx-neutral">
-          {fmtNum(current)}
-        </span>
-        <div className="flex items-end w-12 h-16">
+        <div className="flex flex-col items-center justify-end w-12 h-16 gap-1.5">
+          <span className="text-xs font-medium leading-[1.33] text-tx-neutral">
+            {fmtNum(current)}
+          </span>
           <div
             className="w-full rounded-t bg-fill-primary"
-            style={{ height: `${(current / max) * 100}%` }}
+            style={{ height: barHeight(current) }}
           />
         </div>
         <span className="text-[11px] text-tx-alt">오늘</span>
@@ -410,8 +420,8 @@ function CategoryCompareBars({
         <div
           className={`w-full rounded-t ${fillClass}`}
           style={{
-            // 값이 있으면 아무리 작아도 최소 4px는 보이게 한다.
-            height: `${value > 0 ? Math.max(4, (value / max) * BAR_MAX_H) : 0}px`,
+            // 값이 있으면 아무리 작아도 최소 MIN_BAR_H는 보이게 한다.
+            height: `${value > 0 ? Math.max(MIN_BAR_H, (value / max) * BAR_MAX_H) : 0}px`,
           }}
         />
       </div>

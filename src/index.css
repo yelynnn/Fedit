@@ -236,3 +236,238 @@
 :root {
   --swiper-theme-color: #fff !important;
 }
+
+/* ⑨ 챗봇 답변(RAG 마크다운) — Fedi AI agent 자유 텍스트 슬롯
+   결론 · 서술 본문 · 근거 · 보완 제안 · 판단/주의 박스를 마크다운으로 렌더할 때의 규격.
+   랭킹·차트·이중 바·갭 표는 컴포넌트가 렌더 → 이 범위 밖. */
+.chat-body {
+  /* Figma 토큰 별칭 — 스펙 표기(--text-normal-strong 등)를 그대로 쓰기 위한 로컬 alias.
+     실제 값은 fedit-tokens.css의 --color-* 를 참조하므로 Light/Dark 모드에 자동 대응한다. */
+  --text-normal-strong: var(--color-text-normal-strong);
+  --text-normal-normal: var(--color-text-normal-normal);
+  --text-normal-neutral: var(--color-text-normal-neutral);
+  --text-normal-alternative: var(--color-text-normal-alternative);
+  --text-normal-assistive: var(--color-text-normal-assistive);
+  --fill-normal-strong: var(--color-fill-normal-strong);
+  --line-normal-neutral: var(--color-line-normal-neutral);
+  --line-normal-alternative: var(--color-line-normal-alternative);
+  --line-normal-assistive: var(--color-line-normal-assistive);
+  --surface-basement: var(--color-surface-basement);
+  --surface-floating: var(--color-surface-floating);
+  --trend-rising-default: var(--color-trend-rising-default);
+  --trend-falling-default: var(--color-trend-falling-default);
+  --trend-steady-default: var(--color-trend-steady-default);
+  --system-warning: var(--color-system-warning);
+  --system-info: var(--color-system-info);
+
+  font-family: var(--font-family-base);
+  color: var(--text-normal-neutral);
+  word-break: keep-all; /* 어절 단위 줄바꿈 — 한글 필수 */
+  overflow-wrap: break-word; /* 긴 영문·URL 강제 분해 */
+
+  /* 측정 폭(measure) — 패널/서술 본문 기본값. 섹션 맥락은 .section에서 확장. */
+  max-width: 428px;
+}
+.section .chat-body {
+  max-width: 560px;
+}
+
+.chat-body > :first-child { margin-top: 0; }
+.chat-body > :last-child { margin-bottom: 0; }
+
+/* 결론 답변 첫 줄 — Title(sb)/medium, 수치 포함·굵게 */
+.chat-body .conclusion {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 150%;
+  letter-spacing: -0.005em;
+  color: var(--text-normal-strong);
+  margin: 0 0 16px;
+}
+
+/* h3 소제목 — 포맷 본문 안의 구획 라벨. #/## 는 렌더러가 h3로 강등한다. */
+.chat-body h3 {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 143%;
+  letter-spacing: -0.005em;
+  color: var(--text-normal-strong);
+  margin: 20px 0 8px;
+}
+.chat-body h3:first-child { margin-top: 0; }
+
+/* 본문 p — Body(md)/medium.
+   빈 줄(Enter 두 번) = 문단 구분, 한 줄바꿈(Enter 한 번) = <br/> */
+.chat-body p {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 150%;
+  letter-spacing: -0.005em;
+  color: var(--text-normal-neutral);
+  margin: 8px 0;
+}
+
+/* 본문 내 강조 — 크기 동일, 색·굵기만 변동 */
+.chat-body strong {
+  font-weight: 600;
+  color: var(--text-normal-strong);
+}
+/* 한글은 이탤릭 대신 굵기로 */
+.chat-body em {
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* 수치 강조 — 서버가 클래스를 붙여 내려주는 구조화 슬롯용 */
+.chat-body .value-rising { color: var(--trend-rising-default); font-weight: 600; }
+.chat-body .value-falling { color: var(--trend-falling-default); font-weight: 600; }
+.chat-body .value-steady { color: var(--trend-steady-default); font-weight: 600; }
+.chat-body .num { font-variant-numeric: tabular-nums; }
+
+/* 리스트 — 1depth만. 2depth 이상은 렌더러가 평탄화한다. */
+.chat-body ul,
+.chat-body ol {
+  margin: 12px 0;
+  padding-left: 20px;
+  list-style-position: outside; /* 행잉 인덴트 */
+}
+.chat-body ul { list-style-type: disc; }
+.chat-body ol { list-style-type: decimal; }
+.chat-body li {
+  margin: 4px 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 150%;
+  letter-spacing: -0.005em;
+  color: var(--text-normal-neutral);
+}
+.chat-body li .desc { color: var(--text-normal-alternative); } /* 항목 부가설명 */
+
+/* 인용 / 강조블록 — 근거 줄과 주의 박스 두 용도로만 */
+.chat-body blockquote {
+  margin: 16px 0 0;
+  padding: 0 0 0 12px;
+  border-left: 2px solid var(--line-normal-neutral);
+  background: transparent;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 133%;
+  letter-spacing: 0;
+  color: var(--text-normal-alternative);
+}
+.chat-body blockquote.warning {
+  padding: 12px 16px;
+  border-left: 2px solid var(--system-warning);
+  background: var(--surface-basement);
+  border-radius: 0 12px 12px 0;
+  font-size: 14px;
+  line-height: 143%;
+  letter-spacing: -0.005em;
+  color: var(--text-normal-normal);
+}
+.chat-body blockquote > :first-child { margin-top: 0; }
+.chat-body blockquote > :last-child { margin-bottom: 0; }
+.chat-body blockquote p {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  margin: 0;
+}
+
+/* 표 — 서버가 명시적 table 슬롯을 준 참조표에만 */
+.chat-body .table-wrapper {
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid var(--line-normal-alternative);
+  border-radius: 8px;
+}
+.chat-body table {
+  width: 100%;
+  min-width: 380px;
+  border-collapse: collapse;
+}
+.chat-body th,
+.chat-body td {
+  border-right: 1px solid var(--line-normal-alternative);
+  border-bottom: 1px solid var(--line-normal-alternative);
+  padding: 8px 12px;
+  text-align: left;
+}
+.chat-body th:last-child,
+.chat-body td:last-child { border-right: none; }
+.chat-body tbody tr:last-child td { border-bottom: none; }
+.chat-body th {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 143%;
+  letter-spacing: -0.005em;
+  color: var(--text-normal-alternative);
+  background: var(--fill-normal-strong);
+}
+.chat-body td {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 143%;
+  letter-spacing: -0.005em;
+  color: var(--text-normal-neutral);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 구분선 — 답변당 최대 1개(초과분은 렌더러가 제거) */
+.chat-body hr {
+  border: none;
+  border-top: 1px solid var(--line-normal-alternative);
+  margin: 16px 0;
+}
+
+/* 이미지 */
+.chat-body img {
+  max-width: 100%;
+  border-radius: 12px;
+}
+.chat-body img.thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.panel .chat-body img.thumb {
+  width: 40px;
+  height: 40px;
+}
+
+/* 링크 — 앱 내부 경로만 <a>. 외부 URL은 렌더러가 평문으로 강등한다. */
+.chat-body a {
+  color: var(--system-info);
+  text-decoration: none;
+}
+.chat-body a:hover { text-decoration: underline; }
+
+/* 말풍선 컨테이너 */
+.bubble-bot {
+  padding: 12px 16px;
+  border-radius: 20px; /* border/radius/2xl */
+  background: var(--color-surface-basement);
+}
+.bubble-user {
+  margin-left: auto;
+  padding: 12px 16px;
+  border-radius: 20px;
+  background: var(--color-surface-floating);
+  border: 1px solid var(--color-line-normal-alternative);
+}
+
+/* 접근성 */
+.chat-body a:focus-visible,
+.chat-body button:focus-visible {
+  outline: 2px solid var(--system-info);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-body * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

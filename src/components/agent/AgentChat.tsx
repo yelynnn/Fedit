@@ -132,7 +132,7 @@ export default function AgentChat({ conversationId, onClose }: Props) {
   const currentTitle = conv?.title ?? '새 대화';
 
   return (
-    <div className="flex flex-col w-[460px] h-[580px] bg-[#EDECFF] rounded-3xl shadow-2xl overflow-hidden">
+    <div className="panel flex flex-col w-[460px] h-[580px] bg-[#EDECFF] rounded-3xl shadow-2xl overflow-hidden">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/30">
         <div className="flex items-center gap-2 flex-1 min-w-0">

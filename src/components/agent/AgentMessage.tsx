@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import type { Message, AiResponse, AiProduct } from '@/types/chat';
 
@@ -30,90 +31,207 @@ function MetricBar({ label, value, color }: { label: string; value: number; colo
   );
 }
 
-// **굵게** 인라인 처리
+// 앱 내부 경로만 링크로 허용한다("/"로 시작, "//" 프로토콜상대 제외).
+const isInternalPath = (href: string) => /^\/(?!\/)/.test(href.trim());
+
+// 인라인 마크다운 — 화이트리스트: **볼드**, *이탤릭*(굵기로 렌더), [링크](/path).
+// 나머지(인라인 코드·이미지·HTML·취소선 등)는 이스케이프 없이 제거한다.
 function renderInline(text: string): ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
-    const m = part.match(/^\*\*([^*]+)\*\*$/);
-    return m ? (
-      <strong key={i} className="font-semibold text-gray-900">
-        {m[1]}
-      </strong>
-    ) : (
-      <span key={i}>{part}</span>
-    );
-  });
+  const clean = text
+    .replace(/<[^>]+>/g, '') // HTML 전면 차단
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // 이미지 문법 제거(서버가 슬롯으로 전달)
+    .replace(/`([^`]+)`/g, '$1') // 인라인 코드 마커 제거(내용은 유지)
+    .replace(/~~([^~]+)~~/g, '$1'); // 취소선 등 비화이트리스트 마커 제거
+
+  const nodes: ReactNode[] = [];
+  const re =
+    /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*\s][^*]*?)\*|(?<![A-Za-z0-9])_([^_\s][^_]*?)_(?![A-Za-z0-9])/g;
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(clean)) !== null) {
+    if (m.index > last) {
+      nodes.push(<span key={key++}>{clean.slice(last, m.index)}</span>);
+    }
+    if (m[1] !== undefined) {
+      const label = m[1];
+      const href = m[2].trim();
+      nodes.push(
+        isInternalPath(href) ? (
+          <Link key={key++} to={href} className="underline underline-offset-2">
+            {label}
+          </Link>
+        ) : (
+          // 외부 URL은 <a>로 만들지 않고 평문(텍스트)으로 강등
+          <span key={key++}>{label}</span>
+        ),
+      );
+    } else if (m[3] !== undefined || m[4] !== undefined) {
+      nodes.push(<strong key={key++}>{m[3] ?? m[4]}</strong>);
+    } else if (m[5] !== undefined || m[6] !== undefined) {
+      // 한글 이탤릭 금지 → CSS(.chat-body em)가 굵기로 렌더
+      nodes.push(<em key={key++}>{m[5] ?? m[6]}</em>);
+    }
+    last = re.lastIndex;
+  }
+  if (last < clean.length) {
+    nodes.push(<span key={key++}>{clean.slice(last)}</span>);
+  }
+  return nodes;
 }
 
-// 경량 마크다운 렌더러 (제목/불릿/번호목록/굵게/줄바꿈)
+const isTableRow = (l: string) =>
+  /^\|.*\|?$/.test(l) || /^\|?[\s:|-]*-[\s:|-]*$/.test(l);
+const isHr = (l: string) => /^([-*_])(\s*\1){2,}$/.test(l);
+
+// 경량 마크다운 렌더러 — 자유 텍스트 슬롯 전용 화이트리스트.
+//  허용: **볼드**, *이탤릭*(굵기), 1depth 리스트, > 인용(+ warning), ### 제목,
+//        [링크](/내부경로), --- (답변당 1개)
+//  강등: #/## → h3
+//  제거: 표 · 코드/코드블록 · 이미지 · HTML · 2depth 이상 리스트
+//  줄바꿈: 빈 줄(Enter 두 번) = 문단 구분, 한 줄바꿈(Enter 한 번) = <br/>
 function Markdown({ text }: { text: string }) {
-  const lines = text.replace(/\r/g, '').split('\n');
+  const src = text
+    .replace(/\r/g, '')
+    .replace(/```[\s\S]*?```/g, '') // 펜스 코드블록 제거
+    .replace(/~~~[\s\S]*?~~~/g, '');
+  const lines = src.split('\n');
+
   const blocks: ReactNode[] = [];
   let list: { ordered: boolean; items: string[] } | null = null;
+  let para: string[] = [];
+  let quote: { warning: boolean; rows: string[] } | null = null;
+  let hrUsed = false;
 
-  const flush = () => {
+  const flushList = () => {
     if (!list) return;
-    const items = list.items;
+    const { ordered, items } = list;
+    const Tag = ordered ? 'ol' : 'ul';
     blocks.push(
-      list.ordered ? (
-        <ol key={`b${blocks.length}`} className="list-decimal pl-4 my-1 flex flex-col gap-0.5">
-          {items.map((it, i) => (
-            <li key={i}>{renderInline(it)}</li>
-          ))}
-        </ol>
-      ) : (
-        <ul key={`b${blocks.length}`} className="list-disc pl-4 my-1 flex flex-col gap-0.5">
-          {items.map((it, i) => (
-            <li key={i}>{renderInline(it)}</li>
-          ))}
-        </ul>
-      ),
+      <Tag key={`b${blocks.length}`}>
+        {items.map((it, i) => (
+          <li key={i}>{renderInline(it)}</li>
+        ))}
+      </Tag>,
     );
     list = null;
   };
 
+  // 문단 확정 — 내부 줄바꿈은 <br/>, 문단 사이는 <p> margin.
+  const flushPara = () => {
+    if (para.length === 0) return;
+    const rows = para;
+    blocks.push(
+      <p key={`b${blocks.length}`}>
+        {rows.map((row, i) => (
+          <Fragment key={i}>
+            {i > 0 && <br />}
+            {renderInline(row)}
+          </Fragment>
+        ))}
+      </p>,
+    );
+    para = [];
+  };
+
+  const flushQuote = () => {
+    if (!quote) return;
+    const { warning, rows } = quote;
+    blocks.push(
+      <blockquote key={`b${blocks.length}`} className={warning ? 'warning' : undefined}>
+        {rows.map((row, i) => (
+          <Fragment key={i}>
+            {i > 0 && <br />}
+            {renderInline(row)}
+          </Fragment>
+        ))}
+      </blockquote>,
+    );
+    quote = null;
+  };
+
+  const flush = () => {
+    flushPara();
+    flushList();
+    flushQuote();
+  };
+
   for (const raw of lines) {
     const line = raw.trim();
+
+    // 표 문법은 전부 제거 (컴포넌트가 렌더)
+    if (isTableRow(line) && line.includes('|')) {
+      flush();
+      continue;
+    }
+
     if (!line) {
       flush();
       continue;
     }
+
+    // 구분선 — 답변당 1개, 초과분 제거
+    if (isHr(line)) {
+      flush();
+      if (!hrUsed) {
+        blocks.push(<hr key={`b${blocks.length}`} />);
+        hrUsed = true;
+      }
+      continue;
+    }
+
+    // 인용 / 주의 박스 — 연속된 > 줄을 하나로
+    const q = line.match(/^>\s?(.*)$/);
+    if (q) {
+      flushPara();
+      flushList();
+      let content = q[1];
+      if (!quote) {
+        const wm = content.match(/^\[!(warning|caution|주의)\]\s*/i);
+        quote = { warning: !!wm, rows: [] };
+        if (wm) content = content.slice(wm[0].length);
+      }
+      if (content) quote.rows.push(content);
+      continue;
+    }
+    flushQuote();
+
+    // 제목 — #/##/### 전부 h3로 (구조 의도는 살린다)
     const h = line.match(/^#{1,6}\s+(.*)$/);
     if (h) {
       flush();
-      blocks.push(
-        <p key={`b${blocks.length}`} className="font-semibold text-gray-900 mt-2 mb-0.5">
-          {renderInline(h[1])}
-        </p>,
-      );
+      blocks.push(<h3 key={`b${blocks.length}`}>{renderInline(h[1])}</h3>);
       continue;
     }
+
+    // 불릿 — 들여쓰기(2depth 이상)는 평탄화해서 1depth로
     const b = line.match(/^[-*•]\s+(.*)$/);
     if (b) {
+      flushPara();
       if (!list || list.ordered) {
-        flush();
+        flushList();
         list = { ordered: false, items: [] };
       }
       list.items.push(b[1]);
       continue;
     }
-    const o = line.match(/^\d+\.\s+(.*)$/);
+    const o = line.match(/^\d+[.)]\s+(.*)$/);
     if (o) {
+      flushPara();
       if (!list || !list.ordered) {
-        flush();
+        flushList();
         list = { ordered: true, items: [] };
       }
       list.items.push(o[1]);
       continue;
     }
-    flush();
-    blocks.push(
-      <p key={`b${blocks.length}`} className="my-1">
-        {renderInline(line)}
-      </p>,
-    );
+
+    // 일반 텍스트 — 현재 문단에 누적
+    flushList();
+    para.push(line);
   }
   flush();
-  return <div className="leading-relaxed">{blocks}</div>;
+  return <>{blocks}</>;
 }
 
 interface Props {
@@ -131,7 +249,7 @@ export default function AgentMessage({ message }: Props) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="bg-white rounded-2xl px-4 py-2.5 max-w-[85%] text-sm text-gray-800 shadow-sm leading-relaxed">
+        <div className="bubble-user max-w-[85%] text-sm text-gray-800 shadow-sm leading-relaxed whitespace-pre-line [word-break:keep-all] [overflow-wrap:break-word]">
           {message.content}
         </div>
       </div>
@@ -142,29 +260,48 @@ export default function AgentMessage({ message }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="bg-white/60 rounded-2xl p-4 text-sm text-gray-800 leading-relaxed">
-        {!p && <Markdown text={message.content} />}
+      {/* .chat-body(RAG 마크다운 규격)는 자유 텍스트 슬롯에만 건다.
+          랭킹·비교표·캐러셀·출처 같은 구조화 컴포넌트에는 적용하지 않는다. */}
+      <div className="bubble-bot text-sm text-gray-800 leading-relaxed" aria-live="polite">
+        {!p && (
+          <div className="chat-body">
+            <Markdown text={message.content} />
+          </div>
+        )}
 
         {p && (
           <>
-            <p className="leading-relaxed font-medium">{renderInline(p.message.summary)}</p>
+            <div className="chat-body">
+              {/* 결론 한 줄 — 의미상 첫 요소 */}
+              <p className="conclusion">{renderInline(p.message.summary)}</p>
 
-            {p.message.points && p.message.points.length > 0 && (
-              <ul className="mt-2.5 flex flex-col gap-1.5">
-                {p.message.points.map((point, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-sm text-gray-700">
-                    <span className="text-gray-400 mt-px flex-shrink-0">•</span>
-                    <span>{renderInline(point)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+              {p.message.points && p.message.points.length > 0 && (
+                <ul>
+                  {p.message.points.map((point, i) => (
+                    <li key={i}>{renderInline(point)}</li>
+                  ))}
+                </ul>
+              )}
 
-            {p.message.detail && (
-              <div className="mt-2.5 text-xs text-gray-500 leading-relaxed border-t border-black/5 pt-2.5 whitespace-pre-line">
-                {renderInline(p.message.detail)}
-              </div>
-            )}
+              {p.message.detail && (
+                <>
+                  <hr />
+                  {p.message.detail
+                    .replace(/\r/g, '')
+                    .split(/\n{2,}/)
+                    .map((para, i) => (
+                      <p key={i}>
+                        {para.split('\n').map((row, j) => (
+                          <Fragment key={j}>
+                            {j > 0 && <br />}
+                            {renderInline(row)}
+                          </Fragment>
+                        ))}
+                      </p>
+                    ))}
+                </>
+              )}
+            </div>
 
             {p.comparison && p.comparison.rows && p.comparison.rows.length > 0 && (
               <div className="mt-3 overflow-x-auto hide-scrollbar">
