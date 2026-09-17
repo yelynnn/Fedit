@@ -18,6 +18,7 @@ import {
   clearPendingBasicDowngrade,
 } from "@/lib/pendingDowngrade";
 import { useSubscriptionStore } from "@/stores/SubscriptionStore";
+import { trackFeatureViewed } from "@/lib/analytics";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -30,9 +31,18 @@ function RootNewLayout() {
     openOnboardingTour,
     openSettingsModal,
   } = useUIStore();
+  const selectedTab = useFilterStore((s) => s.selectedTab);
   const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
   const subscription = useSubscriptionStore((s) => s.subscription);
   const subscriptionLoaded = useSubscriptionStore((s) => s.loaded);
+
+  // feature_viewed — 사이드바 탭 전환 시(최초 진입 포함) 매번 전송한다. 제품은
+  // URL이 안 바뀌는 구조라 GA4 자동 페이지 조회로는 못 잡는다. selectedTab은
+  // 새로고침에도 유지되는(persist) 값이라, 특정 탭에 머문 채로 새로고침해도
+  // 이 effect가 마운트 시 한 번 더 쏴줘서 "최초 진입"을 놓치지 않는다.
+  useEffect(() => {
+    trackFeatureViewed(selectedTab);
+  }, [selectedTab]);
 
   const handleCloseInterestBrandModal = () => {
     closeInterestBrandModal();

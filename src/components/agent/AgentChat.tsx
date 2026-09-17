@@ -4,6 +4,7 @@ import AgentMessage from './AgentMessage';
 import type { Message } from '@/types/chat';
 import { useChatStore } from '@/stores/ChatStore';
 import { axiosInstance } from '@/apis/AxiosInstance';
+import { trackFediChatSent } from '@/lib/analytics';
 import {
   useSubscriptionStore,
   getEffectivePlan,
@@ -87,6 +88,11 @@ export default function AgentChat({ conversationId, onClose }: Props) {
     setIsLoading(true);
 
     try {
+      // FEDI 에이전트 채팅 전송 — feature_viewed(조회)와 분리된 별도 이벤트.
+      // 패널을 열기만 한 게 아니라 실제로 채팅 요청을 보낸 시점 기준. 위
+      // 가드(!isPro, 빈 입력/로딩 중)를 통과한 뒤라 여기가 "요청이 실제로
+      // 나가는" 지점이다.
+      trackFediChatSent();
       const res = await axiosInstance.post('/chat', { message: query });
 
       const raw = res.data.answer || '';

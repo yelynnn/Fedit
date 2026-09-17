@@ -9,6 +9,7 @@ import {
   clearLandingEntry,
   SHOW_PRICING_AFTER_SIGNUP_KEY,
 } from "@/lib/secretEntry";
+import { track } from "@/lib/analytics";
 
 const jobOptions = ["MD", "디자이너", "마케팅", "대표", "기타"];
 
@@ -80,6 +81,8 @@ const NextSignupPage = () => {
         clearLandingEntry();
         localStorage.setItem(SHOW_PRICING_AFTER_SIGNUP_KEY, "true");
       }
+      // 개인(이메일) 무료 체험 가입 완료 — GA4/메타 전환 이벤트.
+      track("trial_started", { plan: "basic", signup_method: "email" });
       setShowSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (error: any) {

@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEffect, useRef, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
+import { track } from "@/lib/analytics";
 import {
   useSubscriptionStore,
   getEffectivePlan,
@@ -105,8 +106,16 @@ const PLATFORM_LABELS: Record<string, string> = {
   "29cm": "29cm",
 };
 
+// excel_downloaded 이벤트의 export_type — 어느 분석 탭에서 받았는지 구분.
+const EXPORT_TYPE_BY_TAB: Record<string, string> = {
+  "상품 분석": "product_analysis",
+  "색상 분석": "color_analysis",
+  "유형 분석": "type_analysis",
+  "패션쇼 분석": "runway_analysis",
+};
+
 function BrandTab({ isProductTab }: Props) {
-  const { brandList, platformList } = useFilterStore((s) => s);
+  const { brandList, platformList, selectedTab } = useFilterStore((s) => s);
   const currentPlan = useSubscriptionStore((s) =>
     toBillingPlan(getEffectivePlan(s.subscription)),
   );
@@ -383,6 +392,10 @@ function BrandTab({ isProductTab }: Props) {
             target.brand ??
             (target.platform ? PLATFORM_LABELS[target.platform] : undefined);
           await downloadXlsxWithImages(rows, label);
+          track("excel_downloaded", {
+            export_type: EXPORT_TYPE_BY_TAB[selectedTab] ?? "unknown",
+            row_count: rows.length,
+          });
 
           // 파일 하나가 실제로 완성될 때만(=중단되기 전에 끝까지 받았을
           // 때만) 서버에 기록한다. 중단하면 그 시점까지 받은 파일들의
@@ -407,6 +420,10 @@ function BrandTab({ isProductTab }: Props) {
 
       if (isPro && !isCancelledRef.current && combinedRows.length > 0) {
         await downloadXlsxWithImages(combinedRows);
+        track("excel_downloaded", {
+          export_type: EXPORT_TYPE_BY_TAB[selectedTab] ?? "unknown",
+          row_count: combinedRows.length,
+        });
         try {
           const updated = await PostExcelDownload();
           setUsage(updated);

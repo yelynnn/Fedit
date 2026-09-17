@@ -8,6 +8,7 @@ import {
   clearLandingEntry,
   SHOW_PRICING_AFTER_SIGNUP_KEY,
 } from "@/lib/secretEntry";
+import { track } from "@/lib/analytics";
 
 const CorporateVerifyPage = () => {
   const navigate = useNavigate();
@@ -40,6 +41,8 @@ const CorporateVerifyPage = () => {
           clearLandingEntry();
           localStorage.setItem(SHOW_PRICING_AFTER_SIGNUP_KEY, "true");
         }
+        // 기업(이메일) 무료 체험 가입 완료 — GA4/메타 전환 이벤트.
+        track("trial_started", { plan: "basic", signup_method: "email" });
         setSuccessMessage(res.message);
       } else {
         setErrorMessage(res.message || "인증에 실패했습니다.");
