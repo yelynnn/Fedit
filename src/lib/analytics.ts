@@ -1,6 +1,10 @@
 // GA4/GTM 전환 이벤트 — "FEDIT 측정 구현 요청서" 요청 1.
 // GTM(GTM-P6C7B44R)이 이미 설치돼 있어 dataLayer.push만 하면 GTM 트리거가 받는다.
 // 새 GTM 컨테이너·GA4 속성을 만들지 않는다 — 기존 fedit_main 속성 그대로 쓴다.
+// Amplitude(초기화는 main.tsx에서 initAll로 한 번)도 같은 이벤트를 받는다 —
+// 호출부는 그대로 두고 이 track() 안에서만 양쪽으로 나눠 보낸다.
+import * as amplitude from "@amplitude/unified";
+
 declare global {
   interface Window {
     dataLayer: any[];
@@ -13,6 +17,7 @@ export function track(event: string, params: Record<string, any> = {}) {
   if (typeof window === "undefined") return;
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event, ...params });
+  amplitude.track(event, params);
 }
 
 // feature_viewed — 2026-09-17 마케터 확정 사항으로 first_report_viewed를
