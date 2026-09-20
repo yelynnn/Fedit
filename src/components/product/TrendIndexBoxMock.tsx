@@ -58,13 +58,23 @@ const bandDirection = (band: string | null | undefined): Direction => {
   return "flat";
 };
 
-const GAUGE_BANDS: { key: string; bgClass: string; textClass: string }[] = [
-  { key: "급락", bgClass: "bg-data-blue-medium", textClass: "text-falling" },
-  { key: "하락", bgClass: "bg-falling-bg", textClass: "text-tx-assistive" },
-  { key: "유지", bgClass: "bg-steady-bg", textClass: "text-tx-assistive" },
-  { key: "상승", bgClass: "bg-rising-bg", textClass: "text-tx-assistive" },
-  { key: "급상승", bgClass: "bg-data-red-medium", textClass: "text-rising" },
-];
+// 통합 지수 밴드 5칸 — 액티브 구간만 컬러를 넣고 나머지는 중립 회색으로
+// 둔다. 완만한 방향(하락·상승)은 Medium 톤 배경, 급격한 방향(급락·급상승)과
+// 유지는 Default 톤 배경 — 라벨 글자색은 배경 톤과 무관하게 항상 Default를 쓴다.
+const GAUGE_BAND_KEYS = ["급락", "하락", "유지", "상승", "급상승"] as const;
+
+const GAUGE_BAND_ACTIVE_STYLE: Record<
+  (typeof GAUGE_BAND_KEYS)[number],
+  { bgClass: string; textClass: string }
+> = {
+  급락: { bgClass: "bg-falling", textClass: "text-falling" },
+  하락: { bgClass: "bg-falling-medium", textClass: "text-falling" },
+  유지: { bgClass: "bg-steady", textClass: "text-steady" },
+  상승: { bgClass: "bg-rising-medium", textClass: "text-rising" },
+  급상승: { bgClass: "bg-rising", textClass: "text-rising" },
+};
+const GAUGE_BAND_INACTIVE_BG = "bg-line-alt";
+const GAUGE_BAND_INACTIVE_TEXT = "text-tx-assistive";
 
 const BOX_CLASS_BASE =
   "flex w-full min-w-0 flex-col items-start gap-2 px-6 py-5";
@@ -83,12 +93,15 @@ const fmtNum = (v: number | null | undefined, digits = 0): string =>
 // 카드별 데이터 성숙도 뱃지 — measured(실측)/similar(예측)/market(시장 기준).
 // brand_index는 "none"이면(스토어찜·검색량 둘 다 없음) 뱃지를 안 띄운다.
 const BASIS_BADGE: Record<string, { label: string; className: string }> = {
-  measured: { label: "실측", className: "bg-data-blue-light text-data-blue" },
+  measured: { label: "실측", className: "bg-fill-pressed text-tx-alt" },
   similar: {
     label: "예측",
-    className: "bg-data-orange-light text-status-warning",
+    className: "bg-source-predicted-subtle text-source-predicted-default",
   },
-  market: { label: "시장 기준", className: "bg-falling-bg text-falling" },
+  market: {
+    label: "시장 기준",
+    className: "bg-source-market-subtle text-source-market-default",
+  },
 };
 
 function BasisBadge({ basis }: { basis: string }) {
@@ -96,7 +109,7 @@ function BasisBadge({ basis }: { basis: string }) {
   if (!cfg) return null;
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-semibold leading-[1.33] ${cfg.className}`}
+      className={`inline-flex shrink-0 items-center justify-center gap-1 rounded-sm px-2 py-1 text-xs font-semibold leading-[1.33] ${cfg.className}`}
     >
       {cfg.label}
     </span>
@@ -117,15 +130,44 @@ function HeadlineChange({
   if (value == null) return null;
   const dir = directionOf(value);
   const style = DIRECTION_STYLE[dir];
+  // 화살표 아이콘 대신 부호로 증감을 표현한다 — 상승 +35%, 하락 -35%.
+  const sign = dir === "up" ? "+" : dir === "down" ? "-" : "";
   return (
-    <p
-      className={`flex items-center gap-0.5 text-sm font-semibold ${style.text}`}
-    >
+    <p className="flex items-center gap-0.5 text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-alt">
       {showPrefix && "이전 대비 "}
-      {fmtNum(Math.abs(value), digits)}
-      {suffix}
-      <Icon icon={style.icon} className="h-3.5 w-3.5" />
+      <span className={style.text}>
+        {sign}
+        {fmtNum(Math.abs(value), digits)}
+        {suffix}
+      </span>
     </p>
+  );
+}
+
+// 통합 지수 점수 옆 "이전보다 +35%" 칩 — 점(dot) + 문구 + 부호값을 한 알약
+// 배경에 담는다. 배경·점 색은 방향(상승/하락/유지)에 따라 바뀐다.
+function ScoreChangeChip({ value }: { value: number | null }) {
+  if (value == null) return null;
+  const dir = directionOf(value);
+  const style = DIRECTION_STYLE[dir];
+  const sign = dir === "up" ? "+" : dir === "down" ? "-" : "";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-2 rounded-full px-2 py-1 text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-alt ${style.subtleBg}`}
+    >
+      <span
+        className={`flex h-[7px] w-[7px] shrink-0 items-center justify-center rounded-full ${style.chipBg}`}
+      >
+        <span className={`h-1 w-1 rounded-full ${style.solidBg}`} />
+      </span>
+      <span>
+        이전보다{" "}
+        <span className={style.text}>
+          {sign}
+          {fmtNum(Math.abs(value), 1)}%
+        </span>
+      </span>
+    </span>
   );
 }
 
@@ -152,13 +194,10 @@ function RankLabelRow({
         {label}
       </span>
       {hasValue && (
-        <span
-          className={`inline-flex items-center gap-1 font-semibold ${style?.text ?? "text-tx-strong"}`}
-        >
+        <span className={`font-semibold ${style?.text ?? "text-tx-strong"}`}>
           {fmtNum(prev)}
           {unit} → {fmtNum(current)}
           {unit}
-          {style && <Icon icon={style.icon} className="h-3.5 w-3.5" />}
         </span>
       )}
     </div>
@@ -177,13 +216,18 @@ function PercentileSlider({ pct }: { pct: number | null }) {
     dir === "flat" ? "bg-line-neutral" : DIRECTION_STYLE[dir].chipBg;
   return (
     <div className="w-full">
-      <div className="relative w-full h-2 overflow-hidden rounded bg-line-alt">
-        <div
-          className={`absolute inset-y-0 left-0 ${fillClass}`}
-          style={{ width: `${barPosition}%` }}
-        />
+      {/* 트랙(회색 배경+채움색)만 rounded로 잘라내는 별도 래퍼 — 핸들(원)은
+        이 relative 바깥에 둬서 트랙 높이(8px)보다 큰 12px 원이 위아래로
+        잘리지 않게 한다. */}
+      <div className="relative w-full h-2">
+        <div className="absolute inset-0 overflow-hidden rounded bg-line-alt">
+          <div
+            className={`absolute inset-y-0 left-0 ${fillClass}`}
+            style={{ width: `${barPosition}%` }}
+          />
+        </div>
         <span
-          className={`absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow ${DIRECTION_STYLE[dir].solidBg}`}
+          className={`absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ${DIRECTION_STYLE[dir].solidBg}`}
           style={{ left: `${barPosition}%` }}
         />
       </div>
@@ -210,12 +254,14 @@ function ChipStat({
   badgeSuffix?: string;
   empty?: boolean;
 }) {
+  const badgeDir = badgeValue != null ? directionOf(badgeValue) : null;
+  const badgeSign = badgeDir === "up" ? "+" : badgeDir === "down" ? "-" : "";
   return (
-    <div className="flex justify-between gap-3 shrink-0">
-      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-fill-pressed px-2 py-1 text-sm font-semibold leading-[1.43] tracking-[-0.07px] text-tx-neutral">
+    <div className="flex flex-col gap-2 shrink-0">
+      <span className="text-sm font-semibold leading-[1.43] tracking-[-0.07px] text-tx-alt">
         {label}
       </span>
-      <span className="flex items-center gap-x-2">
+      <span className="flex items-baseline gap-2">
         <span
           className={
             empty
@@ -227,14 +273,11 @@ function ChipStat({
         </span>
         {badgeValue != null && badgeValue !== 0 && (
           <span
-            className={`inline-flex items-center gap-0.5 whitespace-nowrap text-xs font-semibold leading-[1.33] ${DIRECTION_STYLE[directionOf(badgeValue)].text}`}
+            className={`whitespace-nowrap text-sm font-medium leading-[1.43] tracking-[-0.07px] ${DIRECTION_STYLE[badgeDir!].text}`}
           >
+            {badgeSign}
             {fmtNum(Math.abs(badgeValue), 1)}
             {badgeSuffix}
-            <Icon
-              icon={DIRECTION_STYLE[directionOf(badgeValue)].icon}
-              className="w-3 h-3"
-            />
           </span>
         )}
       </span>
@@ -278,7 +321,9 @@ function TodayVsYesterdayBars({
             style={{ height: barHeight(prev) }}
           />
         </div>
-        <span className="text-[11px] text-tx-alt">{pastDayLabel(gapDays)}</span>
+        <span className="text-xs font-medium text-center text-tx-neutral">
+          {pastDayLabel(gapDays)}
+        </span>
       </div>
       <div className="flex flex-col items-center gap-1.5">
         <div className="flex flex-col items-center justify-end w-12 h-16 gap-1.5">
@@ -290,7 +335,9 @@ function TodayVsYesterdayBars({
             style={{ height: barHeight(current) }}
           />
         </div>
-        <span className="text-[11px] text-tx-alt">오늘</span>
+        <span className="text-xs font-medium text-center text-tx-neutral">
+          오늘
+        </span>
       </div>
     </div>
   );
@@ -323,7 +370,7 @@ function MiniTrendLine({
 
   return (
     <div className="flex w-[140px] max-w-full min-w-0 shrink flex-col items-start gap-1">
-      <span className="text-[11px] text-tx-alt">
+      <span className="text-xs text-tx-alt">
         {gapDays == null ? "추이" : `최근 ${gapDays}일 추이`}
       </span>
       <div className="w-full h-12">
@@ -363,7 +410,7 @@ function MiniTrendLine({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex w-full justify-between text-[11px] text-tx-alt">
+      <div className="flex justify-between w-full text-xs text-tx-alt">
         <span>{pastDayLabel(gapDays)}</span>
         <span>오늘</span>
       </div>
@@ -388,7 +435,7 @@ function SingleTodayBar({
         <div className="flex items-end w-12 h-16">
           <div className="w-full h-full rounded-t bg-fill-primary" />
         </div>
-        <span className="text-[11px] text-tx-alt">{label}</span>
+        <span className="text-xs text-tx-alt">{label}</span>
       </div>
     </div>
   );
@@ -425,7 +472,7 @@ function CategoryCompareBars({
           }}
         />
       </div>
-      <span className="text-[11px] text-tx-alt">{label}</span>
+      <span className="text-xs text-tx-alt">{label}</span>
     </div>
   );
   return (
@@ -456,8 +503,9 @@ type ItemInterestMarketData = NonNullable<
 // 아이템 관심도 basis="market" — 3단 폴백.
 // [1] like_count·category_avg_like 둘 다 있으면 비교 막대 2개 + 위치 바.
 // [2] category_avg_like만 있으면 막대 1개.
-// [3] 둘 다 없으면 막대 없이 insight 한 줄만 — insight는 항상 non-null이라
-//     빈 카드가 없다.
+// [3] 둘 다 없으면 막대 없이 위치 바만.
+// like_count===0일 때의 "종합 인사이트" 대체는 아래 "좋아요&찜 수" 칩
+// 자리에서 처리한다(이 컴포넌트가 아니라 그 칩을 대체하는 것).
 function ItemInterestMarket({ data }: { data: ItemInterestMarketData }) {
   const {
     interest_pct,
@@ -487,7 +535,7 @@ function ItemInterestMarket({ data }: { data: ItemInterestMarketData }) {
       </div>
       {category_momentum != null && (
         <p
-          className={`flex items-center gap-0.5 text-sm font-semibold ${DIRECTION_STYLE[category_momentum].text}`}
+          className={`flex items-center gap-0.5 text-sm font-medium leading-[1.43] tracking-[-0.07px] ${DIRECTION_STYLE[category_momentum].text}`}
         >
           카테고리 이번주 {fmtNum(Math.abs(category_momentum_pct ?? 0), 1)}%
           <Icon
@@ -755,7 +803,7 @@ function PurchaseMarketFallback({
         <br />
         속한 카테고리의 시장 흐름을 보여드려요.
       </p>
-      <div className="flex flex-col w-full gap-3 mt-auto">
+      <div className="grid w-full grid-cols-2 gap-x-3 gap-y-3 mt-auto">
         {data?.category_interest_change_pct != null && (
           <ChipStat
             label="카테고리 관심도"
@@ -854,12 +902,6 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
 
   return (
     <div className="w-full overflow-hidden rounded-[20px] border border-line-alt">
-      {data.referenced_snapshot && (
-        <p className="w-full px-4 py-2 text-xs font-medium border-b text-tx-assistive bg-fill-bg-strong border-line-alt">
-          오늘자 데이터가 아직 없어 가장 최근 스냅샷({data.date_asof})을
-          보여드려요.
-        </p>
-      )}
       <div className="grid grid-cols-2 divide-x divide-y divide-line-alt">
         {/* 통합 지수 */}
         <div className={`${TOP_BOX_CLASS} ${INTEGRATED_BG_CLASS}`}>
@@ -874,25 +916,41 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
             <IndexPreparingState />
           ) : (
             <>
-              <div className="flex flex-wrap items-center w-full gap-2">
-                <span className="text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
+              <div className="flex items-center w-full gap-5">
+                <span className="text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong shrink-0">
                   {fmtNum(integrated_index.score, 1)}점
                 </span>
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full px-2 py-1 text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-alt ${overallStyle.subtleBg}`}
-                >
-                  <span
-                    className={`flex h-[7px] w-[7px] shrink-0 items-center justify-center rounded-full ${overallStyle.chipBg}`}
-                  >
+                {/* 회색줄은 고정 폭이 아니라 남는 공간을 채운다 — 사이드바가
+                  열리고 닫히면서 이 박스 너비가 바뀌어도 줄 길이가 그에 맞춰
+                  늘고 줄고, 칩만 오른쪽에 고정 크기로 붙는다. */}
+                <div className="flex items-center flex-1 min-w-0 gap-2">
+                  <span className="h-px min-w-[24px] flex-1 bg-line-alt" />
+                  {integrated_index.score_change_pct != null ? (
+                    <ScoreChangeChip value={integrated_index.score_change_pct} />
+                  ) : (
+                    // 이전 대비 변화율이 없으면(비교할 이전 값이 없는 경우) 예전처럼
+                    // 밴드 칩("평균 대비 급락" 등)을 대신 보여준다 — 회색줄은
+                    // 그대로 두고 칩 안 내용만 바뀐다.
                     <span
-                      className={`h-1 w-1 rounded-full ${overallStyle.solidBg}`}
-                    />
-                  </span>
-                  {integrated_index.band}
-                </span>
+                      className={`inline-flex shrink-0 items-center gap-2 rounded-full px-2 py-1 text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-alt ${overallStyle.subtleBg}`}
+                    >
+                      <span
+                        className={`flex h-[7px] w-[7px] shrink-0 items-center justify-center rounded-full ${overallStyle.chipBg}`}
+                      >
+                        <span
+                          className={`h-1 w-1 rounded-full ${overallStyle.solidBg}`}
+                        />
+                      </span>
+                      <span>
+                        평균 대비{" "}
+                        <span className={`font-semibold ${overallStyle.text}`}>
+                          {integrated_index.band}
+                        </span>
+                      </span>
+                    </span>
+                  )}
+                </div>
               </div>
-
-              <HeadlineChange value={integrated_index.score_change_pct} />
 
               {purchase_power_index.reorder != null && (
                 <p className="w-full text-xs font-semibold leading-[1.33] text-tx-assistive">
@@ -941,9 +999,9 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
               <div className="flex flex-col justify-end flex-1 w-full min-h-0 gap-1">
                 {/* 현재 밴드를 가리키는 화살표 — 칸 안이 아니라 색 막대 위에 뜬다 */}
                 <div className="flex w-full">
-                  {GAUGE_BANDS.map((band) => (
-                    <div key={band.key} className="flex justify-center flex-1">
-                      {band.key === integrated_index.band && (
+                  {GAUGE_BAND_KEYS.map((band) => (
+                    <div key={band} className="flex justify-center flex-1">
+                      {band === integrated_index.band && (
                         <Icon
                           icon="ph:caret-down-fill"
                           className="w-5 h-5 text-icon-default"
@@ -952,33 +1010,44 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
                     </div>
                   ))}
                 </div>
-                {/* 색 막대 — 글자 없이 밴드별 고정 배경색만 */}
+                {/* 색 막대 — 액티브 구간만 컬러, 나머지는 중립 회색 */}
                 <div className="flex w-full gap-[1px]">
-                  {GAUGE_BANDS.map((band, idx) => {
+                  {GAUGE_BAND_KEYS.map((band, idx) => {
                     const roundedClass =
                       idx === 0
                         ? "rounded-l-md"
-                        : idx === GAUGE_BANDS.length - 1
+                        : idx === GAUGE_BAND_KEYS.length - 1
                           ? "rounded-r-md"
                           : "";
+                    const isActive = band === integrated_index.band;
+                    const bgClass = isActive
+                      ? GAUGE_BAND_ACTIVE_STYLE[band].bgClass
+                      : GAUGE_BAND_INACTIVE_BG;
                     return (
                       <div
-                        key={band.key}
-                        className={`h-[22px] flex-1 ${roundedClass} ${band.bgClass}`}
+                        key={band}
+                        className={`h-[22px] flex-1 ${roundedClass} ${bgClass}`}
                       />
                     );
                   })}
                 </div>
-                {/* 밴드 이름 — 막대 "안"이 아니라 막대 아래 별도 줄 */}
+                {/* 밴드 이름 — 막대 "안"이 아니라 막대 아래 별도 줄. 라벨
+                  글자색은 배경 톤(Default/Medium)과 무관하게 항상 Default. */}
                 <div className="flex w-full">
-                  {GAUGE_BANDS.map((band) => (
-                    <span
-                      key={band.key}
-                      className={`flex-1 text-center text-xs font-medium leading-[1.33] ${band.textClass}`}
-                    >
-                      {band.key}
-                    </span>
-                  ))}
+                  {GAUGE_BAND_KEYS.map((band) => {
+                    const isActive = band === integrated_index.band;
+                    const textClass = isActive
+                      ? GAUGE_BAND_ACTIVE_STYLE[band].textClass
+                      : GAUGE_BAND_INACTIVE_TEXT;
+                    return (
+                      <span
+                        key={band}
+                        className={`flex-1 text-center text-xs leading-[1.33] ${isActive ? "font-semibold" : "font-medium"} ${textClass}`}
+                      >
+                        {band}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </>
@@ -989,26 +1058,28 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
           3케이스와 무관하게 항상 같은 UI. 스토어찜·검색량 둘 다 없을 때만
           basis="none"이라 그때만 빈 상태로 바뀐다. */}
         <div className={`${TOP_BOX_CLASS} ${PANEL_BG_CLASS}`}>
-          <div className="flex items-center w-full gap-1">
+          <div className="flex items-center w-full gap-2">
             <span className="text-base font-semibold text-tx-neutral">
               브랜드 인지도
             </span>
             <BasisBadge basis={brand_index.basis} />
           </div>
-          <p className="w-full text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
-            {brand_index.awareness_label ?? "-"}
-          </p>
-          {/* 스토어 찜 수가 없을 때만 브랜드 검색 데이터 기준임을 안내한다 */}
-          {brand_index.store_likes == null && (
-            <p className="w-full mb-2 text-xs font-semibold leading-[1.33] text-falling">
-              브랜드 검색 데이터 기준
+          <div className="flex flex-wrap items-baseline w-full gap-2">
+            <p className="text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
+              {brand_index.awareness_label ?? "-"}
             </p>
-          )}
+            {/* 스토어 찜 수가 없을 때만 브랜드 검색 데이터 기준임을 안내한다 */}
+            {brand_index.store_likes == null && (
+              <p className="text-xs font-semibold leading-[1.33] text-falling">
+                브랜드 검색 데이터 기준
+              </p>
+            )}
+          </div>
 
           <div className="flex flex-col w-full gap-2 mt-auto">
             <RankLabelRow label="인지도 순위" />
             <PercentileSlider pct={brand_index.awareness_pct} />
-            <div className="flex flex-col w-full gap-3 mt-1">
+            <div className="grid w-full grid-cols-2 gap-3 mt-[34px]">
               <ChipStat
                 label="네이버 검색량"
                 value={fmtNum(brand_index.search_volume)}
@@ -1028,7 +1099,7 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
         </div>
 
         <div className={`${BOTTOM_BOX_CLASS} ${PANEL_BG_CLASS} @container`}>
-          <div className="flex items-center w-full gap-1">
+          <div className="flex items-center w-full gap-2">
             <span className="text-base font-semibold text-tx-neutral">
               아이템 관심도
             </span>
@@ -1037,8 +1108,8 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
 
           <div className="flex w-full flex-col gap-1.5">
             {hasInterestLabel ? (
-              <>
-                <p className="w-full text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
+              <div className="flex flex-wrap items-baseline w-full gap-2">
+                <p className="text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
                   {product_index.interest_label}
                 </p>
                 {itemInterestBasis === "similar" ? (
@@ -1051,7 +1122,7 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
                 ) : (
                   <HeadlineChange value={product_index.like_change_pct} />
                 )}
-              </>
+              </div>
             ) : (
               <p className="mt-2 w-full text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-alt">
                 아직 해당 상품의 반응 데이터가 모이기 전이라, <br />
@@ -1108,11 +1179,25 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
             {product_index.basis === "market" && data.item_interest_market && (
               <ItemInterestMarket data={data.item_interest_market} />
             )}
-            <ChipStat
-              label="좋아요&찜 수"
-              value={fmtNum(product_index.like_count)}
-              badgeValue={product_index.like_change_pct}
-            />
+            {/* 좋아요&찜 수가 0이면 "0"이라는 숫자 자체가 근거 없이 허전해
+              보이니, 그 자리를 종합 인사이트 문구로 대체한다(값이 있으면
+              기존처럼 칩으로). */}
+            {product_index.like_count === 0 && data.item_interest_market ? (
+              <div className="flex flex-col w-full gap-1">
+                <span className="text-sm font-semibold leading-[1.43] tracking-[-0.07px] text-tx-strong">
+                  종합 인사이트
+                </span>
+                <p className="text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-neutral">
+                  {data.item_interest_market.insight}
+                </p>
+              </div>
+            ) : (
+              <ChipStat
+                label="좋아요&찜 수"
+                value={fmtNum(product_index.like_count)}
+                badgeValue={product_index.like_change_pct}
+              />
+            )}
             {/* 유사상품들의 평균 찜 수 — 비교 막대에 이미 들어간 경우
               (showSimilarCompareBars)엔 중복되니 칩은 생략한다. */}
             {itemInterestBasis === "similar" &&
@@ -1140,18 +1225,17 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
             <PurchaseMarketFallback data={data.purchase_power_market} />
           ) : (
             <>
-              <div className="flex w-full flex-col gap-1.5">
-                <p className="w-full text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
+              <div className="flex flex-wrap items-baseline w-full gap-2">
+                <p className="text-xl font-semibold leading-[1.4] tracking-[-0.24px] text-tx-strong">
                   {purchase_power_index.purchase_label ?? "-"}
                 </p>
                 <HeadlineChange
                   value={purchase_power_index.rank_change}
                   suffix="단계"
                   digits={0}
-                  showPrefix={false}
                 />
               </div>
-              <div className="flex flex-col justify-end flex-1 w-full gap-4">
+              <div className="flex flex-col justify-end flex-1 w-full gap-5 mt-5">
                 <div className="flex flex-col w-full gap-2">
                   <RankLabelRow
                     label="화력 순위"
@@ -1161,7 +1245,7 @@ function TrendIndexBoxMock({ data, isLoading }: TrendIndexBoxMockProps) {
                   />
                   <PercentileSlider pct={purchase_power_index.purchase_pct} />
                 </div>
-                <div className="flex flex-col w-full gap-1.5">
+                <div className="grid w-full grid-cols-2 gap-x-3 gap-y-1.5">
                   <ChipStat
                     label="리뷰 수"
                     value={

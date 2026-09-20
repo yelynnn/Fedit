@@ -643,7 +643,7 @@ export default function SettingsPage() {
           <div className="flex-1 flex flex-col w-full gap-6 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {NAV_GROUPS.map((group) => (
               <div key={group.title} className="flex flex-col gap-0.5">
-                <p className="text-[11px] font-semibold text-tx-assistive uppercase tracking-wider px-2 mb-1">
+                <p className="text-xs font-semibold text-tx-assistive uppercase tracking-wider px-2 mb-1">
                   {group.title}
                 </p>
                 {group.items
@@ -844,7 +844,7 @@ export default function SettingsPage() {
               <div className="max-w-[620px]">
                 <h1 className="flex items-center gap-2 text-2xl font-semibold text-[#0B0E0F]">
                   FEDI 채팅 목록
-                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-600">
+                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-600">
                     베타 테스트 중
                   </span>
                 </h1>

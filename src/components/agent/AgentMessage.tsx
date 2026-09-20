@@ -305,7 +305,7 @@ export default function AgentMessage({ message }: Props) {
 
             {p.comparison && p.comparison.rows && p.comparison.rows.length > 0 && (
               <div className="mt-3 overflow-x-auto hide-scrollbar">
-                <table className="w-full text-[11px] border-collapse">
+                <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-black/10">
                       <th className="text-left font-semibold text-gray-400 py-1.5 pr-2 whitespace-nowrap">
@@ -425,7 +425,7 @@ export default function AgentMessage({ message }: Props) {
                 <button
                   type="button"
                   onClick={() => setSourcesOpen((v) => !v)}
-                  className="w-full flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-gray-700"
+                  className="w-full flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700"
                 >
                   <Icon icon="mdi:fire" width={13} className="text-orange-400" />
                   실데이터 출처 {p.sources.length}
@@ -438,7 +438,7 @@ export default function AgentMessage({ message }: Props) {
                 {sourcesOpen && (
                   <ul className="flex flex-col gap-1.5 mt-1.5">
                     {p.sources.map((s, i) => (
-                      <li key={i} className="text-[11px] text-gray-600 flex items-start gap-1.5">
+                      <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
                         <span className="flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 mt-px">
                           {s.platform}
                         </span>
@@ -455,7 +455,7 @@ export default function AgentMessage({ message }: Props) {
 
             {p.accounts && p.accounts.length > 0 && (
               <div className="mt-3 border-t border-black/5 pt-2.5">
-                <p className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
+                <p className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1">
                   <Icon icon="mdi:instagram" width={13} className="text-pink-400" />
                   주목할 국내 인스타 계정
                 </p>
@@ -463,7 +463,7 @@ export default function AgentMessage({ message }: Props) {
                   {p.accounts.map((a, i) => (
                     <span
                       key={i}
-                      className="text-[11px] bg-white/80 border border-white/60 rounded-full px-2 py-1 text-gray-600"
+                      className="text-xs bg-white/80 border border-white/60 rounded-full px-2 py-1 text-gray-600"
                     >
                       <span className="font-medium text-gray-800">{a.name}</span>
                       {a.handle && <span className="text-gray-400"> {a.handle}</span>}

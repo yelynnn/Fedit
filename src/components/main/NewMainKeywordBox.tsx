@@ -251,17 +251,17 @@ function NewMainKeywordBox({
                   )}
                   <div className="flex items-center w-full gap-4">
                     <span
-                      className={`font-semibold text-[18px] ${item.idx <= 3 ? "text-data-blue" : "text-tx-alt"}`}
+                      className={`w-6 shrink-0 text-center text-base font-semibold leading-[1.5] tracking-[-0.08px] ${item.idx <= 3 ? "text-data-blue" : "text-tx-alt"}`}
                     >
                       {item.idx}
                     </span>
-                    <div className="flex flex-col w-full ">
+                    <div className="flex flex-col w-full min-w-0">
                       {brand && (
                         <span className="text-sm text-tx-alt font-semibold mb-[2px]">
                           {brand}
                         </span>
                       )}
-                      <span className="text-base font-semibold text-tx-neutral line-clamp-1">
+                      <span className="truncate text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-default">
                         {keywordText}
                       </span>
                     </div>

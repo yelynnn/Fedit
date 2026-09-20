@@ -263,7 +263,7 @@ export default function BrandApplyPanel() {
                       onClick={() => jumpToLetter(letter)}
                       disabled={!available}
                       className={[
-                        "pointer-events-auto flex h-6 w-6 items-center justify-center rounded-pill p-1 text-[11px] transition-colors",
+                        "pointer-events-auto flex h-6 w-6 items-center justify-center rounded-pill p-1 text-xs transition-colors",
                         active
                           ? "bg-[var(--color-fill-normal-interaction-pressed)] font-semibold text-tx-strong"
                           : available

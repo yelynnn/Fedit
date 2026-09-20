@@ -614,7 +614,7 @@ export default function ProductDetailContent({
                   <div className="w-[1px] h-4 bg-line-alt" />
 
                   <div className="flex items-center gap-2">
-                    <span className="bg-line-divider px-2 py-1 rounded text-[11px] font-semibold text-tx-alt">
+                    <span className="bg-line-divider px-2 py-1 rounded text-xs font-semibold text-tx-alt">
                       성별
                     </span>
                     <span className="text-xs font-medium text-tx-default">
@@ -625,7 +625,7 @@ export default function ProductDetailContent({
                   <div className="w-[1px] h-4 bg-line-alt" />
 
                   <div className="flex items-center gap-2">
-                    <span className="bg-line-divider px-2 py-1 rounded text-[11px] font-semibold text-tx-alt">
+                    <span className="bg-line-divider px-2 py-1 rounded text-xs font-semibold text-tx-alt">
                       신상 업데이트
                     </span>
                     <span className="text-xs font-medium text-tx-default">

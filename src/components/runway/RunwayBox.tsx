@@ -140,7 +140,7 @@ export default function RunwayBox({ brands, season }: RunwayBoxProps) {
 
                       {hoveredIdx === i && (
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[180px]">
-                          <div className="bg-black/70 backdrop-blur-md text-white text-[11px] p-2 rounded-lg leading-snug shadow-xl relative text-center">
+                          <div className="bg-black/70 backdrop-blur-md text-white text-xs p-2 rounded-lg leading-snug shadow-xl relative text-center">
                             {item.detail}
                             <div className="absolute w-2 h-2 rotate-45 -translate-x-1/2 -bottom-1 left-1/2 bg-black/70" />
                           </div>
