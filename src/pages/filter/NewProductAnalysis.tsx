@@ -6,7 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
-import { useFilterStore } from "@/stores/FilterStore";
+import { useFilterStore, useFilterStoreHydrated } from "@/stores/FilterStore";
 import {
   useSubscriptionStore,
   isBasicPlan,
@@ -38,6 +38,12 @@ function NewProductAnalysis() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   const isFetchingRef = useRef(false);
+  // 필터가 바뀌어 처음부터 다시 불러올 때(cursor=null) 쓰는, "지금 유효한
+  // 요청"을 가리키는 컨트롤러. 새로고침 직후처럼 필터 스토어가 아직
+  // 복원되기 전에 빈 필터로 한 번, 복원된 뒤 올바른 필터로 또 한 번 요청이
+  // 나갈 수 있는데, 이전 요청을 취소해서 늦게 도착한 빈 필터 응답이 올바른
+  // 필터 응답을 덮어쓰지 못하게 한다.
+  const fetchAbortRef = useRef<AbortController | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const clickedItemRef = useRef<string | null>(null);
   const itemButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -53,6 +59,11 @@ function NewProductAnalysis() {
     selectedSeasons,
   } = useFilteredData();
   const { brandList, platformList } = useFilterStore();
+  // localStorage 복원(zustand persist)이 끝나기 전에는 필터가 전부 빈
+  // 값이라, 이 값이 true가 되기 전엔 조회 자체를 미룬다 — 안 그러면
+  // 새로고침 직후 필터 없는 결과가 잠깐 나왔다가 필터링된 결과로 바뀌는
+  // 깜빡임(+그 사이의 낭비되는 API 호출)이 생긴다.
+  const isFilterHydrated = useFilterStoreHydrated();
   const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
   const { subscription, loaded: subscriptionLoaded } = useSubscriptionStore(
     (s) => s,
@@ -73,7 +84,14 @@ function NewProductAnalysis() {
 
   const fetchData = useCallback(
     async (cursor: string | null = null) => {
-      if (isFetchingRef.current) return;
+      // 무한스크롤(다음 페이지, cursor 있음)만 겹쳐 호출을 막는다. 처음부터
+      // 다시 불러오는 경우(cursor=null, 필터 변경)는 진행 중이던 이전
+      // 요청을 취소하고 새 요청을 최신 것으로 확정한다.
+      if (cursor != null && isFetchingRef.current) return;
+
+      fetchAbortRef.current?.abort();
+      const controller = new AbortController();
+      fetchAbortRef.current = controller;
 
       try {
         isFetchingRef.current = true;
@@ -88,7 +106,12 @@ function NewProductAnalysis() {
           selectedPatterns,
           selectedSeasons,
           cursor,
+          signal: controller.signal,
         });
+
+        // 그 사이 더 최신 요청이 시작됐으면(=이 요청은 이미 취소됨) 응답이
+        // 늦게 도착해도 반영하지 않는다.
+        if (fetchAbortRef.current !== controller) return;
 
         const newList = Array.isArray(data?.items) ? data.items : [];
 
@@ -100,10 +123,14 @@ function NewProductAnalysis() {
 
         setNextCursor(data?.nextCursor || null);
       } catch {
-        // 무시: 목록은 비워두지 않고 이전 상태 유지
+        // 무시: 취소됐거나 실패한 요청 — 목록은 비워두지 않고 이전 상태 유지
       } finally {
-        isFetchingRef.current = false;
-        setIsFetching(false);
+        // 이 요청이 여전히 "현재 요청"일 때만 로딩 상태를 내린다 — 취소된
+        // 이전 요청의 finally가 최신 요청의 진행 중 상태를 덮어쓰지 않게.
+        if (fetchAbortRef.current === controller) {
+          isFetchingRef.current = false;
+          setIsFetching(false);
+        }
       }
     },
     [
@@ -149,11 +176,14 @@ function NewProductAnalysis() {
   const lastFetchKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // 필터 스토어 복원 전이면 fetchKey가 아직 빈 필터 기준이라 조회를
+    // 미룬다 — 복원되면 fetchKey가 바뀌면서 이 effect가 다시 돈다.
+    if (!isFilterHydrated) return;
     if (lastFetchKeyRef.current === fetchKey) return;
     lastFetchKeyRef.current = fetchKey;
     setNextCursor(null);
     fetchData(null);
-  }, [fetchKey, fetchData]);
+  }, [isFilterHydrated, fetchKey, fetchData]);
 
   useEffect(() => {
     if (!nextCursor) return;

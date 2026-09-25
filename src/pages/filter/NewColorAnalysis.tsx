@@ -9,7 +9,7 @@ import BrandCompareModal from "@/components/filter/BrandCompareModal";
 import TrendColorBox, {
   type TrendColorData,
 } from "@/components/color/TrendColorBox";
-import { useFilterStore } from "@/stores/FilterStore";
+import { useFilterStore, useFilterStoreHydrated } from "@/stores/FilterStore";
 import { GetColorGraph, GetTrendColor } from "@/apis/ColorAPI";
 import type { BrandColorData, TrendColorItem } from "@/apis/ColorAPI";
 
@@ -46,6 +46,9 @@ const toTreeMapEntry = (brandData: BrandColorData): TreeMapEntry => ({
 
 function NewColorAnalysis() {
   const { brandList } = useFilterStore();
+  // localStorage 복원 전엔 brandList가 빈 배열이라, 실제 저장된 브랜드
+  // 필터로 바뀌기 전에 "전체 브랜드" 조회가 한 번 먼저 나가는 걸 막는다.
+  const isFilterHydrated = useFilterStoreHydrated();
   const [isCompareModalOpen, setCompareModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
@@ -56,6 +59,7 @@ function NewColorAnalysis() {
   const [trendColors, setTrendColors] = useState<TrendColorData[]>([]);
 
   useEffect(() => {
+    if (!isFilterHydrated) return;
     const load = async () => {
       try {
         const res = await GetColorGraph();
@@ -71,9 +75,10 @@ function NewColorAnalysis() {
       }
     };
     load();
-  }, [brandList]);
+  }, [brandList, isFilterHydrated]);
 
   useEffect(() => {
+    if (!isFilterHydrated) return;
     const load = async () => {
       try {
         const res = await GetTrendColor();
@@ -87,7 +92,7 @@ function NewColorAnalysis() {
       }
     };
     load();
-  }, [brandList]);
+  }, [brandList, isFilterHydrated]);
 
   const handleCompareSubmit = (brands: string[]) => {
     brands.forEach((brandName) => {

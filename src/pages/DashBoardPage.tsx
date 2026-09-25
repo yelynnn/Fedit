@@ -3,7 +3,7 @@ import NewMainKeywordBox from "@/components/main/NewMainKeywordBox";
 
 import RankBox from "@/components/main/RankBox";
 import SubTitleBox from "@/components/main/SubTitleBox";
-import { useTypeStore } from "@/stores/TypeStore";
+import { useTypeStore, useTypeStoreHydrated } from "@/stores/TypeStore";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Icon } from "@iconify/react";
@@ -103,6 +103,10 @@ function DashBoardPage() {
   const [crawledDate, setCrawledDate] = useState<string | null>(null);
   const { audienceType, selectedMonth, setAudienceType, setSelectedMonth } =
     useTypeStore();
+  // localStorage 복원 전엔 audienceType이 기본값("female")이라, 실제
+  // 저장된 값(예: "male")으로 바뀌기 전에 한 번 먼저 조회가 나가는 걸
+  // 막는다 — 안 그러면 여성 키워드가 잠깐 나왔다가 남성 키워드로 바뀐다.
+  const isTypeStoreHydrated = useTypeStoreHydrated();
 
   const [currentDate, setCurrentDate] = useState(dayjs());
   const isToday = currentDate.isSame(dayjs(), "day");
@@ -155,6 +159,7 @@ function DashBoardPage() {
   };
 
   useEffect(() => {
+    if (!isTypeStoreHydrated) return;
     const fetchAll = async () => {
       try {
         // 달을 따로 고르지 않았으면(초기 진입) 오늘 날짜를 그대로 보내고,
@@ -228,7 +233,7 @@ function DashBoardPage() {
     };
 
     fetchAll();
-  }, [selectedMonth, audienceType]);
+  }, [selectedMonth, audienceType, isTypeStoreHydrated]);
 
   return (
     <div className="w-full h-full px-14">

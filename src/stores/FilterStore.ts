@@ -1,6 +1,7 @@
 // stores/FilterStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useEffect, useState } from "react";
 import type { FilterStore } from "../types/Filter";
 import { brandData } from "@/data/BrandCategories";
 
@@ -81,3 +82,26 @@ export const useFilterStore = create<FilterStore>()(
     }
   )
 );
+
+// localStorage 복원(zustand persist)이 끝났는지 — 복원은 마이크로태스크
+// 한 틱 뒤에 끝나서, 새로고침 직후 첫 렌더는 항상 빈 필터값을 본다. 필터
+// 의존 조회(예: 상품 분석 목록)를 이 값이 true가 될 때까지 미루면, "필터
+// 없는 결과가 잠깐 나왔다가 필터링된 결과로 바뀌는" 깜빡임과 그 사이의
+// 낭비되는 API 호출을 아예 없앨 수 있다.
+export function useFilterStoreHydrated(): boolean {
+  const [hydrated, setHydrated] = useState(() =>
+    useFilterStore.persist.hasHydrated(),
+  );
+
+  useEffect(() => {
+    if (hydrated) return;
+    // 구독을 걸기 전에 이미 끝났을 수 있어 한 번 더 확인한다.
+    if (useFilterStore.persist.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+    return useFilterStore.persist.onFinishHydration(() => setHydrated(true));
+  }, [hydrated]);
+
+  return hydrated;
+}

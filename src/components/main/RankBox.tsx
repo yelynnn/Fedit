@@ -44,7 +44,7 @@ import type {
   TrendSnapshotDetailDto,
 } from "@/types/Main";
 import { useProductStore } from "@/stores/ProductStore";
-import { useTypeStore } from "@/stores/TypeStore";
+import { useTypeStore, useTypeStoreHydrated } from "@/stores/TypeStore";
 import {
   useSubscriptionStore,
   getEffectivePlan,
@@ -79,6 +79,9 @@ const DATA_UNAVAILABLE_NOTICE = (
 export default function RankBox() {
   const { setModalTrendSnapshot } = useProductStore((s) => s);
   const { audienceType } = useTypeStore();
+  // localStorage 복원 전엔 audienceType이 기본값("female")이라, 실제
+  // 저장된 값으로 바뀌기 전에 랭킹 조회가 한 번 먼저 나가는 걸 막는다.
+  const isTypeStoreHydrated = useTypeStoreHydrated();
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedPlatform, setSelectedPlatform] = useState<string>("무신사");
@@ -147,6 +150,7 @@ export default function RankBox() {
   // 내림차순으로 정렬한 뒤 position을 1부터 다시 매긴다. gender는 남성 탭일 때만
   // "남성"으로 넘긴다 — 현재 남성 외에는(여성 포함) gender 값 자체가 없다.
   useEffect(() => {
+    if (!isTypeStoreHydrated) return;
     const platform = PLATFORM_SLUG[selectedPlatform] ?? selectedPlatform;
     // 일단 date 없이 보내서 백엔드가 최신 점수값을 주도록 확인해본다.
     const gender = audienceType === "male" ? "남성" : undefined;
@@ -170,7 +174,13 @@ export default function RankBox() {
         setTestRankingList([]);
         setActiveTempItemId(null);
       });
-  }, [selectedPlatform, selectedCategory, currentDate, audienceType]);
+  }, [
+    selectedPlatform,
+    selectedCategory,
+    currentDate,
+    audienceType,
+    isTypeStoreHydrated,
+  ]);
 
   // 트렌드 지수 고도화 — 선택된 항목의 트렌드 지수 상세를
   // /trend/{tempItemId}로 받아온다. date를 안 넘기면 최신 스냅샷을 준다.

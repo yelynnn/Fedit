@@ -3,14 +3,24 @@ import { MockNewTypeData } from "@/data/mock/MockNewTypeData";
 import { useEffect, useState } from "react";
 import { GetCategoryGraph } from "@/apis/AnalysisAPI";
 import QuestionTooltip from "@/components/common/QuestionTooltip";
+import { useFilterStore, useFilterStoreHydrated } from "@/stores/FilterStore";
 
 type TypeBlock = (typeof MockNewTypeData)[number];
 
 function NewTypeAnalysis() {
   const [blocks, setBlocks] = useState<TypeBlock[]>([]);
   const [loading, setLoading] = useState(false);
+  // GetCategoryGraph는 브랜드 필터를 인자로 안 받고 useFilterStore.getState()로
+  // 직접 읽는다. 이 effect는 원래 마운트 시 한 번만(deps=[]) 돌아서, 새로고침
+  // 직후 localStorage 복원이 끝나기 전에 실행되면 brandList가 계속 빈
+  // 값으로 조회돼버리고 이후에 복원이 끝나도 다시 불러오지 않았다 — 저장해둔
+  // 브랜드 필터가 "유형 분석"에는 아예 반영 안 되는 상태로 계속 남는 버그.
+  // brandList를 deps에 넣고 복원 완료까지 기다리도록 고친다.
+  const { brandList } = useFilterStore();
+  const isFilterHydrated = useFilterStoreHydrated();
 
   useEffect(() => {
+    if (!isFilterHydrated) return;
     const load = async () => {
       try {
         setLoading(true);
@@ -30,7 +40,7 @@ function NewTypeAnalysis() {
       }
     };
     load();
-  }, []);
+  }, [brandList, isFilterHydrated]);
 
   return (
     <div className="px-14">
