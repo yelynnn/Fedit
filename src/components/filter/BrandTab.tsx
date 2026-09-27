@@ -139,12 +139,18 @@ function BrandTab({ isProductTab }: Props) {
 
   const isFree = currentPlan === "free";
   const isBasicLike = currentPlan === "basic";
+  const isPro = currentPlan === "pro";
+  const isEnterprise = currentPlan === "enterprise";
+  const hasExcelLimit = isBasicLike || isPro;
+  // Enterprise는 한도는 없지만(hasExcelLimit에 안 넣음), 여러 브랜드를
+  // 한 파일로 합쳐 받는 Pro의 편의는 그대로 누린다.
+  const combinesFiles = isPro || isEnterprise;
 
   // FREE는 두 API 모두 403이라 아예 안 부른다. BASIC/BASIC_SECRET(둘 다
-  // toBillingPlan에서 "basic"으로 합쳐짐)만 한도가 있어서 조회한다 — PRO는
-  // 무제한이라 버튼 활성화 여부 판단에 안 쓰인다.
+  // toBillingPlan에서 "basic"으로 합쳐짐)와 PRO는 둘 다 월 한도가 있어서
+  // (Basic 월 3회, Pro 월 30회) 조회한다.
   useEffect(() => {
-    if (!isBasicLike) {
+    if (!hasExcelLimit) {
       setUsage(null);
       return;
     }
@@ -157,7 +163,7 @@ function BrandTab({ isProductTab }: Props) {
     return () => {
       ignore = true;
     };
-  }, [isBasicLike]);
+  }, [hasExcelLimit]);
 
   // 다운로드 도중 이 컴포넌트가 언마운트되면(탭 전환 등) 진행 중이던 요청도
   // 같이 취소한다.
@@ -342,18 +348,21 @@ function BrandTab({ isProductTab }: Props) {
   const finalTargets =
     targets.length > 0 ? targets : [{ brand: null, platform: null }];
 
-  const isPro = currentPlan === "pro";
   const isBasicUsageLoading = isBasicLike && usage === null;
   const isBasicLimitReached =
     isBasicLike && usage !== null && !usage.canDownload;
   const isBasicMultiTargetBlocked = isBasicLike && finalTargets.length > 1;
+  const isProUsageLoading = isPro && usage === null;
+  const isProLimitReached = isPro && usage !== null && !usage.canDownload;
   // 다운로드 중에는 이 버튼이 "중단" 버튼으로 바뀌므로 여기엔 안 넣는다 —
   // 눌러서 취소할 수 있어야 하니 계속 활성 상태여야 한다.
   const isDownloadDisabled =
     isFree ||
     isBasicUsageLoading ||
     isBasicLimitReached ||
-    isBasicMultiTargetBlocked;
+    isBasicMultiTargetBlocked ||
+    isProUsageLoading ||
+    isProLimitReached;
 
   const handleDownloadClick = async () => {
     if (isDownloadDisabled) return;
@@ -385,7 +394,7 @@ function BrandTab({ isProductTab }: Props) {
         }
         if (isCancelledRef.current) break;
 
-        if (isPro) {
+        if (combinesFiles) {
           combinedRows.push(...rows);
         } else if (rows.length > 0) {
           const label =
@@ -418,7 +427,7 @@ function BrandTab({ isProductTab }: Props) {
         setDownloadProgress({ done: i + 1, total: finalTargets.length });
       }
 
-      if (isPro && !isCancelledRef.current && combinedRows.length > 0) {
+      if (combinesFiles && !isCancelledRef.current && combinedRows.length > 0) {
         await downloadXlsxWithImages(combinedRows);
         track("excel_downloaded", {
           export_type: EXPORT_TYPE_BY_TAB[selectedTab] ?? "unknown",
@@ -427,8 +436,13 @@ function BrandTab({ isProductTab }: Props) {
         try {
           const updated = await PostExcelDownload();
           setUsage(updated);
-        } catch {
-          // Pro는 무제한이라 기록이 실패해도 파일은 이미 받았으니 조용히 넘어간다.
+        } catch (recordError: any) {
+          if (recordError?.code === "EXCEL_DOWNLOAD_LIMIT_EXCEEDED") {
+            alert(
+              recordError.message || "이번 달 엑셀 다운로드 한도를 초과했습니다.",
+            );
+          }
+          // 기록 자체가 실패해도 파일은 이미 받았으니 조용히 넘어간다.
         }
       }
     } catch {
@@ -493,8 +507,8 @@ function BrandTab({ isProductTab }: Props) {
                 ? "눌러서 다운로드를 중단해요. 이미 받은 파일의 횟수는 그대로 유지돼요."
                 : isFree
                   ? "무료 요금제는 엑셀 다운로드를 이용할 수 없어요. 요금제를 업그레이드해주세요."
-                  : isBasicLimitReached
-                    ? `이번 달 엑셀 다운로드 횟수(월 ${usage?.limit ?? 3}회)를 모두 사용했어요.`
+                  : isBasicLimitReached || isProLimitReached
+                    ? `이번 달 엑셀 다운로드 횟수(월 ${usage?.limit ?? (isBasicLike ? 3 : 30)}회)를 모두 사용했어요.`
                     : isBasicMultiTargetBlocked
                       ? "Basic 요금제는 브랜드를 1개만 선택했을 때 다운로드할 수 있어요."
                       : undefined
@@ -513,7 +527,7 @@ function BrandTab({ isProductTab }: Props) {
             <p>
               {isDownloading
                 ? `다운로드 중… (${downloadProgress?.done ?? 0}/${downloadProgress?.total ?? 0}) · 중단`
-                : isBasicLike && usage
+                : hasExcelLimit && usage
                   ? `엑셀 다운로드 (${usage.used}/${usage.limit})`
                   : "엑셀 다운로드"}
             </p>
@@ -523,6 +537,11 @@ function BrandTab({ isProductTab }: Props) {
             <DateNavNotice>
               Basic 요금제는 한 번에 브랜드 1개만, 월 {usage?.limit ?? 3}회까지
               다운로드할 수 있어요
+            </DateNavNotice>
+          )}
+          {isDownloadHovered && isPro && (
+            <DateNavNotice>
+              Pro 요금제는 월 {usage?.limit ?? 30}회까지 다운로드할 수 있어요
             </DateNavNotice>
           )}
         </div>

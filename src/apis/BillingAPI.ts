@@ -3,10 +3,17 @@ import { axiosInstance } from "./AxiosInstance";
 // basic_secret은 비밀 링크로 유입된 Basic — 가격만 19,000원으로 다를 뿐
 // 기능은 Basic과 완전히 동일하다. 화면 표시/기능 게이팅은 SubscriptionStore의
 // toBillingPlan/isBasicPlan을 거쳐 항상 "basic"으로 취급해야 한다.
+// PlanType은 자체 결제(PostChangePlan 등)로 실제 전환을 요청할 수 있는
+// plan_code만 담는다 — "enterprise"는 영업을 통해서만 얻는 플랜이라 여기
+// 포함하지 않는다(전환 시도 시 서버가 400 ENTERPRISE_MANAGED를 낸다).
 export type PlanType = "basic" | "pro" | "basic_secret";
+// 구독 조회 응답에서 실제로 내려올 수 있는 plan 값. PlanType + "free"(무료
+// 체험 등) + "enterprise"(영업을 통해 수동으로 배정되는, 자체 결제 불가한
+// 최상위 플랜 — 브랜드 선택·엑셀 다운로드 한도가 없다).
+export type SubscriptionPlan = "free" | PlanType | "enterprise";
 export type SubscriptionStatus =
   | "not_started"
-  // "trial": Basic 기능을 3일간 무료로 쓰는 체험 기간. plan은 "basic"으로
+  // "trial": Basic 기능을 5일간 무료로 쓰는 체험 기간. plan은 "basic"으로
   // 내려오고, 결제로 전환하면 "active"가 된다.
   | "trial"
   | "active"
@@ -15,7 +22,7 @@ export type SubscriptionStatus =
   | "expired";
 
 export interface Subscription {
-  plan: "free" | PlanType;
+  plan: SubscriptionPlan;
   status: SubscriptionStatus;
   amount: number;
   hasBillingKey: boolean;

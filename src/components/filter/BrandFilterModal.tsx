@@ -8,7 +8,7 @@ import {
   toBillingPlan,
 } from "@/stores/SubscriptionStore";
 import { GetBrandList, PostBrandApply } from "@/apis/AnalysisAPI";
-import { REQUIRED_COUNT } from "@/components/billing/InterestBrandModal";
+import { getBrandCap } from "@/lib/brandCap";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 import cancelIcon from "@/assets/etc/cancel.svg";
 
@@ -21,6 +21,10 @@ type Props = { isOpen: boolean; onClose: () => void; onSubmit?: () => void };
 // 보낸다 — 개별 브랜드명을 다 나열하면 상품 목록 요청 헤더가 너무 커진다.
 const PLATFORM_LABEL_TO_CODE: Record<string, string> = {
   무신사: "musinsa",
+  "29cm": "29cm",
+};
+const PLATFORM_CODE_TO_LABEL: Record<string, string> = {
+  musinsa: "무신사",
   "29cm": "29cm",
 };
 
@@ -37,6 +41,8 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const currentPlan = toBillingPlan(getEffectivePlan(subscription));
   const isBasic = currentPlan === "basic";
   const isFree = currentPlan === "free";
+  const isPro = currentPlan === "pro";
+  const brandCap = getBrandCap(currentPlan);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("selected");
   const [keyword, setKeyword] = useState("");
@@ -132,15 +138,16 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     brandList.length +
     platformList.reduce((sum, code) => sum + platformBrandCount(code), 0);
 
-  // Basic 플랜은 관심 브랜드(+ 기본 제공되는 무신사) 만, 무료 플랜은
-  // 기본 제공되는 무신사만 이용 가능하다. "기본 제공"은 상품 분석 화면 등에서
-  // 브랜드를 아무것도 고르지 않았을 때 자동으로 채워지는 값(NewFilterTabBar
-  // 참고)일 뿐, 이 모달에서 브랜드를 직접 골라 담는 것과는 별개다 — 여기서는
-  // 무신사 탭을 포함한 모든 카테고리 탭에서 이미 선택된(=관심 브랜드로 고른)
-  // 것 외에는 새로 추가하지 못하도록 막는다. 무료 플랜은 interestBrandPicks가
-  // 항상 비어 있어 아래 isBrandDisabled에서 자연히 전부 잠긴다. "선택된
-  // 브랜드" 탭만 예외(이미 골라둔 것 해제는 허용).
-  const isRestrictedTab = (isBasic || isFree) && activeTab !== "selected";
+  // Basic·Pro 플랜은 관심 브랜드(+ 기본 제공되는 무신사, 개수 상한만 다름)
+  // 만, 무료 플랜은 기본 제공되는 무신사만 이용 가능하다. "기본 제공"은
+  // 상품 분석 화면 등에서 브랜드를 아무것도 고르지 않았을 때 자동으로
+  // 채워지는 값(NewFilterTabBar 참고)일 뿐, 이 모달에서 브랜드를 직접
+  // 골라 담는 것과는 별개다 — 여기서는 무신사 탭을 포함한 모든 카테고리
+  // 탭에서 이미 선택된(=관심 브랜드로 고른) 것 외에는 새로 추가하지
+  // 못하도록 막는다. 무료 플랜은 interestBrandPicks가 항상 비어 있어 아래
+  // isBrandDisabled에서 자연히 전부 잠긴다. "선택된 브랜드" 탭만 예외(이미
+  // 골라둔 것 해제는 허용).
+  const isRestrictedTab = (isBasic || isFree || isPro) && activeTab !== "selected";
 
   const visibleBrands = useMemo(() => {
     const k = keyword.trim().toLowerCase();
@@ -215,19 +222,32 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const isBrandDisabled = (brand: string) =>
     isRestrictedTab && !interestBrandPicks.includes(brand);
 
+  // 제한된 탭(Basic/Free/Pro)에서는 관심 브랜드로 고른 것만 실제로 선택
+  // 가능하니, "전체 선택"도 그중 선택 가능한 것만 기준으로 판단한다 —
+  // 안 그러면 잠긴 브랜드 때문에 다 골라도 체크박스가 영원히 안 켜진다.
+  const selectableVisibleBrands = useMemo(
+    () =>
+      isRestrictedTab
+        ? visibleBrands.filter((b) => interestBrandPicks.includes(b))
+        : visibleBrands,
+    [isRestrictedTab, visibleBrands, interestBrandPicks],
+  );
+
   const allVisibleChecked = useMemo(() => {
     if (isPlatformFullySelected) return true;
     return (
-      visibleBrands.length > 0 &&
-      visibleBrands.every((b) => brandList.includes(b))
+      selectableVisibleBrands.length > 0 &&
+      selectableVisibleBrands.every((b) => brandList.includes(b))
     );
-  }, [visibleBrands, brandList, isPlatformFullySelected]);
+  }, [selectableVisibleBrands, brandList, isPlatformFullySelected]);
 
   const toggleAllVisible = () => {
     // 무신사/29cm 탭에서 검색 중이 아니면 "전체 선택"을 플랫폼 단위로
     // 처리한다 — 브랜드 100개 넘게 개별로 담으면 상품 목록 요청 헤더가
-    // 너무 커진다.
-    if (activePlatformCode && keyword.trim() === "") {
+    // 너무 커진다. 다만 제한된 탭에서는 플랫폼 전체를 통째로 담아버리면
+    // 관심 브랜드가 아닌 것까지 다 선택돼버리니, 이 지름길은 쓰지 않고
+    // 아래 개별 선택 로직(잠긴 브랜드는 자동으로 건너뜀)으로 처리한다.
+    if (!isRestrictedTab && activePlatformCode && keyword.trim() === "") {
       if (isPlatformFullySelected) {
         setPlatformList(platformList.filter((p) => p !== activePlatformCode));
       } else {
@@ -325,7 +345,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
         disabled
           ? isFree
             ? "무료 플랜은 무신사 입점 브랜드만 이용할 수 있어요"
-            : `관심 브랜드 ${REQUIRED_COUNT}개 또는 무신사 입점 브랜드만 이용 가능해요`
+            : `관심 브랜드(최대 ${brandCap}개) 또는 무신사 입점 브랜드만 이용 가능해요`
           : undefined
       }
       className={
@@ -470,7 +490,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
           <Icon icon="ph:info" className="w-3.5 h-3.5 flex-shrink-0" />
           {isFree
             ? "무료 플랜은 무신사 입점 브랜드만 이용할 수 있어요. 더 많은 브랜드를 보려면 요금제를 업그레이드해주세요."
-            : `Basic 플랜은 관심 브랜드 ${REQUIRED_COUNT}개만 이용할 수 있어요.`}
+            : `${isPro ? "Pro" : "Basic"} 플랜은 관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요.`}
         </p>
       )}
 
@@ -484,7 +504,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
             className="w-4 h-4 accent-tx-neutral"
             checked={allVisibleChecked}
             onChange={toggleAllVisible}
-            disabled={visibleBrands.length === 0 || isRestrictedTab}
+            disabled={selectableVisibleBrands.length === 0}
           />
           <span className="text-icon-neutral">브랜드 전체 선택하기</span>
         </label>
@@ -515,7 +535,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
                       }
                       className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-fill-primary-hover type-body-medium text-tx-inverse"
                     >
-                      전체 ({platformBrandCount(code)})
+                      {PLATFORM_CODE_TO_LABEL[code] ?? code} 전체
                     </button>
                   ))}
                 {visibleBrands.map((brand) => {

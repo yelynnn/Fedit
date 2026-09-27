@@ -3,11 +3,15 @@ import Modal from "react-modal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useUIStore } from "@/stores/UIStore";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+} from "@/stores/SubscriptionStore";
 import { GetBrandList, GetBrandPicks, PutBrandPicks } from "@/apis/AnalysisAPI";
 import pointIcon from "@/assets/etc/pointIcon.svg";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
-
-export const REQUIRED_COUNT = 5;
+import { getBrandCap } from "@/lib/brandCap";
 
 type ApiCategory = { label: string; brands: string[] };
 
@@ -18,6 +22,11 @@ type Props = {
   // "signup"(기본): 첫 결제 직후 빈 상태에서 새로 선택.
   // "change": 설정 화면에서 이미 저장된 픽을 불러와 수정.
   mode?: "signup" | "change";
+  // true면 mode="change"로 불러온 기존 픽(originalPicksRef)을 뺄 수 없게
+  // 막는다 — 설정 페이지의 "브랜드 추가하기"(자리가 남았을 때, 언제든
+  // 가능)처럼 순수 추가만 허용하고 싶을 때 쓴다. "변경하기"(월 1회 제한이
+  // 걸리는 실제 교체)에서는 false로 둬서 자유롭게 빼고 바꿀 수 있게 한다.
+  lockExistingPicks?: boolean;
 };
 
 export default function InterestBrandModal({
@@ -25,6 +34,7 @@ export default function InterestBrandModal({
   onClose,
   onComplete,
   mode = "signup",
+  lockExistingPicks = false,
 }: Props) {
   const brandList = useFilterStore((s) => s.brandList);
   const addBrand = useFilterStore((s) => s.addBrand);
@@ -36,6 +46,10 @@ export default function InterestBrandModal({
     (s) => s.setLastBrandPicksSavedAt,
   );
   const setBrandPicksEditing = useUIStore((s) => s.setBrandPicksEditing);
+  const subscription = useSubscriptionStore((s) => s.subscription);
+  const currentPlan = toBillingPlan(getEffectivePlan(subscription));
+  const isProPlan = currentPlan === "pro";
+  const cap = getBrandCap(currentPlan);
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [activeTab, setActiveTab] = useState("");
@@ -44,6 +58,9 @@ export default function InterestBrandModal({
   const [err, setErr] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
+  // "change" 모드에서 처음 불러온 픽. 저장 시 이 목록을 그대로 포함하는
+  // 순수 추가(제거/교체 없음)인지 판단해 월 1회 변경 제한 소진 여부를 정한다.
+  const originalPicksRef = useRef<string[]>([]);
 
   // 이 모달이 열려있는 동안(온보딩용 전역 인스턴스든, 설정 페이지의 "변경하기"
   // 로컬 인스턴스든) brandList를 편집 중임을 전역에 알려서, 다른 곳의 서버 픽
@@ -61,9 +78,13 @@ export default function InterestBrandModal({
     if (!isOpen) return;
     if (mode === "change") {
       GetBrandPicks()
-        .then((picks) => setBrandList(picks))
+        .then((picks) => {
+          originalPicksRef.current = picks;
+          setBrandList(picks);
+        })
         .catch(() => resetBrand());
     } else {
+      originalPicksRef.current = [];
       resetBrand();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,11 +186,15 @@ export default function InterestBrandModal({
     handleScroll();
   }, [visibleBrands, handleScroll]);
 
-  const isFull = brandList.length >= REQUIRED_COUNT;
-  const remaining = REQUIRED_COUNT - brandList.length;
+  const isFull = brandList.length >= cap;
+  const remaining = cap - brandList.length;
+
+  const isLockedBrand = (brand: string) =>
+    lockExistingPicks && originalPicksRef.current.includes(brand);
 
   const toggleBrand = (brand: string) => {
     if (brandList.includes(brand)) {
+      if (isLockedBrand(brand)) return;
       removeBrand(brand);
     } else if (!isFull) {
       addBrand(brand);
@@ -185,10 +210,23 @@ export default function InterestBrandModal({
     return `${d.getMonth() + 1}월 ${d.getDate()}일`;
   }, []);
 
+  const canSubmit = brandList.length > 0;
+
   const handleSubmit = () => {
-    if (brandList.length !== REQUIRED_COUNT) return;
+    if (!canSubmit) return;
     setShowStartConfirm(true);
   };
+
+  // 기존에 골라둔 브랜드를 그대로 두고 자리만 더 채운 경우(순수 추가)인지.
+  const isPureAddition =
+    mode === "change" &&
+    originalPicksRef.current.every((b) => brandList.includes(b));
+  // 이번 저장으로 상한(cap)을 다 채웠는지. 순수 추가라도 상한을 다 채우면
+  // "다 골랐다"고 보고 이번 주기 변경 횟수를 소진한 것으로 친다 — 실제로
+  // 빼거나 바꾼 경우도 당연히 소진한다. 자리가 남아있는 순수 추가만 언제든
+  // 다시 할 수 있게 소진하지 않는다.
+  const reachedCap = brandList.length >= cap;
+  const consumesMonthlyChange = !isPureAddition || reachedCap;
 
   const handleConfirmStart = async () => {
     if (isSaving) return;
@@ -196,7 +234,9 @@ export default function InterestBrandModal({
     try {
       await PutBrandPicks(brandList);
       setInterestBrandPicks(brandList);
-      setLastBrandPicksSavedAt(new Date().toISOString());
+      if (consumesMonthlyChange) {
+        setLastBrandPicksSavedAt(new Date().toISOString());
+      }
       setShowStartConfirm(false);
       onComplete?.();
       onClose();
@@ -237,16 +277,19 @@ export default function InterestBrandModal({
                 "분석 브랜드 변경"
               ) : (
                 <>
-                  <span className="font-bold">BASIC</span> 플랜 설정
+                  <span className="font-bold">
+                    {isProPlan ? "PRO" : "BASIC"}
+                  </span>{" "}
+                  플랜 설정
                 </>
               )}
             </span>
             <h1 className="text-[24px] font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
-              관심 브랜드 {REQUIRED_COUNT}개를 선택해주세요
+              관심 브랜드를 최대 {cap}개까지 선택해주세요
             </h1>
             {mode === "change" ? (
               <p className="text-[15px] leading-[150%] text-[#6F7173]">
-                이번 주기에 트렌드 분석할 브랜드 {REQUIRED_COUNT}개를 골라주세요.
+                이번 주기에 분석할 브랜드를 최대 {cap}개까지 골라주세요.
                 <br />
                 저장하면 다음 결제일{" "}
                 <b className="font-semibold text-[#3D3F41]">{nextCycleLabel}</b>
@@ -254,18 +297,13 @@ export default function InterestBrandModal({
               </p>
             ) : (
               <p className="text-[15px] leading-[150%] text-[#6F7173]">
-                선택한 {REQUIRED_COUNT}개 브랜드를 기준으로 트렌드와 분석을
-                보여드려요.
+                선택한 브랜드를 기준으로 트렌드와 분석을 보여드려요.
                 <br />
-                브랜드는 가입 후{" "}
-                <b className="font-semibold text-[#3D3F41]">월 1회</b> 변경할 수
-                있어요.
+                선택한 브랜드를 다른 브랜드로 바꾸는 건 다음 결제일(
+                <b className="font-semibold text-[#3D3F41]">{nextCycleLabel}</b>
+                )부터 가능하고, 추가 브랜드 선택은 언제든 할 수 있어요.
               </p>
             )}
-            <p className="-mt-1 -mb-2 flex items-center gap-1 text-[13px] text-[#A1A3A5]">
-              <Icon icon="ph:info" className="w-3.5 h-3.5 flex-shrink-0" />
-              무신사 입점 브랜드는 별도 선택 없이 기본으로 제공돼요.
-            </p>
           </div>
 
           <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#E4E4E4] p-5">
@@ -275,13 +313,15 @@ export default function InterestBrandModal({
                   {brandList.length}
                 </span>
                 <span className="text-[14px] font-medium text-[#3D3F41]">
-                  / {REQUIRED_COUNT} 선택
+                  / {cap} 선택
                 </span>
               </div>
               <span className="text-[12px] text-[#A1A3A5]">
                 {isFull
                   ? "모두 선택했어요!"
-                  : `${remaining}개 더 선택하면 시작할 수 있어요!`}
+                  : brandList.length > 0
+                    ? `최대 ${remaining}개 더 선택할 수 있어요`
+                    : "브랜드를 선택해주세요"}
               </span>
             </div>
 
@@ -289,7 +329,7 @@ export default function InterestBrandModal({
               <div
                 className="h-full rounded-full bg-[#0B0E0F] transition-all"
                 style={{
-                  width: `${(brandList.length / REQUIRED_COUNT) * 100}%`,
+                  width: `${(brandList.length / cap) * 100}%`,
                 }}
               />
             </div>
@@ -312,22 +352,29 @@ export default function InterestBrandModal({
                 </>
               ) : (
                 <div className="flex flex-wrap gap-3">
-                  {brandList.map((brand) => (
-                    <button
-                      key={brand}
-                      type="button"
-                      onClick={() => removeBrand(brand)}
-                      className="flex h-10 w-[147px] items-center justify-between gap-2 rounded-lg bg-[#0B0E0F] px-4 py-2 text-[16px] font-medium leading-[150%] tracking-[-0.08px] text-white"
-                    >
-                      <span className="flex-1 min-w-0 text-left truncate">
-                        {brand}
-                      </span>
-                      <Icon
-                        icon="mdi:close"
-                        className="flex-shrink-0 w-4 h-4"
-                      />
-                    </button>
-                  ))}
+                  {brandList.map((brand) => {
+                    const locked = isLockedBrand(brand);
+                    return (
+                      <button
+                        key={brand}
+                        type="button"
+                        onClick={() => (locked ? undefined : removeBrand(brand))}
+                        disabled={locked}
+                        title={locked ? "이미 저장된 브랜드는 변경하기에서만 뺄 수 있어요" : undefined}
+                        className={[
+                          "inline-flex h-10 items-center gap-2 rounded-lg px-4 py-2 text-[16px] font-medium leading-[150%] tracking-[-0.08px]",
+                          locked
+                            ? "cursor-default bg-[#3D3F41] text-white"
+                            : "bg-[#0B0E0F] text-white",
+                        ].join(" ")}
+                      >
+                        <span>{brand}</span>
+                        {!locked && (
+                          <Icon icon="mdi:close" className="flex-shrink-0 w-4 h-4" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -337,10 +384,10 @@ export default function InterestBrandModal({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!isFull}
+              disabled={!canSubmit}
               className={[
                 "flex h-[46px] w-full items-center justify-center gap-1 rounded-md px-3 py-2 type-title-medium transition-colors",
-                isFull
+                canSubmit
                   ? "bg-[#0B0E0F] text-tx-inverse hover:bg-black"
                   : "bg-[#F4F4F5] text-[#A1A3A5] cursor-not-allowed",
               ].join(" ")}
@@ -420,6 +467,7 @@ export default function InterestBrandModal({
                 <div className="grid grid-cols-3 gap-2">
                   {visibleBrands.map((brand) => {
                     const selected = brandList.includes(brand);
+                    const locked = selected && isLockedBrand(brand);
                     const letter = anchorKeys.get(brand);
                     return (
                       <button
@@ -427,7 +475,8 @@ export default function InterestBrandModal({
                         type="button"
                         data-anchor-letter={letter ?? undefined}
                         onClick={() => toggleBrand(brand)}
-                        disabled={!selected && isFull}
+                        disabled={(!selected && isFull) || locked}
+                        title={locked ? "이미 저장된 브랜드는 변경하기에서만 뺄 수 있어요" : undefined}
                         className={[
                           "flex items-center justify-center gap-2 rounded-md px-4 py-2 type-body-medium transition-colors",
                           selected
@@ -436,8 +485,12 @@ export default function InterestBrandModal({
                           !selected && isFull
                             ? "cursor-not-allowed opacity-40"
                             : "",
+                          locked ? "cursor-default" : "",
                         ].join(" ")}
                       >
+                        {locked && (
+                          <Icon icon="ph:check-bold" className="w-3.5 h-3.5 flex-shrink-0" />
+                        )}
                         <span className="truncate">{brand}</span>
                       </button>
                     );
@@ -485,14 +538,28 @@ export default function InterestBrandModal({
               </div>
               <h2 className="text-center text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-tx-strong">
                 {mode === "change"
-                  ? `이 ${REQUIRED_COUNT}개 브랜드로 변경할까요?`
-                  : `이 ${REQUIRED_COUNT}개 브랜드로 분석을 시작할까요?`}
+                  ? `이 ${brandList.length}개 브랜드로 변경할까요?`
+                  : `이 ${brandList.length}개 브랜드로 분석을 시작할까요?`}
               </h2>
               <div className="w-full rounded-xl bg-fill-bg-strong p-4 text-[14px] leading-[150%] text-tx-neutral">
-                저장하면{" "}
-                <b className="font-semibold">{nextCycleLabel}(다음 결제일)</b>
-                까지 이 구성으로 트렌드를 분석해요. 이번 주기 동안에는 브랜드를
-                바꿀 수 없고, {nextCycleLabel}부터 다시 고를 수 있어요.
+                {isPureAddition && !reachedCap ? (
+                  <>
+                    기존에 고른 브랜드는 그대로 두고 브랜드만 추가돼요. 남은
+                    자리는 이후에도 언제든 채울 수 있어요.
+                  </>
+                ) : isPureAddition ? (
+                  <>
+                    이제 최대 개수를 다 채웠어요. <b className="font-semibold">{nextCycleLabel}</b>
+                    까지 이 구성으로 분석하고, 브랜드 교체는 다음 결제일부터
+                    가능해요.
+                  </>
+                ) : (
+                  <>
+                    <b className="font-semibold">{nextCycleLabel}</b>까지 이
+                    구성으로 분석해요. 브랜드 교체는 다음 결제일부터, 추가
+                    선택은 언제든 가능해요.
+                  </>
+                )}
               </div>
               <div className="flex w-full gap-3">
                 <button

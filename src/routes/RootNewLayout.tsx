@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import Sidebar from "@/components/common/Sidebar";
 import { useChatStore } from "@/stores/ChatStore";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/pendingDowngrade";
 import { useSubscriptionStore } from "@/stores/SubscriptionStore";
 import { trackFeatureViewed } from "@/lib/analytics";
+import { GetBrandPicks } from "@/apis/AnalysisAPI";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -69,6 +70,29 @@ function RootNewLayout() {
     if (subscription.downgradePending) return;
     clearPendingBasicDowngrade();
     if (subscription.plan === "basic") openInterestBrandModal();
+  }, [subscriptionLoaded, subscription, openInterestBrandModal]);
+
+  // 백엔드가 관심 브랜드 제한을 Pro까지 확장하면서, 이미 Pro였던 기존
+  // 계정은 관심 브랜드를 하나도 안 고른 채로 남아있다. 이 상태로는 상품
+  // 조회가 전부 기본값(샤넬) 하나로만 나가서 서비스가 거의 비어 보이므로,
+  // 결제 직후에만 모달을 띄우는 기존 흐름과 별개로 basic/pro인데 관심
+  // 브랜드가 하나도 없는 계정은 앱 진입 시 바로 모달을 띄워 선택을
+  // 유도한다. 앱이 떠 있는 동안 한 번만 확인하고(새로고침하면 다시 확인),
+  // "나중에 하기"로 닫아도 이후 구독 상태 갱신 때마다 다시 뜨지 않게
+  // ref로 막는다.
+  const hasCheckedInitialBrandPicksRef = useRef(false);
+  useEffect(() => {
+    if (!subscriptionLoaded || !subscription) return;
+    if (hasCheckedInitialBrandPicksRef.current) return;
+    if (subscription.downgradePending) return;
+    const plan = subscription.plan;
+    if (plan !== "basic" && plan !== "basic_secret" && plan !== "pro") return;
+    hasCheckedInitialBrandPicksRef.current = true;
+    GetBrandPicks()
+      .then((picks) => {
+        if (picks.length === 0) openInterestBrandModal();
+      })
+      .catch(() => {});
   }, [subscriptionLoaded, subscription, openInterestBrandModal]);
 
   // 개발 중 결제 없이 모달을 확인하기 위한 디버그 트리거: /?showBrandModal=1

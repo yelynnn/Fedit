@@ -228,9 +228,9 @@ const PostBrandApply = async (brand: string): Promise<void> => {
   }
 };
 
-// FREE는 두 API 모두 403(FREE_PLAN_NOT_ALLOWED), BASIC/BASIC_SECRET는 월
-// limit 안에서 used/remaining을 관리, PRO는 limited:false로 무제한이지만
-// used는 계속 집계된다.
+// FREE는 두 API 모두 403(FREE_PLAN_NOT_ALLOWED). BASIC/BASIC_SECRET/PRO는
+// 모두 월 limit 안에서 used/remaining을 관리한다(Basic 월 3회, Pro 월
+// 30회). 한도를 넘으면 POST가 403(EXCEL_DOWNLOAD_LIMIT_EXCEEDED)을 낸다.
 export type ExcelDownloadUsage = {
   plan: string;
   limited: boolean;

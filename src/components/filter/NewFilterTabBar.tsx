@@ -12,7 +12,6 @@ import BoardsPage from "@/pages/BoardsPage";
 import { useSubscriptionStore, isBasicPlan } from "@/stores/SubscriptionStore";
 import ProUpgradeOverlay from "@/components/common/ProUpgradeOverlay";
 import { GetBrandPicks } from "@/apis/AnalysisAPI";
-import { REQUIRED_COUNT } from "@/components/billing/InterestBrandModal";
 import { useUIStore } from "@/stores/UIStore";
 
 // PRO 요금제에서만 이용 가능한 탭
@@ -103,24 +102,31 @@ export function NewFilterTabPanels() {
   // 관심 브랜드 선택 모달(온보딩/설정 어느 쪽이든)이 열려있는 동안에는
   // 사용자가 칩을 고르는 중이라 brandList를 건드리면 안 되므로 건너뛴다.
   //
-  // Basic이 아니게 되면(Free/Pro) interestBrandPicks를 비워서 예전 Basic
-  // 관심 브랜드가 다른 플랜에서까지 "선택 가능"한 상태로 남지 않게
-  // 한다. Free이거나 Basic인데 아직 관심 브랜드를 다 고르지 않았다면
-  // platformList를 무신사(musinsa)로 채운다 — 개별 브랜드명을 다 나열하면
-  // (120개 안팎) 요청 헤더가 너무 커지니, 플랫폼 코드 하나로 대신 보낸다.
-  // 상품 분석 화면이 처음부터 빈 목록이 아니라 실제 카드로 채워져야 온보딩
-  // 투어의 "첫 상품 카드" 스텝도 정상적으로 뜬다 (Pro는 브랜드 제한이 없는
-  // 플랜이라 건드리지 않는다).
+  // Basic·Pro 둘 다 이제 관심 브랜드(개수 상한만 다름)를 쓰므로 같은 방식으로
+  // 처리한다. 둘 다 아니게 되면(Free 등) interestBrandPicks를 비워서 예전
+  // 관심 브랜드가 다른 플랜에서까지 "선택 가능"한 상태로 남지 않게 하고,
+  // 아직 브랜드를 고르지 않았다면 platformList를 무신사(musinsa)로 채운다 —
+  // 개별 브랜드명을 다 나열하면(120개 안팎) 요청 헤더가 너무 커지니, 플랫폼
+  // 코드 하나로 대신 보낸다. 상품 분석 화면이 처음부터 빈 목록이 아니라
+  // 실제 카드로 채워져야 온보딩 투어의 "첫 상품 카드" 스텝도 정상적으로 뜬다.
   useEffect(() => {
     if (!loaded || isBrandPicksEditing) return;
 
-    if (!isBasicPlan(subscription?.plan)) {
+    // Enterprise는 브랜드 선택 자체가 없는 무제한 플랜이다(예전의 "무제한
+    // Pro"와 동일) — 관심 브랜드 목록만 비워두고, 필터 선택은 건드리지
+    // 않는다(Free처럼 무신사로 강제 축소하면 안 된다).
+    if (subscription?.plan === "enterprise") {
       setInterestBrandPicks([]);
-      if (subscription?.plan !== "pro") {
-        const state = useFilterStore.getState();
-        if (state.brandList.length === 0 && state.platformList.length === 0) {
-          setPlatformList(["musinsa"]);
-        }
+      return;
+    }
+
+    const hasBrandCap = isBasicPlan(subscription?.plan) || subscription?.plan === "pro";
+
+    if (!hasBrandCap) {
+      setInterestBrandPicks([]);
+      const state = useFilterStore.getState();
+      if (state.brandList.length === 0 && state.platformList.length === 0) {
+        setPlatformList(["musinsa"]);
       }
       return;
     }
@@ -129,13 +135,13 @@ export function NewFilterTabPanels() {
     GetBrandPicks()
       .then((picks) => {
         if (ignore) return;
-        // 관심 브랜드는 정확히 REQUIRED_COUNT개를 골라야 "완료"로 친다
-        // (InterestBrandModal의 저장 조건과 동일). 그보다 적게 남아있는
-        // 값은 완료 전 이탈 등으로 생긴 잔여 데이터이므로, 다 고른 것처럼
-        // 취급해 그 브랜드들만 계속 선택 가능한 상태로 남기지 않는다.
-        const isComplete = picks.length === REQUIRED_COUNT;
-        setInterestBrandPicks(isComplete ? picks : []);
-        if (isComplete) {
+        // 관심 브랜드를 하나라도 골라뒀으면 그 구성 그대로 분석에 쓴다.
+        // 예전엔 상한(REQUIRED_COUNT)을 정확히 채워야만 "완료"로 쳤지만,
+        // 이제는 일부만 고르고 나중에 더 채우는 것도 허용하므로 부분
+        // 선택도 유효한 값으로 취급한다.
+        const hasPicks = picks.length > 0;
+        setInterestBrandPicks(hasPicks ? picks : []);
+        if (hasPicks) {
           const state = useFilterStore.getState();
           const hasExistingSelection =
             state.brandList.length > 0 || state.platformList.length > 0;
@@ -162,7 +168,10 @@ export function NewFilterTabPanels() {
   ]);
 
   const isLocked =
-    loaded && subscription?.plan !== "pro" && PRO_ONLY_TABS.has(selectedTab);
+    loaded &&
+    subscription?.plan !== "pro" &&
+    subscription?.plan !== "enterprise" &&
+    PRO_ONLY_TABS.has(selectedTab);
 
   return (
     <div className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">

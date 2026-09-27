@@ -1,14 +1,14 @@
 import { create } from "zustand";
 import {
   GetSubscription,
-  type PlanType,
   type Subscription,
+  type SubscriptionPlan,
 } from "@/apis/BillingAPI";
 
 // status: "not_started"는 회원가입 직후 무료체험조차 시작하지 않은 상태,
 // "expired"는 무료체험/유료 플랜 기간이 끝나고 갱신하지 않은 상태다. 이
 // 둘은 subscription.plan 값과 무관하게 상태 자체로 구분해야 한다.
-export type EffectivePlan = "none" | "expired" | "free" | PlanType;
+export type EffectivePlan = "none" | "expired" | SubscriptionPlan;
 
 export const getEffectivePlan = (
   subscription: Subscription | null,
@@ -20,7 +20,7 @@ export const getEffectivePlan = (
   return subscription.plan;
 };
 
-// 3일 무료 체험(Basic) 이용 중인지. 현재 요금제 표시·결제 유도 버튼 분기에서
+// 5일 무료 체험(Basic) 이용 중인지. 현재 요금제 표시·결제 유도 버튼 분기에서
 // "이미 결제한 Basic"과 구분하려고 쓴다.
 export const isTrial = (subscription: Subscription | null): boolean =>
   subscription?.status === "trial";
@@ -34,10 +34,11 @@ export const getTrialEndsAt = (
 
 // "미선택"/"만료"/"무료"를 구분할 필요 없이 그냥 무료 등급으로 취급해도 되는
 // 곳(브랜드 제한, 결제 랭크 비교 등)에서 쓰는 정규화 헬퍼. basic_secret은
-// Basic과 기능이 완전히 동일하므로 항상 "basic"으로 합친다.
+// Basic과 기능이 완전히 동일하므로 항상 "basic"으로 합친다. enterprise는
+// 자체 결제 대상이 아닌 별도 최상위 플랜이라 그대로 통과시킨다.
 export const toBillingPlan = (
   effective: EffectivePlan,
-): "free" | "basic" | "pro" => {
+): "free" | "basic" | "pro" | "enterprise" => {
   if (effective === "none" || effective === "expired") return "free";
   if (effective === "basic_secret") return "basic";
   return effective;

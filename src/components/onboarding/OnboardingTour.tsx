@@ -1,7 +1,12 @@
 import { useLayoutEffect, useState, type CSSProperties } from "react";
 import { useUIStore } from "@/stores/UIStore";
 import { useFilterStore } from "@/stores/FilterStore";
-import { REQUIRED_COUNT } from "@/components/billing/InterestBrandModal";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+} from "@/stores/SubscriptionStore";
+import { getBrandCap, PRO_REQUIRED_COUNT } from "@/lib/brandCap";
 import sparkleIcon from "@/assets/etc/sparkleicon.svg";
 
 type Placement = "bottom" | "right";
@@ -18,22 +23,20 @@ type Step = {
   heightTrim?: number;
 };
 
-const STEP_1_NOT_SELECTED: Step = {
+const getStep1NotSelected = (cap: number): Step => ({
   anchor: "brand-banner",
   fallbackAnchor: "brand-chip",
   placement: "bottom",
   title: "분석할 브랜드 범위예요",
-  description:
-    `지금은 무신사 기본 데이터예요. 관심 브랜드 ${REQUIRED_COUNT}개를 선택하면 이 화면이 내 브랜드 기준으로 바뀌어요.`,
-};
+  description: `지금은 무신사 기본 데이터예요. 관심 브랜드를 선택하면(최대 ${cap}개) 이 화면이 내 브랜드 기준으로 바뀌어요.`,
+});
 
-const STEP_1_SELECTED: Step = {
+const getStep1Selected = (cap: number): Step => ({
   anchor: "brand-chip",
   placement: "bottom",
   title: "분석할 브랜드 범위예요",
-  description:
-    `선택한 ${REQUIRED_COUNT}개 브랜드를 기준으로 모든 랭킹·분석이 채워져요. 브랜드는 월 1회 변경할 수 있어요.`,
-};
+  description: `선택한 브랜드를 기준으로 모든 랭킹·분석이 채워져요. 최대 ${cap}개까지 고를 수 있고, 다른 브랜드로 바꾸는 건 월 1회 가능해요.`,
+});
 
 const STEP_1_FREE_SIGNUP: Step = {
   anchor: "brand-chip",
@@ -47,8 +50,7 @@ const STEP_1_PRO: Step = {
   anchor: "brand-chip",
   placement: "bottom",
   title: "분석할 브랜드 범위예요",
-  description:
-    "PRO 플랜은 브랜드 제한 없이 원하는 브랜드를 모두 선택해서 분석할 수 있어요.",
+  description: `PRO 플랜은 관심 브랜드를 최대 ${PRO_REQUIRED_COUNT}개까지 선택해서 분석할 수 있어요.`,
 };
 
 const REST_STEPS: Step[] = [
@@ -97,6 +99,9 @@ export default function OnboardingTour() {
     (s) => s.setSidebarCollapseOverride,
   );
   const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
+  const subscription = useSubscriptionStore((s) => s.subscription);
+  const currentPlan = toBillingPlan(getEffectivePlan(subscription));
+  const brandCap = getBrandCap(currentPlan);
 
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -107,9 +112,9 @@ export default function OnboardingTour() {
       ? STEP_1_FREE_SIGNUP
       : source === "pro"
         ? STEP_1_PRO
-        : interestBrandPicks.length >= REQUIRED_COUNT
-          ? STEP_1_SELECTED
-          : STEP_1_NOT_SELECTED;
+        : interestBrandPicks.length >= brandCap
+          ? getStep1Selected(brandCap)
+          : getStep1NotSelected(brandCap);
   const steps: Step[] = [step1, ...REST_STEPS];
   const current = steps[step];
 

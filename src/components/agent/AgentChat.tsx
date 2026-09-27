@@ -39,7 +39,10 @@ export default function AgentChat({ conversationId, onClose }: Props) {
   const { conversations, saveMessages, updateTitle } = useChatStore((s) => s);
   const conv = conversations.find((c) => c.id === conversationId);
   const subscription = useSubscriptionStore((s) => s.subscription);
-  const isPro = toBillingPlan(getEffectivePlan(subscription)) === 'pro';
+  // AI Agent는 Enterprise 전용 기능이다 — 버튼/패널 자체는 모두에게
+  // 노출하되, 실제로 입력해서 보내는 건 Enterprise만 가능하게 막는다.
+  const isEnterprise =
+    toBillingPlan(getEffectivePlan(subscription)) === 'enterprise';
 
   const [messages, setMessages] = useState<Message[]>(conv?.messages ?? []);
   const [input, setInput] = useState('');
@@ -71,7 +74,7 @@ export default function AgentChat({ conversationId, onClose }: Props) {
   };
 
   const handleSend = async (text?: string) => {
-    if (!isPro) return;
+    if (!isEnterprise) return;
     const query = (text ?? input).trim();
     if (!query || isLoading) return;
 
@@ -90,7 +93,7 @@ export default function AgentChat({ conversationId, onClose }: Props) {
     try {
       // FEDI 에이전트 채팅 전송 — feature_viewed(조회)와 분리된 별도 이벤트.
       // 패널을 열기만 한 게 아니라 실제로 채팅 요청을 보낸 시점 기준. 위
-      // 가드(!isPro, 빈 입력/로딩 중)를 통과한 뒤라 여기가 "요청이 실제로
+      // 가드(!isEnterprise, 빈 입력/로딩 중)를 통과한 뒤라 여기가 "요청이 실제로
       // 나가는" 지점이다.
       trackFediChatSent();
       const res = await axiosInstance.post('/chat', { message: query });
@@ -221,7 +224,7 @@ export default function AgentChat({ conversationId, onClose }: Props) {
             <button
               key={s}
               onClick={() => handleSend(s)}
-              disabled={isLoading || !isPro}
+              disabled={isLoading || !isEnterprise}
               className="flex-shrink-0 text-xs bg-white/80 border border-white/60 rounded-full px-3 py-1.5 text-gray-600 hover:bg-white transition-colors whitespace-nowrap disabled:opacity-50"
             >
               {s}
@@ -238,15 +241,15 @@ export default function AgentChat({ conversationId, onClose }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={!isPro}
+            disabled={!isEnterprise}
             placeholder={
-              isPro ? '어떤 것을 도와드릴까요?' : 'PRO 요금제에서만 이용할 수 있어요'
+              isEnterprise ? '어떤 것을 도와드릴까요?' : 'Enterprise 요금제에서만 이용할 수 있어요'
             }
             className="flex-1 text-sm outline-none bg-transparent text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
           />
           <button
             onClick={() => handleSend()}
-            disabled={!isPro || !input.trim() || isLoading}
+            disabled={!isEnterprise || !input.trim() || isLoading}
             className="w-7 h-7 bg-gray-800 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Icon icon="mdi:arrow-up" width={14} className="text-white" />

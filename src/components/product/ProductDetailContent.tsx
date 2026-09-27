@@ -115,6 +115,7 @@ export default function ProductDetailContent({
   const effectiveId = itemcodeOverride ?? selectedProductId;
   const [detailData, setDetailData] = useState<ApiDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [related, setRelated] = useState<RelatedItem[]>([]);
   // 랭킹 상품(previewSnapshot) 상세일 때만 /trend/{id}/similar로 채운다.
   const [trendSimilar, setTrendSimilar] = useState<TrendSimilarItemDto[]>([]);
@@ -305,6 +306,7 @@ export default function ProductDetailContent({
   };
 
   useEffect(() => {
+    setDetailError(null);
     if (previewSnapshot) {
       setDetailData(mapSnapshotToApiDetail(previewSnapshot));
       return;
@@ -324,8 +326,16 @@ export default function ProductDetailContent({
           ? await GetProductByItemCode(effectiveId)
           : await GetDetailInfo({ itemcode: effectiveId });
         if (!canceled) setDetailData(res ?? null);
-      } catch {
-        if (!canceled) setDetailData(null);
+      } catch (error: any) {
+        if (canceled) return;
+        setDetailData(null);
+        // 관심 브랜드로 제한된 뒤로는, 관심 브랜드가 아닌 상품을 열면
+        // 403(PLATFORM_RESTRICTED)이 온다. 조용히 빈 화면을 보여주는 대신
+        // 이유를 알려준다.
+        setDetailError(
+          error?.response?.data?.message ||
+            "이 상품은 조회할 수 없어요. 선택한 관심 브랜드의 상품만 볼 수 있어요.",
+        );
       } finally {
         if (!canceled) setLoading(false);
       }
@@ -459,6 +469,14 @@ export default function ProductDetailContent({
       {loading ? (
         <div className="p-10 text-center text-gray-500">
           상세 정보를 불러오는 중…
+        </div>
+      ) : !detailData && detailError ? (
+        <div className="flex flex-col items-center gap-3 p-10 text-center">
+          <Icon
+            icon="ph:lock-simple-bold"
+            className="w-8 h-8 text-icon-alt"
+          />
+          <p className="text-sm text-tx-alt">{detailError}</p>
         </div>
       ) : (
         detailData && (

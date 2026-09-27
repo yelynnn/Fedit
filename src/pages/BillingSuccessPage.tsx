@@ -7,7 +7,6 @@ import {
   useSubscriptionStore,
   isBasicPlan,
 } from "@/stores/SubscriptionStore";
-import { useFilterStore } from "@/stores/FilterStore";
 
 const PLAN_LABELS: Record<PlanType, string> = {
   basic: "Basic",
@@ -20,9 +19,7 @@ function BillingSuccessPage() {
   const navigate = useNavigate();
   const openSettingsModal = useUIStore((s) => s.openSettingsModal);
   const openInterestBrandModal = useUIStore((s) => s.openInterestBrandModal);
-  const openOnboardingTour = useUIStore((s) => s.openOnboardingTour);
   const setSubscription = useSubscriptionStore((s) => s.setSubscription);
-  const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
   const [status, setStatus] = useState<"loading" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const requested = useRef(false);
@@ -44,11 +41,8 @@ function BillingSuccessPage() {
     PostConfirmBilling({ authKey, customerKey, plan })
       .then((subscription) => {
         setSubscription(subscription);
-        if (isBasicPlan(plan)) {
+        if (isBasicPlan(plan) || plan === "pro") {
           openInterestBrandModal();
-        } else if (plan === "pro") {
-          setSelectedTab("상품 분석");
-          openOnboardingTour("pro");
         } else {
           openSettingsModal("구독");
         }
@@ -63,9 +57,7 @@ function BillingSuccessPage() {
     navigate,
     openSettingsModal,
     openInterestBrandModal,
-    openOnboardingTour,
     setSubscription,
-    setSelectedTab,
   ]);
 
   return (

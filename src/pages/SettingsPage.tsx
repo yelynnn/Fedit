@@ -27,9 +27,12 @@ import {
   getTrialEndsAt,
 } from "@/stores/SubscriptionStore";
 import cancelIcon from "@/assets/planCard/cancel.svg";
-import InterestBrandModal, {
+import InterestBrandModal from "@/components/billing/InterestBrandModal";
+import {
   REQUIRED_COUNT,
-} from "@/components/billing/InterestBrandModal";
+  PRO_REQUIRED_COUNT,
+  getBrandCap,
+} from "@/lib/brandCap";
 import BrandApplyPanel from "@/components/settings/BrandApplyPanel";
 import { GetBrandList, GetBrandPicks } from "@/apis/AnalysisAPI";
 import { isSecretEntry as checkSecretEntry } from "@/lib/secretEntry";
@@ -61,7 +64,7 @@ const PLAN_DEFS: {
   inherits?: string;
   features: { ok: boolean; text: string }[];
 }[] = [
-  // 무료 체험은 이제 별도 요금제가 아니라 "Basic 3일 무료 체험"이라 비교표
+  // 무료 체험은 이제 별도 요금제가 아니라 "Basic 5일 무료 체험"이라 비교표
   // 열에서는 뺀다. Basic 열 버튼이 체험 시작을 겸한다.
   // {
   //   key: "free",
@@ -82,39 +85,38 @@ const PLAN_DEFS: {
   {
     key: "basic",
     label: "Basic",
-    badge: "추천",
-    originalPrice: "59,000원",
-    discount: "51% 할인",
-    price: "29,000원",
+    badge: null,
+    originalPrice: "72,000원",
+    discount: "18% 할인 · 첫 달 29,000원",
+    price: "59,000원",
     sub: "/월",
     features: [
+      { ok: true, text: "1인 이용" },
       {
         ok: true,
-        text: `관심 브랜드 최대 ${REQUIRED_COUNT}개 모니터링`,
+        text: `경쟁사 모니터링 ${REQUIRED_COUNT}개 브랜드`,
       },
-      { ok: true, text: "플랫폼별 키워드 분석 제공" },
       { ok: true, text: "엑셀 다운로드 월 3회" },
       { ok: true, text: "신규 브랜드 분석 신청 월 1회" },
-      { ok: true, text: "데일리 트렌드 뉴스레터 제공" },
-      { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
+      { ok: false, text: "유형·색상·소재·패션쇼 분석" },
+      { ok: false, text: "월간 트렌드 리포트 · AI Agent" },
     ],
   },
   {
     key: "pro",
     label: "Pro",
-    badge: null,
-    originalPrice: null,
-    discount: null,
-    price: "가격 문의",
-    sub: "브랜드별 맞춤형 AI 분석 구축",
+    badge: "추천",
+    originalPrice: "165,000원",
+    discount: "40% 할인",
+    price: "99,000원",
+    sub: "/월",
     features: [
-      { ok: true, text: "모든 브랜드 모니터링 제공" },
-      { ok: true, text: "유형/색상/패션쇼 분석 지원" },
-      { ok: true, text: "엑셀 다운로드 무제한" },
+      { ok: true, text: "1인 이용" },
+      { ok: true, text: `경쟁사 모니터링 ${PRO_REQUIRED_COUNT}개 브랜드` },
+      { ok: true, text: "엑셀 다운로드 월 30회" },
       { ok: true, text: "신규 브랜드 분석 신청 월 3회" },
-      { ok: true, text: "기업 트렌드 리포트 제공 (월말 추가 제공)" },
-      { ok: true, text: "데일리 트렌드 뉴스레터 제공" },
-      { ok: true, text: "자사 맞춤형 AI Agent 제공" },
+      { ok: true, text: "유형·색상·소재·패션쇼 분석" },
+      { ok: false, text: "월간 트렌드 리포트 · AI Agent" },
     ],
   },
   {
@@ -123,13 +125,13 @@ const PLAN_DEFS: {
     badge: null,
     originalPrice: null,
     discount: null,
-    price: "가격 문의",
-    sub: "팀 단위 도입 · 맞춤 구축",
-    inherits: "Pro",
+    price: "문의하기",
+    sub: "팀 규모와 브랜드 맞춤 세팅",
     features: [
-      { ok: true, text: "신규 브랜드 분석 맞춤 지원" },
-      { ok: true, text: "자사 맞춤형 AI Agent 구축" },
-      { ok: true, text: "팀 시트·관리자 기능으로 대규모 팀 관리" },
+      { ok: true, text: "공유 계정 5개" },
+      { ok: true, text: "경쟁사 모니터링 전체 브랜드" },
+      { ok: true, text: "유형·색상·소재·패션쇼 분석" },
+      { ok: true, text: "엑셀 무제한 · 월간 트렌드 리포트 · AI Agent" },
     ],
   },
 ];
@@ -208,13 +210,8 @@ function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
 }
 
 export default function SettingsPage() {
-  const {
-    settingsModalTab,
-    closeSettingsModal,
-    openInterestBrandModal,
-    openOnboardingTour,
-  } = useUIStore();
-  const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
+  const { settingsModalTab, closeSettingsModal, openInterestBrandModal } =
+    useUIStore();
   const {
     conversations,
     activeConversationId,
@@ -291,17 +288,20 @@ export default function SettingsPage() {
   // 구분해서 보여줄 때만 쓰고, 그 외 요금제 비교/업그레이드 로직은 지금까지처럼
   // currentPlan(둘 다 free로 취급)을 그대로 쓴다.
   const effectivePlan = getEffectivePlan(subscription);
-  const currentPlan: "free" | PlanType = toBillingPlan(effectivePlan);
-  // 3일 무료 체험(Basic) 이용 중인지 + 체험 종료일. 현재 요금제 표시와
+  const currentPlan: "free" | PlanType | "enterprise" =
+    toBillingPlan(effectivePlan);
+  // 5일 무료 체험(Basic) 이용 중인지 + 체험 종료일. 현재 요금제 표시와
   // "결제하기" 유도 버튼을 "이미 결제한 Basic"과 다르게 보여주려고 쓴다.
   const trialing = isTrial(subscription);
   const trialEndsAt = getTrialEndsAt(subscription);
 
   // 비밀 링크로 들어온 경우, Basic 카드는 "첫 달 19,000원" 특가로 바꿔서
-  // 보여준다. Pro는 가격은 그대로지만(정가 그대로 결제) 배지만 "비밀 링크
-  // 한정"으로 같이 표시한다. 실제 결제 요청에 보낼 plan_code는 이거랑 별개로
-  // 아래 checkoutPlan에서 pendingPlan === "basic"일 때만 "basic_secret"으로
-  // 바꿔서 보낸다 — Pro는 비밀 링크로 들어와도 정가 그대로다.
+  // 보여준다(정가·월 요금 자체는 그대로 두고 discount/price만 첫 달 특가로
+  // 덮어써서, spread로 originalPrice·sub는 그대로 이어받는다). Pro는 가격은
+  // 그대로지만(정가 그대로 결제) 배지만 "비밀 링크 한정"으로 같이 표시한다.
+  // 실제 결제 요청에 보낼 plan_code는 이거랑 별개로 아래 checkoutPlan에서
+  // pendingPlan === "basic"일 때만 "basic_secret"으로 바꿔서 보낸다 — Pro는
+  // 비밀 링크로 들어와도 정가 그대로다.
   const planDefs = isSecretEntry
     ? PLAN_DEFS.map((plan) =>
         plan.key === "basic"
@@ -319,7 +319,7 @@ export default function SettingsPage() {
 
   // 결제 요청에 실제로 실어 보낼 plan_code — 비밀 링크 유입 + Basic이면
   // basic_secret(첫 달 특가)으로 바꿔 보낸다. Pro는 비밀 링크로 들어와도
-  // 정가(pro/59,000원) 그대로 요청한다.
+  // 정가(pro/99,000원) 그대로 요청한다.
   const checkoutPlan: PlanType | null =
     pendingPlan === "basic" && isSecretEntry ? "basic_secret" : pendingPlan;
 
@@ -330,6 +330,15 @@ export default function SettingsPage() {
     Record<string, string>
   >({});
   const [isBrandChangeModalOpen, setIsBrandChangeModalOpen] = useState(false);
+  // "add": 자리가 남아있을 때 "브랜드 추가하기"(언제든 가능, 기존 픽은 뺄 수
+  // 없음) / "change": "변경하기"(월 1회 제한, 기존 픽도 자유롭게 뺄 수 있음).
+  const [brandModalIntent, setBrandModalIntent] = useState<"add" | "change">(
+    "add",
+  );
+  const openBrandModal = (intent: "add" | "change") => {
+    setBrandModalIntent(intent);
+    setIsBrandChangeModalOpen(true);
+  };
 
   const fetchBrandPicks = async () => {
     setBrandPicksLoading(true);
@@ -343,8 +352,14 @@ export default function SettingsPage() {
     }
   };
 
+  const brandCap = getBrandCap(currentPlan);
+
   useEffect(() => {
-    if (active !== "관심브랜드" || currentPlan !== "basic") return;
+    if (
+      active !== "관심브랜드" ||
+      (currentPlan !== "basic" && currentPlan !== "pro")
+    )
+      return;
     fetchBrandPicks();
     GetBrandList()
       .then((data) => {
@@ -418,13 +433,9 @@ export default function SettingsPage() {
           alert(`${nextDate}부터 ${label} 요금제로 적용됩니다.`);
         } else {
           alert(`${label} 요금제로 변경되었습니다.`);
-          if (plan === "basic") {
+          if (plan === "basic" || plan === "pro") {
             closeSettingsModal();
             openInterestBrandModal();
-          } else if (plan === "pro") {
-            closeSettingsModal();
-            setSelectedTab("상품 분석");
-            openOnboardingTour("pro");
           }
         }
       } else {
@@ -467,8 +478,7 @@ export default function SettingsPage() {
       await PostStartTrial();
       await fetchSubscription();
       closeSettingsModal();
-      setSelectedTab("상품 분석");
-      openOnboardingTour("signup");
+      openInterestBrandModal();
     } catch (error: any) {
       alert(error?.message || "무료체험 시작에 실패했습니다.");
     } finally {
@@ -643,13 +653,15 @@ export default function SettingsPage() {
           <div className="flex-1 flex flex-col w-full gap-6 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {NAV_GROUPS.map((group) => (
               <div key={group.title} className="flex flex-col gap-0.5">
-                <p className="text-xs font-semibold text-tx-assistive uppercase tracking-wider px-2 mb-1">
+                <p className="px-2 mb-1 text-xs font-semibold tracking-wider uppercase text-tx-assistive">
                   {group.title}
                 </p>
                 {group.items
                   .filter(
                     (item) =>
-                      item.id !== "관심브랜드" || currentPlan === "basic",
+                      item.id !== "관심브랜드" ||
+                      currentPlan === "basic" ||
+                      currentPlan === "pro",
                   )
                   .map((item) => (
                     <button
@@ -672,12 +684,13 @@ export default function SettingsPage() {
             ))}
           </div>
 
-          {/* FEDIT Pro upgrade card */}
-          {currentPlan !== "pro" && (
+          {/* FEDIT Enterprise upgrade card — 무제한 분석·트렌드 리포트는
+              이제 Enterprise 전용이라 Basic·Pro 둘 다에게 노출한다. */}
+          {currentPlan !== "enterprise" && (
             <div className="w-full shrink-0">
               <div className="flex flex-col items-start self-stretch gap-3 p-3 rounded-xl border border-[#E4E4E4] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.06)]">
                 <p className="text-sm font-semibold text-tx-strong">
-                  FEDIT Pro
+                  FEDIT Enterprise
                 </p>
                 <p className="text-xs leading-relaxed text-tx-alt">
                   무제한 분석과 트렌드 리포트를 확인
@@ -1158,110 +1171,114 @@ export default function SettingsPage() {
             {active === "브랜드입점신청" && <BrandApplyPanel />}
 
             {/* ── 관심 브랜드 설정 ── */}
-            {active === "관심브랜드" && currentPlan === "basic" && (
-              <div className="max-w-[680px]">
-                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
-                  관심 브랜드 설정
-                </h1>
-                <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
-                  분석에 사용할 브랜드를 관리하세요
-                </p>
-
-                <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-sm bg-[#EAF2FE]">
-                  <Icon
-                    icon="material-symbols-light:info-rounded"
-                    className="flex-shrink-0 w-5 h-5 text-[#1A75FF]"
-                  />
-                  <p className="text-xs font-medium text-[#1A75FF] leading-[133%]">
-                    브랜드는 결제일마다 1회 변경할 수 있어요.{" "}
-                    {subscription?.nextBillingDate && (
-                      <>
-                        다음 변경일은{" "}
-                        {formatMonthDay(subscription.nextBillingDate)}이에요.
-                      </>
-                    )}
+            {active === "관심브랜드" &&
+              (currentPlan === "basic" || currentPlan === "pro") && (
+                <div className="max-w-[680px]">
+                  <h1 className="text-2xl font-semibold text-[#0B0E0F]">
+                    관심 브랜드 설정
+                  </h1>
+                  <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
+                    분석에 사용할 브랜드를 관리하세요
                   </p>
-                </div>
 
-                <div className="p-5 border border-line-divider rounded-xl">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[18px] font-semibold text-[#3D3F41]">
-                        지금 적용 중인 브랜드
-                      </h3>
-                      {currentPeriodLabel && (
-                        <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-fill-bg-strong text-tx-alt">
-                          <Icon icon="ph:calendar" className="w-3.5 h-3.5" />
-                          {currentPeriodLabel} 분석에 반영 중
-                        </span>
+                  <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-sm bg-[#EAF2FE]">
+                    <Icon
+                      icon="material-symbols-light:info-rounded"
+                      className="flex-shrink-0 w-5 h-5 text-[#1A75FF]"
+                    />
+                    <p className="text-xs font-medium text-[#1A75FF] leading-[133%]">
+                      최대 {brandCap}개까지 고를 수 있어요. 자리가 남아있으면
+                      언제든 추가할 수 있고, 고른 브랜드를 다른 브랜드로 바꾸는
+                      건 결제일마다 1회 가능해요.{" "}
+                      {subscription?.nextBillingDate && (
+                        <>
+                          다음 변경일은{" "}
+                          {formatMonthDay(subscription.nextBillingDate)}이에요.
+                        </>
                       )}
-                    </div>
-                    {!brandPicksLoading &&
-                      currentBrandPicks.length > 0 &&
-                      (hasChangedThisCycle ? (
-                        <span className="text-xs text-tx-assistive">
-                          {subscription?.nextBillingDate
-                            ? `${formatMonthDay(subscription.nextBillingDate)}부터 다시 변경할 수 있어요`
-                            : "다음 결제일부터 다시 변경할 수 있어요"}
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => setIsBrandChangeModalOpen(true)}
-                          className="px-4 py-2 text-sm font-semibold transition-colors border rounded-lg border-line-divider text-tx-neutral hover:bg-surface-base"
-                        >
-                          변경하기
-                        </button>
-                      ))}
+                    </p>
                   </div>
 
-                  {brandPicksLoading ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-[68px] rounded-xl bg-fill-bg-strong animate-pulse"
-                        />
-                      ))}
-                    </div>
-                  ) : currentBrandPicks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-                      <p className="text-sm text-tx-alt">
-                        아직 선택한 관심 브랜드가 없어요.
-                      </p>
-                      <button
-                        onClick={() => setIsBrandChangeModalOpen(true)}
-                        className="px-4 py-2 text-sm font-semibold text-white rounded-lg bg-fill-primary"
-                      >
-                        브랜드 선택하기
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      {currentBrandPicks.map((brand) => (
-                        <div
-                          key={brand}
-                          className="flex items-center gap-3 p-4 border rounded-xl border-line-divider"
-                        >
-                          <span className="flex items-center justify-center flex-shrink-0 text-sm font-semibold rounded-lg w-9 h-9 bg-fill-bg-strong text-tx-neutral">
-                            {brand.trim().charAt(0)}
+                  <div className="p-5 border border-line-divider rounded-xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-[18px] font-semibold text-[#3D3F41]">
+                          지금 적용 중인 브랜드
+                        </h3>
+                        {currentPeriodLabel && (
+                          <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-fill-bg-strong text-tx-alt">
+                            <Icon icon="ph:calendar" className="w-3.5 h-3.5" />
+                            {currentPeriodLabel} 분석에 반영 중
                           </span>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold truncate text-tx-strong">
-                              {brand}
-                            </p>
-                            {brandCategoryMap[brand] && (
-                              <p className="text-xs truncate text-tx-alt">
-                                {brandCategoryMap[brand]}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                      {!brandPicksLoading &&
+                        currentBrandPicks.length > 0 &&
+                        (currentBrandPicks.length < brandCap ? (
+                          <button
+                            onClick={() => openBrandModal("add")}
+                            className="px-4 py-2 text-sm font-semibold transition-colors border rounded-lg border-line-divider text-tx-neutral hover:bg-surface-base"
+                          >
+                            브랜드 추가하기
+                          </button>
+                        ) : hasChangedThisCycle ? null : (
+                          <button
+                            onClick={() => openBrandModal("change")}
+                            className="px-4 py-2 text-sm font-semibold transition-colors border rounded-lg border-line-divider text-tx-neutral hover:bg-surface-base"
+                          >
+                            변경하기
+                          </button>
+                        ))}
                     </div>
-                  )}
+
+                    {brandPicksLoading ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-[68px] rounded-xl bg-fill-bg-strong animate-pulse"
+                          />
+                        ))}
+                      </div>
+                    ) : currentBrandPicks.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                        <p className="text-sm text-tx-alt">
+                          아직 선택한 관심 브랜드가 없어요.
+                        </p>
+                        <button
+                          onClick={() => openBrandModal("add")}
+                          className="px-4 py-2 text-sm font-semibold text-white rounded-lg bg-fill-primary"
+                        >
+                          브랜드 선택하기
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        {currentBrandPicks.map((brand) => (
+                          <div
+                            key={brand}
+                            className="flex items-center gap-3 p-4 border rounded-xl border-line-divider"
+                          >
+                            <span className="flex items-center justify-center flex-shrink-0 text-sm font-semibold rounded-lg w-9 h-9 bg-fill-bg-strong text-tx-neutral">
+                              {brand.trim().charAt(0)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold truncate text-tx-strong">
+                                {brand}
+                              </p>
+                              {brandCategoryMap[brand] && (
+                                <p className="text-xs truncate text-tx-alt">
+                                  {brandCategoryMap[brand]}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* ── 구독 관리 ── */}
             {active === "구독" && (
@@ -1316,7 +1333,10 @@ export default function SettingsPage() {
                         ) : subscription?.cancelAtPeriodEnd ? (
                           <p className="flex items-center gap-1 mt-0.5 text-sm text-tx-alt">
                             <Icon icon="ph:info" className="w-4 h-4" />
-                            해지 예약됨 · {subscription?.nextBillingDate ?? "-"}
+                            해지 예약됨 ·{" "}
+                            {subscription?.nextBillingDate
+                              ? formatMonthDay(subscription.nextBillingDate)
+                              : "-"}
                             까지 이용 가능
                           </p>
                         ) : subscription?.status === "past_due" ? (
@@ -1337,17 +1357,20 @@ export default function SettingsPage() {
                           </p>
                         ) : (
                           <p className="text-sm text-tx-alt mt-0.5">
-                            다음 결제일 {subscription?.nextBillingDate ?? "-"}
+                            다음 결제일{" "}
+                            {subscription?.nextBillingDate
+                              ? formatMonthDay(subscription.nextBillingDate)
+                              : "-"}
                           </p>
                         )}
                       </>
                     )}
                   </div>
-                  {currentPlan !== "pro" && (
+                  {currentPlan !== "enterprise" && (
                     <button
                       onClick={() => {
                         if (effectivePlan === "none") {
-                          // 아직 체험 미시작 → 3일 무료 체험 시작
+                          // 아직 체험 미시작 → 5일 무료 체험 시작
                           if (!isStartingTrial) handleStartTrial();
                         } else if (trialing || currentPlan === "free") {
                           // 체험 중이거나 레거시 free → 결제로 전환
@@ -1366,7 +1389,7 @@ export default function SettingsPage() {
                       }`}
                     >
                       {effectivePlan === "none"
-                        ? "3일 무료 체험 시작하기"
+                        ? "5일 무료 체험 시작하기"
                         : trialing
                           ? "결제하기"
                           : currentPlan === "free"
@@ -1400,10 +1423,10 @@ export default function SettingsPage() {
                       PLAN_RANK[plan.key] < PLAN_RANK[currentPlan];
                     // effectivePlan === "none": 아직 무료 체험도 시작 안 한 상태.
                     const isTrialAvailable = effectivePlan === "none";
-                    // Pro·Enterprise는 결제 대상이 아니라 항상 "문의하기".
-                    const isContactOnly =
-                      plan.key === "pro" || plan.key === "enterprise";
-                    // Basic 열은 체험 미시작이면 "3일 무료 체험", 그 외엔 결제.
+                    // Enterprise만 결제 대상이 아니라 항상 "문의하기" — Basic·
+                    // Pro는 둘 다 실제 결제 버튼으로 동작한다.
+                    const isContactOnly = plan.key === "enterprise";
+                    // Basic 열은 체험 미시작이면 "5일 무료 체험", 그 외엔 결제.
                     const isBasicTrialStart =
                       plan.key === "basic" && isTrialAvailable;
                     const btnLabel = isCurrent
@@ -1411,15 +1434,15 @@ export default function SettingsPage() {
                       : isContactOnly
                         ? "문의하기"
                         : isBasicTrialStart
-                          ? "3일 무료 체험 시작하기"
+                          ? "5일 무료 체험 시작하기"
                           : isTrialBasic
                             ? "결제하기"
                             : plan.key === "free"
                               ? isTrialAvailable
                                 ? "무료체험 시작하기"
                                 : "무료 체험"
-                              : plan.key === "basic"
-                                ? isSecretEntry
+                              : plan.key === "basic" || plan.key === "pro"
+                                ? plan.key === "basic" && isSecretEntry
                                   ? "비밀 특가로 시작하기"
                                   : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`
                                 : "문의하기";
@@ -1431,7 +1454,7 @@ export default function SettingsPage() {
                     return (
                       <div
                         key={plan.label}
-                        className={`flex flex-col flex-1 ${plan.key === "basic" ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
+                        className={`flex flex-col flex-1 ${plan.key === "pro" ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
                         style={{ padding: "20px 16px", gap: 20 }}
                       >
                         {/* 플랜명 + 배지 */}
@@ -1468,30 +1491,33 @@ export default function SettingsPage() {
                             ))}
                         </div>
 
-                        {/* 가격 영역 */}
-                        <div className="flex flex-col gap-0.5">
+                        {/* 가격 영역 — Basic의 자연 높이(2줄 할인 +
+                            가격줄 = 68px)를 최소 높이로 잡아, Basic/Pro는
+                            지금처럼 그대로 두고 Enterprise(할인 없이
+                            가격+안내문 2줄)만 아래에 여백이 생겨 버튼
+                            위치가 맞춰지게 한다. */}
+                        <div className="flex min-h-[68px] flex-col gap-0.5">
                           {plan.originalPrice && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs line-through text-[#A1A3A5]">
+                            <div className="flex min-h-[34px] flex-col justify-center gap-0.5">
+                              <span className="text-xs whitespace-nowrap line-through text-[#A1A3A5]">
                                 정가 {plan.originalPrice}
                               </span>
-                              <span className="text-xs text-[#3E7EFF] font-semibold">
+                              <span className="text-xs whitespace-nowrap text-[#3E7EFF] font-semibold">
                                 {plan.discount}
                               </span>
                             </div>
                           )}
                           <p className="text-[24px] font-semibold leading-[133%] tracking-[-0.48px] text-[#0B0E0F]">
                             {plan.price}
-                            {plan.key === "basic" && (
+                            {(plan.key === "basic" || plan.key === "pro") && (
                               <span className="text-sm font-medium text-[#6F7173] ml-0.5">
                                 {plan.sub}
                               </span>
                             )}
                           </p>
                           {(plan.key === "free" ||
-                            plan.key === "pro" ||
                             plan.key === "enterprise") && (
-                            <p className="text-[12px] font-medium leading-[133%] text-[#6F7173]">
+                            <p className="mt-1.5 text-[12px] font-medium leading-[133%] text-[#6F7173]">
                               {plan.sub}
                             </p>
                           )}
@@ -1518,7 +1544,9 @@ export default function SettingsPage() {
                               if (isTrialAvailable) handleStartTrial();
                               return;
                             }
-                            if (plan.key === "basic") setPendingPlan("basic");
+                            if (plan.key === "basic" || plan.key === "pro") {
+                              setPendingPlan(plan.key);
+                            }
                           }}
                           className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
                             isCurrent || isFreeDisabled
@@ -1766,7 +1794,7 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              {currentPlan !== "free" && (
+              {currentPlan !== "free" && currentPlan !== "enterprise" && (
                 <div className="flex w-full flex-col gap-2 rounded-xl bg-[#EFFBF3] p-3">
                   <span className="type-body-xsmall text-tx-alt">
                     인터뷰 참여 리워드
@@ -1774,7 +1802,7 @@ export default function SettingsPage() {
                   <p className="type-title-medium text-tx-strong">
                     최근 결제한 1개월권{" "}
                     <span className="text-status-warning">
-                      {currentPlan === "pro" ? "59,000원" : "19,000원"}
+                      {planDefs.find((p) => p.key === currentPlan)?.price}
                     </span>{" "}
                     페이백
                   </p>
@@ -1933,11 +1961,20 @@ export default function SettingsPage() {
               {planDefs.find((p) => p.key === pendingPlan)?.label} 요금제로
               시작할게요
             </h2>
-            <p className="mb-6 text-sm leading-relaxed text-tx-alt">
-              {planDefs.find((p) => p.key === pendingPlan)?.price}
-              {planDefs.find((p) => p.key === pendingPlan)?.sub}에 정기결제가
-              시작됩니다. 진행 전 아래 내용을 확인해주세요.
-            </p>
+            <div className="mb-6">
+              <p className="text-sm leading-relaxed text-tx-alt">
+                {planDefs.find((p) => p.key === pendingPlan)?.price}
+                {planDefs.find((p) => p.key === pendingPlan)?.sub}에 정기결제가
+                시작됩니다. 진행 전 아래 내용을 확인해주세요.
+              </p>
+              {pendingPlan === "basic" && !isSecretEntry && (
+                <p className="mt-2 text-xs leading-relaxed text-tx-assistive">
+                  결제 이력이 없는 계정의 첫 결제 시 29,000원(최초 1회)이
+                  청구되고, 다음 결제부터 정가(59,000원)가 청구돼요. 이미 결제한
+                  적이 있다면 첫 결제부터 정가가 청구돼요.
+                </p>
+              )}
+            </div>
 
             <label className="flex items-start gap-2 p-4 mb-6 cursor-pointer select-none bg-surface-base rounded-xl">
               <input
@@ -1990,6 +2027,7 @@ export default function SettingsPage() {
       <InterestBrandModal
         isOpen={isBrandChangeModalOpen}
         mode="change"
+        lockExistingPicks={brandModalIntent === "add"}
         onClose={() => setIsBrandChangeModalOpen(false)}
         onComplete={fetchBrandPicks}
       />
