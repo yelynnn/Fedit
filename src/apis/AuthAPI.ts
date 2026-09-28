@@ -1,4 +1,5 @@
 import { axiosInstance } from "./AxiosInstance";
+import { getAttribution } from "@/lib/attribution";
 
 // const PostLogin = async (password: string) => {
 //   try {
@@ -31,7 +32,11 @@ export interface PersonalSignupBody {
 
 const PostPersonalSignup = async (body: PersonalSignupBody) => {
   try {
-    const res = await axiosInstance.post("/auth/signup/personal", body);
+    // 광고 유입 경로를 함께 보낸다. 값이 없으면 first/last 모두 null.
+    const res = await axiosInstance.post("/auth/signup/personal", {
+      ...body,
+      attribution: getAttribution(),
+    });
     return res.data;
   } catch (error: any) {
     if (error.response) {
@@ -84,9 +89,12 @@ const PostLogin = async (email: string, password: string) => {
 
 const PostCorporateSignupConfirm = async (email: string, auth_code: string) => {
   try {
+    // 기업 가입은 auth-request → confirm 2단계이고, 계정은 confirm에서
+    // 만들어진다(임시 비밀번호 발송). 그래서 유입 경로도 여기에 싣는다.
     const res = await axiosInstance.post("/auth/signup/corporate/confirm", {
       email,
       auth_code,
+      attribution: getAttribution(),
     });
     return res.data as { message: string; ok: boolean };
   } catch (error: any) {

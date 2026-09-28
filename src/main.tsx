@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import * as amplitude from "@amplitude/unified";
 import "./index.css";
 import App from "./App.tsx";
+import { captureAttribution } from "@/lib/attribution";
 
 // Amplitude(분석 + 세션 리플레이) — 앱 전체에서 한 번만 초기화한다.
 // initAll이어야 세션 리플레이가 같이 붙는다(init만 쓰면 분석만 켜짐).
@@ -16,5 +17,9 @@ if (!AMPLITUDE_API_KEY) {
     sessionReplay: { sampleRate: 0.2 },
   });
 }
+
+// 광고 유입 경로(UTM) 저장 — 어느 페이지로 들어오든 첫 로드 때 한 번 잡는다.
+// SPA라 화면이 바뀌면 쿼리스트링이 사라지므로 렌더 전에 호출해야 한다.
+captureAttribution();
 
 createRoot(document.getElementById("root")!).render(<App />);
