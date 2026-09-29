@@ -41,8 +41,8 @@ const CorporateVerifyPage = () => {
           clearLandingEntry();
           localStorage.setItem(SHOW_PRICING_AFTER_SIGNUP_KEY, "true");
         }
-        // 기업(이메일) 무료 체험 가입 완료 — GA4/메타 전환 이벤트.
-        track("trial_started", { plan: "basic", signup_method: "email" });
+        // 기업 회원가입 완료 — GA4/메타 전환 이벤트. 체험 시작은 따로.
+        track("sign_up", { signup_method: "email", account_type: "company" });
         setSuccessMessage(res.message);
       } else {
         setErrorMessage(res.message || "인증에 실패했습니다.");

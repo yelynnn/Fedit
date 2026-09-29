@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useUIStore } from "@/stores/UIStore";
 import { useUserStore } from "@/stores/UserStore";
+import { resetUser } from "@/lib/analytics";
 import feditLogo from "@/assets/logo/feditLogo.svg";
 import snbLogoButton from "@/assets/logo/SNB_Logo button.svg";
 import profileIcon from "@/assets/etc/profileIcon.svg";
@@ -66,6 +67,7 @@ export default function Sidebar() {
     localStorage.removeItem("userName");
     localStorage.removeItem("userEmail");
     useUserStore.getState().reset();
+    resetUser();
     window.location.href = "/login";
   };
 

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/AuthStore";
+import { resetUser } from "@/lib/analytics";
 
 function SessionExpiredModal() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ function SessionExpiredModal() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     setSessionExpired(false);
+    resetUser();
     navigate("/login");
   };
 

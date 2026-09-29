@@ -21,6 +21,7 @@ import { getBrandCap } from "@/lib/brandCap";
 
 import { GetProductList } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
+import { trackFeatureViewed, trackProductsLoaded } from "@/lib/analytics";
 
 function NewProductAnalysis() {
   const {
@@ -45,6 +46,10 @@ function NewProductAnalysis() {
   // 나갈 수 있는데, 이전 요청을 취소해서 늦게 도착한 빈 필터 응답이 올바른
   // 필터 응답을 덮어쓰지 못하게 한다.
   const fetchAbortRef = useRef<AbortController | null>(null);
+  // 이 탭 뷰(마운트)당 feature_viewed(product_count 포함)를 딱 한 번만
+  // 보내기 위한 플래그 — 필터를 바꿔서 다시 불러올 때마다 또 보내면
+  // "화면 조회" 지표가 아니라 "필터 변경" 지표가 돼버린다.
+  const hasTrackedViewRef = useRef(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const clickedItemRef = useRef<string | null>(null);
   const itemButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -120,9 +125,18 @@ function NewProductAnalysis() {
         if (fetchAbortRef.current !== controller) return;
 
         const newList = Array.isArray(data?.items) ? data.items : [];
+        // 처음 로드·스크롤 추가 로드·필터 변경 재조회 모두, 이번 회차에 새로
+        // 불러온 개수만 보낸다(합계 = 불러와 본 상품 수).
+        if (newList.length > 0) {
+          trackProductsLoaded("product_analysis", newList.length, { brandList });
+        }
 
         if (!cursor) {
           setResultLists(newList);
+          if (!hasTrackedViewRef.current) {
+            hasTrackedViewRef.current = true;
+            trackFeatureViewed("상품 분석", brandList, newList.length);
+          }
         } else {
           setResultLists((prev) => [...prev, ...newList]);
         }

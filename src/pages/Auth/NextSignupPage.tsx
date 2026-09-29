@@ -81,8 +81,9 @@ const NextSignupPage = () => {
         clearLandingEntry();
         localStorage.setItem(SHOW_PRICING_AFTER_SIGNUP_KEY, "true");
       }
-      // 개인(이메일) 무료 체험 가입 완료 — GA4/메타 전환 이벤트.
-      track("trial_started", { plan: "basic", signup_method: "email" });
+      // 개인 회원가입 완료 — GA4/메타 전환 이벤트. 가입만 한 상태라 요금제는
+      // 없다(체험 시작은 trial_started가 체험이 실제로 열릴 때 따로 나간다).
+      track("sign_up", { signup_method: "email", account_type: "personal" });
       setShowSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (error: any) {

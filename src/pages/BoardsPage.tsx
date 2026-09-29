@@ -11,6 +11,7 @@ import {
   type BoardItemThumbnail,
   type BoardListItem,
 } from "@/apis/BoardAPI";
+import { trackFeatureViewed } from "@/lib/analytics";
 
 function BoardThumbnail({ board }: { board: BoardListItem }) {
   return (
@@ -56,7 +57,12 @@ export default function BoardsPage() {
     setItemsLoading(true);
     GetBoardItems(selectedBoardId)
       .then((items) => {
-        if (!canceled) setBoardItems(items);
+        if (!canceled) {
+          setBoardItems(items);
+          // 탭에 막 들어왔을 때 뜨는 feature_viewed(product_count 없음)와
+          // 별개로, 보드를 열 때마다(=상품 수를 아는 시점) 한 번 더 보낸다.
+          trackFeatureViewed("내 보드", [], items.length);
+        }
       })
       .catch(() => {
         if (!canceled) setBoardItems([]);

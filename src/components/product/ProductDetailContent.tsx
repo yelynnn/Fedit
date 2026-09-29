@@ -30,6 +30,7 @@ import defaultImg from "@/assets/logo/defaultImg.svg";
 import AIAnalysisBox from "./AIAnalysisBox";
 import TrendIndexBoxMock from "./TrendIndexBoxMock";
 import { formatSalesCount } from "@/lib/utils";
+import { trackFolderSave, trackProductDetailViewed } from "@/lib/analytics";
 
 const hasValue = (v: string | string[] | undefined | null) =>
   Array.isArray(v)
@@ -234,6 +235,12 @@ export default function ProductDetailContent({
     try {
       await PostAddBoardItem(selectedBoard.boardId, effectiveId);
       setSavedItemcodes((prev) => new Set(prev).add(effectiveId));
+      trackFolderSave(
+        effectiveId,
+        detailData?.brand,
+        detailData?.categories?.[0]?.main_category ??
+          detailData?.categories?.[0]?.category,
+      );
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       setToast({
         boardName: selectedBoard.name,
@@ -308,13 +315,24 @@ export default function ProductDetailContent({
   useEffect(() => {
     setDetailError(null);
     if (previewSnapshot) {
-      setDetailData(mapSnapshotToApiDetail(previewSnapshot));
+      const mapped = mapSnapshotToApiDetail(previewSnapshot);
+      setDetailData(mapped);
+      trackProductDetailViewed(
+        mapped.itemcode || String(previewSnapshot.temp_item_id ?? "unknown"),
+        mapped.brand,
+        mapped.categories?.[0]?.main_category ?? mapped.categories?.[0]?.category,
+      );
       return;
     }
     if (!effectiveId) return;
 
     if (product && product.itemcode === effectiveId) {
       setDetailData(product);
+      trackProductDetailViewed(
+        effectiveId,
+        product.brand,
+        product.categories?.[0]?.main_category ?? product.categories?.[0]?.category,
+      );
       return;
     }
 
@@ -325,7 +343,16 @@ export default function ProductDetailContent({
         const res: ApiDetail = itemcodeOverride
           ? await GetProductByItemCode(effectiveId)
           : await GetDetailInfo({ itemcode: effectiveId });
-        if (!canceled) setDetailData(res ?? null);
+        if (!canceled) {
+          setDetailData(res ?? null);
+          if (res) {
+            trackProductDetailViewed(
+              effectiveId,
+              res.brand,
+              res.categories?.[0]?.main_category ?? res.categories?.[0]?.category,
+            );
+          }
+        }
       } catch (error: any) {
         if (canceled) return;
         setDetailData(null);

@@ -17,9 +17,20 @@ import {
   isPendingBasicDowngrade,
   clearPendingBasicDowngrade,
 } from "@/lib/pendingDowngrade";
-import { useSubscriptionStore } from "@/stores/SubscriptionStore";
-import { trackFeatureViewed } from "@/lib/analytics";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+  isTrial,
+} from "@/stores/SubscriptionStore";
+import {
+  trackFeatureViewed,
+  trackBrandFilterChanged,
+  identifyUser,
+  trackTrialStartedOnce,
+} from "@/lib/analytics";
 import { GetBrandPicks } from "@/apis/AnalysisAPI";
+import { GetMe } from "@/apis/AuthAPI";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -34,6 +45,7 @@ function RootNewLayout() {
   } = useUIStore();
   const selectedTab = useFilterStore((s) => s.selectedTab);
   const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
+  const brandList = useFilterStore((s) => s.brandList);
   const subscription = useSubscriptionStore((s) => s.subscription);
   const subscriptionLoaded = useSubscriptionStore((s) => s.loaded);
 
@@ -41,9 +53,32 @@ function RootNewLayout() {
   // URL이 안 바뀌는 구조라 GA4 자동 페이지 조회로는 못 잡는다. selectedTab은
   // 새로고침에도 유지되는(persist) 값이라, 특정 탭에 머문 채로 새로고침해도
   // 이 effect가 마운트 시 한 번 더 쏴줘서 "최초 진입"을 놓치지 않는다.
+  // brandList는 탭 전환 시점의 값만 실어 보낸다 — 탭 안 바꾸고 브랜드만
+  // 바꿀 때마다 다시 쏘면 "화면 조회" 지표가 아니라 "필터 변경" 지표가
+  // 돼버리므로, 일부러 deps에서 뺐다.
+  // "상품 분석"은 product_count(첫 로드된 상품 수)를 실어야 해서, 그 값을
+  // 실제로 아는 NewProductAnalysis.tsx 안에서 자체적으로 보낸다 — 여기서
+  // 또 보내면 같은 조회에 이벤트가 두 번 나간다. "내 보드"는 여기서도
+  // 그대로 보내되(탭에 막 들어왔을 땐 보드 목록만 보여서 상품 수가 없다),
+  // 특정 보드를 열면 BoardsPage.tsx가 product_count를 실어 한 번 더 보낸다.
   useEffect(() => {
-    trackFeatureViewed(selectedTab);
+    if (selectedTab === "상품 분석") return;
+    trackFeatureViewed(selectedTab, brandList);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTab]);
+
+  // 같은 탭 안에서 브랜드 필터만 바꿀 때 — 첫 렌더(복원된 값)는 건너뛰고,
+  // 여러 브랜드를 연달아 체크하는 경우를 한 건으로 묶으려고 1초 뒤에 보낸다.
+  const brandFilterMountedRef = useRef(false);
+  useEffect(() => {
+    if (!brandFilterMountedRef.current) {
+      brandFilterMountedRef.current = true;
+      return;
+    }
+    const t = setTimeout(() => trackBrandFilterChanged(selectedTab, brandList), 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brandList]);
 
   const handleCloseInterestBrandModal = () => {
     closeInterestBrandModal();
@@ -59,6 +94,35 @@ function RootNewLayout() {
     openSettingsModal("구독");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 로그인 직후든 새로고침에 의한 세션 복원이든, 인증된 상태로 이 화면이
+  // 뜨는 시점은 결국 여기 한 곳이라 Amplitude 사용자 식별을 여기서만
+  // 처리한다. plan/status가 바뀔 때(결제·체험 전환 등)도 다시 불러서
+  // 프로필을 최신으로 유지한다.
+  useEffect(() => {
+    // 구독이 없는(가입만 한) 사용자도 식별해야 해서 subscription이 null이어도 진행한다.
+    if (!subscriptionLoaded) return;
+    (async () => {
+      try {
+        const [me, monitoredBrands] = await Promise.all([
+          GetMe(),
+          GetBrandPicks().catch(() => []),
+        ]);
+        // 가입만 한 사람은 none, 체험 중이면 trial, 결제해야 basic/pro/enterprise.
+        const billing = toBillingPlan(getEffectivePlan(subscription));
+        const plan = isTrial(subscription)
+          ? "trial"
+          : billing === "free"
+            ? "none"
+            : billing;
+        identifyUser(me.email, plan, me.name, monitoredBrands);
+        if (plan === "trial") trackTrialStartedOnce(me.email, subscription?.plan ?? "basic");
+      } catch {
+        // 식별 실패는 무시한다 — 화면 동작에 영향을 주면 안 된다.
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subscriptionLoaded, subscription?.plan, subscription?.status]);
 
   // pro→basic 다운그레이드 신청 시 SettingsPage가 남겨둔 "적용 대기" 플래그를
   // 여기서 소비한다. 다음 결제일이 지나 실제로 basic으로 전환된 뒤 첫 진입에서만

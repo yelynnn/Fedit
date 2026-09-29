@@ -15,6 +15,7 @@ import {
 import { getTossPayments } from "@/lib/toss";
 import ChangePasswordModal from "@/components/common/ChangePasswordModal";
 import { PostLogout, DeleteWithdraw } from "@/apis/AuthAPI";
+import { resetUser } from "@/lib/analytics";
 import { AI_GUIDE_TOPICS, getGuideTopicsByCategory } from "@/content/aiGuides";
 import GuideDetailView from "@/components/settings/guide/GuideDetailView";
 import GuideCard from "@/components/settings/GuideCard";
@@ -537,6 +538,7 @@ export default function SettingsPage() {
       localStorage.removeItem("userName");
       localStorage.removeItem("userEmail");
       useUserStore.getState().reset();
+      resetUser();
       window.location.href = "/login";
     }
   };
@@ -1895,6 +1897,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   localStorage.clear();
+                  resetUser();
                   window.location.href = "/login";
                 }}
                 className="flex h-[46px] w-full items-center justify-center gap-1 rounded-md bg-fill-primary type-title-medium text-tx-inverse"

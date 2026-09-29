@@ -51,6 +51,7 @@ import {
   isLockedPlan,
 } from "@/stores/SubscriptionStore";
 import SubscriptionLockOverlay from "@/components/common/SubscriptionLockOverlay";
+import { trackProductsLoaded } from "@/lib/analytics";
 
 const PLATFORMS = ["무신사", "29CM", "W컨셉", "플랫폼 통합"];
 const CATEGORIES = ["상의", "아우터", "바지", "원피스", "스커트"];
@@ -169,6 +170,9 @@ export default function RankBox() {
           .map((item, index) => ({ ...item, position: index + 1 }));
         setTestRankingList(sorted);
         setActiveTempItemId(sorted[0]?.temp_item_id ?? null);
+        trackProductsLoaded("realtime_ranking", sorted.length, {
+          platform: selectedPlatform,
+        });
       })
       .catch(() => {
         setTestRankingList([]);

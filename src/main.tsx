@@ -9,7 +9,14 @@ import { captureAttribution } from "@/lib/attribution";
 // sampleRate 0.2 — 기본값 1(전수 녹화)에서 낮춘 것. 고객사 상품 기획 화면이
 // 녹화되는 문제 때문이며, 개인정보처리방침 정비 후 올린다.
 const AMPLITUDE_API_KEY = import.meta.env.VITE_AMPLITUDE_API_KEY;
-if (!AMPLITUDE_API_KEY) {
+// localhost(로컬 개발)에서는 초기화 자체를 건너뛴다 — 실제 사용자 지표에
+// 테스트 데이터가 섞이는 걸 막는다.
+const isLocalhost = ["localhost", "127.0.0.1"].includes(
+  window.location.hostname,
+);
+if (isLocalhost) {
+  console.info("Amplitude disabled on localhost");
+} else if (!AMPLITUDE_API_KEY) {
   console.warn("Amplitude API key missing — analytics disabled");
 } else {
   amplitude.initAll(AMPLITUDE_API_KEY, {

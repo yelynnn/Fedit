@@ -12,6 +12,8 @@ import { GetBrandList, GetBrandPicks, PutBrandPicks } from "@/apis/AnalysisAPI";
 import pointIcon from "@/assets/etc/pointIcon.svg";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 import { getBrandCap } from "@/lib/brandCap";
+import { useUserStore } from "@/stores/UserStore";
+import { updateMonitoredBrands } from "@/lib/analytics";
 
 type ApiCategory = { label: string; brands: string[] };
 
@@ -36,6 +38,7 @@ export default function InterestBrandModal({
   mode = "signup",
   lockExistingPicks = false,
 }: Props) {
+  const email = useUserStore((s) => s.email);
   const brandList = useFilterStore((s) => s.brandList);
   const addBrand = useFilterStore((s) => s.addBrand);
   const removeBrand = useFilterStore((s) => s.removeBrand);
@@ -234,6 +237,7 @@ export default function InterestBrandModal({
     try {
       await PutBrandPicks(brandList);
       setInterestBrandPicks(brandList);
+      updateMonitoredBrands(email, brandList);
       if (consumesMonthlyChange) {
         setLastBrandPicksSavedAt(new Date().toISOString());
       }
