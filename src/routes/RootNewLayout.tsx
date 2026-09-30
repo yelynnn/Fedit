@@ -104,9 +104,17 @@ function RootNewLayout() {
     if (!subscriptionLoaded) return;
     (async () => {
       try {
+        // GET /brand/picks는 Basic/Pro 계정에만 있는 개념이라 Enterprise·
+        // Free(가입만 한 상태 포함) 계정으로 부르면 서버가 403을 낸다 —
+        // 콘솔에 불필요한 에러가 남지 않도록 애초에 안 부른다.
+        const rawPlan = subscription?.plan;
+        const hasBrandPicks =
+          rawPlan === "basic" ||
+          rawPlan === "basic_secret" ||
+          rawPlan === "pro";
         const [me, monitoredBrands] = await Promise.all([
           GetMe(),
-          GetBrandPicks().catch(() => []),
+          hasBrandPicks ? GetBrandPicks().catch(() => []) : Promise.resolve([]),
         ]);
         // 가입만 한 사람은 none, 체험 중이면 trial, 결제해야 basic/pro/enterprise.
         const billing = toBillingPlan(getEffectivePlan(subscription));

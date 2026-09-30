@@ -686,9 +686,9 @@ export default function ProductDetailContent({
                       {Number(detailData.views).toLocaleString("ko-KR")}
                     </div>
                   )}
-                  {detailData.sales != null && (
+                  {formatSalesCount(detailData.sales) && (
                     <div className="px-3 py-1.5 bg-data-orange-light text-status-warning text-xs font-semibold rounded-lg">
-                      누적판매 {formatSalesCount(detailData.sales!)}
+                      누적판매 {formatSalesCount(detailData.sales)}
                     </div>
                   )}
                 </div>

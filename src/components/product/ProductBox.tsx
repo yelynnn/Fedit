@@ -67,20 +67,25 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
         </span>
 
         {/* 5. 누적 조회수 & 누적 판매 (데이터가 있을 때만 렌더링) */}
-        {(product.views || product.sales) && (
-          <div className="flex flex-wrap gap-1">
-            {product.views && (
-              <div className="flex items-center justify-center gap-1 rounded bg-[var(--color-fill-normal-interaction-pressed)] px-2 py-1 type-title-xsmall text-tx-alt">
-                누적조회수 {Number(product.views).toLocaleString("ko-KR")}
+        {(() => {
+          const salesText = formatSalesCount(product.sales);
+          return (
+            (product.views || salesText) && (
+              <div className="flex flex-wrap gap-1">
+                {product.views && (
+                  <div className="flex items-center justify-center gap-1 rounded bg-[var(--color-fill-normal-interaction-pressed)] px-2 py-1 type-title-xsmall text-tx-alt">
+                    누적조회수 {Number(product.views).toLocaleString("ko-KR")}
+                  </div>
+                )}
+                {salesText && (
+                  <div className="flex items-center justify-center gap-1 rounded bg-[var(--color-fill-normal-interaction-pressed)] px-2 py-1 type-title-xsmall text-tx-alt">
+                    누적판매 {salesText}
+                  </div>
+                )}
               </div>
-            )}
-            {product.sales!=1 && (
-              <div className="flex items-center justify-center gap-1 rounded bg-[var(--color-fill-normal-interaction-pressed)] px-2 py-1 type-title-xsmall text-tx-alt">
-                누적판매 {formatSalesCount(product.sales!)}
-              </div>
-            )}
-          </div>
-        )}
+            )
+          );
+        })()}
 
       </div>
     </section>
