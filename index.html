@@ -1,14 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Google Tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-P6C7B44R"></script>
+    <!-- Google Tag Manager (GTM-P6C7B44R) -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+
+      // 실서비스 주소에서만 GTM을 불러온다. localhost와 Vercel 미리보기
+      // 배포(*-git-*.vercel.app)에서는 로드되지 않으므로, GA4와 메타 픽셀
+      // 양쪽 모두에 테스트 데이터가 나가지 않는다.
+      // GTM을 안 불러와도 analytics.ts의 dataLayer.push는 그대로 동작한다 —
+      // 배열에 쌓이기만 하고 밖으로 전송되지 않는다.
+      // 커스텀 도메인을 붙이면 이 목록에 추가할 것.
+      // 로컬에서 GTM 동작을 확인해야 할 땐 잠시 'localhost'를 넣었다 뺀다.
+      var PROD_HOSTS = ['fedit.vercel.app'];
+      if (PROD_HOSTS.indexOf(location.hostname) !== -1) {
+        var gtmScript = document.createElement('script');
+        gtmScript.async = true;
+        gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-P6C7B44R';
+        document.head.appendChild(gtmScript);
+      }
     </script>
-    <!-- End Google Tag (gtag.js) -->
+    <!-- End Google Tag Manager -->
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/feditIcon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

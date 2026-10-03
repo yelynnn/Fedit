@@ -6,6 +6,7 @@ import {
   GetDetailList,
   GetPatternList,
   GetCategoryList,
+  GetSeasonList,
   type CategoryGroup,
 } from "@/apis/AnalysisAPI";
 
@@ -16,11 +17,15 @@ export default function useFilteredData() {
   const [apiDetails, setApiDetails] = useState<string[]>([]);
   const [apiPatterns, setApiPatterns] = useState<string[]>([]);
   const [apiCategories, setApiCategories] = useState<CategoryGroup[]>([]);
+  // "23FW"·"25SS"처럼 "YY"+시즌 조합 코드 원본 목록 — 연도/시즌을 따로
+  // 골랐을 때 실제로 존재하는 코드로 풀어 보내는 데 쓴다.
+  const [apiSeasons, setApiSeasons] = useState<string[]>([]);
 
   useEffect(() => {
     GetDetailList().then(setApiDetails);
     GetPatternList().then(setApiPatterns);
     GetCategoryList().then(setApiCategories);
+    GetSeasonList().then(setApiSeasons);
   }, []);
 
   const allBrands = useMemo(() => Object.values(brandData).flat(), []);
@@ -63,14 +68,22 @@ export default function useFilteredData() {
     [filterList, allTypes]
   );
 
+  // 백엔드는 "26FW"처럼 연도+시즌이 합쳐진 코드로만 필터링한다. 연도나
+  // 시즌 중 하나만 고른 경우, 예전엔 "FW"나 "26"처럼 반쪽짜리 코드를 그대로
+  // 보내서 어떤 실제 코드와도 안 맞아 결과가 하나도 안 왔다 — 실제로 존재하는
+  // 코드 목록(apiSeasons)에서 맞는 것들을 다 찾아 배열로 보낸다.
   const selectedSeasons = useMemo(() => {
     if (selectedYear && selectedSeason) {
       return [`${selectedYear.slice(-2)}${selectedSeason}`];
     }
-    if (selectedYear) return [selectedYear.slice(-2)];
-    if (selectedSeason) return [selectedSeason];
+    if (selectedYear) {
+      return apiSeasons.filter((s) => s.startsWith(selectedYear.slice(-2)));
+    }
+    if (selectedSeason) {
+      return apiSeasons.filter((s) => s.endsWith(selectedSeason));
+    }
     return [];
-  }, [selectedYear, selectedSeason]);
+  }, [selectedYear, selectedSeason, apiSeasons]);
 
   return {
     selectedBrands,

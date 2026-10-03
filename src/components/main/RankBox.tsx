@@ -205,6 +205,11 @@ export default function RankBox() {
     setIsMonthModalOpen(false);
   };
 
+  // "이번달" 버튼 — 어느 달을 보고 있든 오늘 날짜(이번 달)로 바로 복귀한다.
+  const goToCurrentMonth = () => {
+    setCurrentDate(dayjs());
+  };
+
   // 아직 누적된 월간 분석 데이터가 없어서(8월부터 제공 예정) 이전달 이동은
   // 잠시 막아두고, 누른 버튼 바로 아래에 안내 토스트만 3초간 보여준다.
   const [dateNoticeTarget, setDateNoticeTarget] = useState<
@@ -246,9 +251,16 @@ export default function RankBox() {
             )}
           </div>
 
-          <span className="flex h-[34px] items-center justify-center gap-2 rounded-full border border-line-alt bg-white px-3 py-2 text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-neutral">
-            {isCurrentMonth ? "이번달" : `${currentDate.month() + 1}월`}
-          </span>
+          <button
+            type="button"
+            onClick={goToCurrentMonth}
+            disabled={isCurrentMonth}
+            className={`flex h-[34px] items-center justify-center gap-2 rounded-full border border-line-alt bg-white px-3 py-2 text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-neutral transition-colors ${
+              isCurrentMonth ? "cursor-default" : "hover:bg-fill-bg-strong"
+            }`}
+          >
+            이번달
+          </button>
 
           <div className="relative">
             <button

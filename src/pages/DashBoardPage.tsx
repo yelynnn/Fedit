@@ -141,6 +141,12 @@ function DashBoardPage() {
     setCurrentDate(dayjs(`${value}-01`));
   };
 
+  // "이번달" 버튼 — 어느 달을 보고 있든 오늘 날짜(이번 달)로 바로 복귀한다.
+  const goToCurrentMonth = () => {
+    setSelectedMonth("");
+    setCurrentDate(dayjs());
+  };
+
   const handlePrevMonth = () => {
     if (!canGoPrev) return;
     goToMonth(prevMonth.format("YYYY-MM"));
@@ -151,8 +157,7 @@ function DashBoardPage() {
     const target = currentDate.add(1, "month");
     if (target.isSame(dayjs(), "month")) {
       // 실제 이번 달로 돌아오는 경우 — 오늘 날짜 그대로 복귀.
-      setSelectedMonth("");
-      setCurrentDate(dayjs());
+      goToCurrentMonth();
       return;
     }
     goToMonth(target.format("YYYY-MM"));
@@ -299,9 +304,16 @@ function DashBoardPage() {
               )}
             </div>
 
-            <span className="flex h-[34px] items-center justify-center gap-2 rounded-full border border-line-alt bg-white px-3 py-2 text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-neutral">
-              {isCurrentMonth ? "이번달" : `${currentDate.month() + 1}월`}
-            </span>
+            <button
+              type="button"
+              onClick={goToCurrentMonth}
+              disabled={isCurrentMonth}
+              className={`flex h-[34px] items-center justify-center gap-2 rounded-full border border-line-alt bg-white px-3 py-2 text-sm font-medium leading-[1.43] tracking-[-0.07px] text-tx-neutral transition-colors ${
+                isCurrentMonth ? "cursor-default" : "hover:bg-fill-bg-strong"
+              }`}
+            >
+              이번달
+            </button>
 
             <div className="relative">
               <button
