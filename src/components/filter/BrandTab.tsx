@@ -16,6 +16,7 @@ import {
 } from "@/apis/AnalysisAPI";
 import DateNavNotice from "@/components/main/DateNavNotice";
 import type { ApiDetail } from "@/types/Product";
+import { formatSalesCount } from "@/lib/utils";
 
 type Props = { isProductTab: boolean };
 
@@ -239,6 +240,14 @@ function BrandTab({ isProductTab }: Props) {
           r[k] = Array.isArray(p.vlm?.detail) ? p.vlm.detail.join(", ") : "";
         else if (k === "current_price" || k === "regular_price")
           r[k] = formatPrice((p as any)[k]);
+        // 판매량은 화면과 동일하게 표시한다 — 값이 없거나 1 이하(백엔드가
+        // 데이터 없을 때 내려주는 값)는 빈칸, 500건 이하는 "500건 이하".
+        else if (k === "sales") r[k] = formatSalesCount(p.sales) ?? "";
+        // 평점 0은 실제 평점이 아니라 값이 없는 것이라 빈칸으로 둔다.
+        else if (k === "rating") {
+          const rating = Number(p.rating);
+          r[k] = Number.isFinite(rating) && rating > 0 ? rating : "";
+        }
         else r[k] = (p as any)[k] ?? "";
       });
       ws.addRow(r);
@@ -300,8 +309,13 @@ function BrandTab({ isProductTab }: Props) {
     const blob = new Blob([buf], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    const namePart = brandLabel ? `_${brandLabel}` : "";
-    saveAs(blob, `FEDIT${namePart}_${yymmdd()}.xlsx`);
+    // 브랜드(또는 플랫폼) 하나만 받는 경우 파일명을 "다이닛_261002"처럼
+    // 해당 이름으로, 여러 브랜드를 합친 파일은 기존처럼 "FEDIT_261002"로 저장한다.
+    // 파일명에 쓸 수 없는 문자는 "_"로 바꾼다.
+    const namePart = brandLabel
+      ? brandLabel.replace(/[\\/:*?"<>|]/g, "_").trim()
+      : "";
+    saveAs(blob, `${namePart || "FEDIT"}_${yymmdd()}.xlsx`);
   }
 
   // 브랜드(또는 플랫폼) 하나만 지정해 전체 페이지를 끝까지 순회하며 모은다.
@@ -347,6 +361,13 @@ function BrandTab({ isProductTab }: Props) {
   ];
   const finalTargets =
     targets.length > 0 ? targets : [{ brand: null, platform: null }];
+
+  const getTargetLabel = (target: {
+    brand: string | null;
+    platform: string | null;
+  }) =>
+    target.brand ??
+    (target.platform ? PLATFORM_LABELS[target.platform] : undefined);
 
   const isBasicUsageLoading = isBasicLike && usage === null;
   const isBasicLimitReached =
@@ -397,10 +418,7 @@ function BrandTab({ isProductTab }: Props) {
         if (combinesFiles) {
           combinedRows.push(...rows);
         } else if (rows.length > 0) {
-          const label =
-            target.brand ??
-            (target.platform ? PLATFORM_LABELS[target.platform] : undefined);
-          await downloadXlsxWithImages(rows, label);
+          await downloadXlsxWithImages(rows, getTargetLabel(target));
           trackExcelDownload(
             EXPORT_TYPE_BY_TAB[selectedTab] ?? "unknown",
             brandList,
@@ -429,7 +447,11 @@ function BrandTab({ isProductTab }: Props) {
       }
 
       if (combinesFiles && !isCancelledRef.current && combinedRows.length > 0) {
-        await downloadXlsxWithImages(combinedRows);
+        // 합쳐 받는 파일도 대상이 하나뿐이면 그 이름으로, 여러 개면 FEDIT로 저장한다.
+        await downloadXlsxWithImages(
+          combinedRows,
+          finalTargets.length === 1 ? getTargetLabel(finalTargets[0]) : undefined,
+        );
         trackExcelDownload(
           EXPORT_TYPE_BY_TAB[selectedTab] ?? "unknown",
           brandList,
