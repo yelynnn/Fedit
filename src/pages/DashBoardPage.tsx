@@ -48,6 +48,7 @@ const PLATFORMS: { platform: string; title: string }[] = [
   { platform: "naver", title: "네이버" },
   { platform: "musinsa", title: "무신사" },
   { platform: "wconcept", title: "W컨셉" },
+  { platform: "pinterest", title: "핀터레스트" },
 ];
 
 // 남성 탭 선택 시 fetchAll에서 platform 값에 "_male"을 붙여 보낸다.
@@ -187,14 +188,19 @@ function DashBoardPage() {
               audienceType === "male"
                 ? (MALE_PLATFORM_OVERRIDE[platform] ?? `${platform}_male`)
                 : platform;
+            // 한 플랫폼 요청이 실패해도(예: 아직 데이터가 없는 핀터레스트)
+            // Promise.all 전체가 실패해 모든 박스가 사라지지 않도록, 실패한
+            // 플랫폼만 빈 리스트로 처리한다.
             return GetTrendKeyword({
               date: requestDate,
               platform: requestPlatform,
-            }).then((res) => ({
-              res,
-              title,
-              platform: requestPlatform,
-            }));
+            })
+              .catch(() => null)
+              .then((res) => ({
+                res,
+                title,
+                platform: requestPlatform,
+              }));
           }),
         );
 
@@ -337,7 +343,9 @@ function DashBoardPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-5">
+        {/* 플랫폼 4개(네이버/무신사/W컨셉/핀터레스트)가 항상 한 줄에 들어가도록
+            4열 그리드로 두고, 각 박스는 화면 폭에 맞춰 균등하게 줄어든다. */}
+        <div className="grid grid-cols-4 gap-5">
           {keywordList.map((box) => (
             <NewMainKeywordBox
               key={`${box.title}-${box.dateType}`}
@@ -351,7 +359,9 @@ function DashBoardPage() {
           ))}
 
           {keywordList.length === 0 && (
-            <div className="text-sm text-gray-500">표시할 키워드가 없어요.</div>
+            <div className="col-span-full text-sm text-gray-500">
+              표시할 키워드가 없어요.
+            </div>
           )}
         </div>
       </section>

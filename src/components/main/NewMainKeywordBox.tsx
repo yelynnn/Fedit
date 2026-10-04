@@ -5,6 +5,7 @@ import naverIcon from "@/assets/brand/naverIcon.png";
 import musinsaIcon from "@/assets/brand/musinsaIcon.png";
 import wconceptIcon from "@/assets/brand/wconceptIcon.png";
 import icon4910 from "@/assets/brand/4910.png";
+import pinterestIcon from "@/assets/brand/pinterestIcon.png";
 import MonthModal from "./modal/MonthModal";
 import infoFilledIcon from "@/assets/etc/info_filled.svg";
 import upIcon from "@/assets/etc/upIcon.svg";
@@ -36,6 +37,8 @@ function getImageByPlatform(platformKey: string | undefined, title: string) {
       return wconceptIcon;
     case "4910":
       return icon4910;
+    case "pinterest":
+      return pinterestIcon;
   }
   switch (title) {
     case "네이버":
@@ -45,6 +48,8 @@ function getImageByPlatform(platformKey: string | undefined, title: string) {
       return musinsaIcon;
     case "W컨셉":
       return wconceptIcon;
+    case "핀터레스트":
+      return pinterestIcon;
     default:
       return "";
   }
@@ -110,7 +115,7 @@ function NewMainKeywordBox({
       className={`${
         isMonthly
           ? "w-[880px]"
-          : "flex-grow flex-shrink-0 basis-[calc(33.333%-1rem)] min-w-[300px] max-w-[430px]"
+          : "w-full min-w-0"
       } box-border`}
     >
       <header className="flex items-center justify-between px-1 pb-3">
