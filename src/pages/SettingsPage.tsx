@@ -254,7 +254,7 @@ export default function SettingsPage() {
   // Pro는 결제 플로우 없이 항상 외부 문의 페이지로 연결한다.
   const goToInquiry = () => {
     window.open(
-      "https://fedit.framer.website/contact-us",
+      "https://mify.im/fedit/contact-us",
       "_blank",
       "noopener,noreferrer",
     );

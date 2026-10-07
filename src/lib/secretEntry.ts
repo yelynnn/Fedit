@@ -1,4 +1,4 @@
-// 마케팅 랜딩페이지(fedit.framer.website, fedit.framer.website/fedit-vip-x7k2q9)에서
+// 마케팅 랜딩페이지(mify.im/fedit, mify.im/fedit-vip-x7k2q9)에서
 // 로그인 페이지로 넘어올 때 붙는 ?ref= 쿼리스트링을 읽어 로컬에 남겨두는
 // 플래그들. 로그인 페이지 → (선택) 회원가입 → 첫 로그인까지 여러 화면을
 // 거치는 동안에도 "어디서 들어왔는지"를 잃지 않기 위해 localStorage를 쓴다.

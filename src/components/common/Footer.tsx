@@ -69,7 +69,7 @@ function Footer() {
               <ul className="mt-4 space-y-2 text-sm text-tx-alt">
                 <li>
                   <a
-                    href="https://fedit.framer.website/contact-us"
+                    href="https://mify.im/fedit/contact-us"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-tx-alt"
@@ -79,7 +79,7 @@ function Footer() {
                 </li>
                 <li>
                   <a
-                    href="https://fedit.framer.website/contact-us"
+                    href="https://mify.im/fedit/contact-us"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-tx-alt"
@@ -96,7 +96,7 @@ function Footer() {
               <ul className="mt-4 space-y-2 text-sm text-tx-alt">
                 <li>
                   <a
-                    href="https://fedit.framer.website/contact-us"
+                    href="https://mify.im/fedit/contact-us"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-tx-alt"
@@ -106,7 +106,7 @@ function Footer() {
                 </li>
                 <li>
                   <a
-                    href="https://fedit.framer.website/contact-us"
+                    href="https://mify.im/fedit/contact-us"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-tx-alt"

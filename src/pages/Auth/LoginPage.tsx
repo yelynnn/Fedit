@@ -13,7 +13,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
 
-  // 마케팅 랜딩페이지(fedit.framer.website, .../fedit-vip-x7k2q9)의 CTA가
+  // 마케팅 랜딩페이지(mify.im/fedit, .../fedit-vip-x7k2q9)의 CTA가
   // 이 로그인 페이지로 ?ref=vip 또는 ?ref=landing을 붙여서 보내주면, 이후
   // 회원가입/로그인을 마치고 설정 화면에 도착했을 때까지 이어서 알 수
   // 있도록 로컬에 남겨둔다.
