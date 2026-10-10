@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useUIStore } from "@/stores/UIStore";
+import { AGENT_TAB, useChatStore } from "@/stores/ChatStore";
 import { useUserStore } from "@/stores/UserStore";
 import { resetUser } from "@/lib/analytics";
 import feditLogo from "@/assets/logo/feditLogo.svg";
@@ -14,12 +15,14 @@ import colorIcon from "@/assets/etc/colorIcon.svg";
 import categoryIcon from "@/assets/etc/categoryIcon.svg";
 import runwayIcon from "@/assets/etc/runwayIcon.svg";
 
-const TABS_CONFIG = [
+const TABS_CONFIG: { label: string; icon?: string; iconify?: string }[] = [
   { label: "실시간 랭킹", icon: dashboardIcon },
   { label: "상품 분석", icon: analysisIcon },
   { label: "색상 분석", icon: colorIcon },
   { label: "유형 분석", icon: categoryIcon },
   { label: "패션쇼 분석", icon: runwayIcon },
+  // 전체화면 FEDI 챗봇(AgentPage)
+  { label: AGENT_TAB, iconify: "ph:sparkle-fill" },
 ];
 
 export default function Sidebar() {
@@ -133,7 +136,11 @@ export default function Sidebar() {
           return (
             <button
               key={tab.label}
-              onClick={() => setSelectedTab(tab.label)}
+              onClick={() => {
+                // 챗봇은 최근 대화면 이어서, 오래됐으면 새 대화로 연다
+                if (tab.label === AGENT_TAB) useChatStore.getState().resumeOrStartConversation();
+                setSelectedTab(tab.label);
+              }}
               className={`w-full flex transition-colors duration-150
           ${
             isCollapsed
@@ -151,11 +158,15 @@ export default function Sidebar() {
     }
   `}
               >
-                <img
-                  src={tab.icon}
-                  alt={tab.label}
-                  className="w-[18px] h-[18px]"
-                />
+                {tab.iconify ? (
+                  <Icon icon={tab.iconify} className="w-[18px] h-[18px] text-[#111]" />
+                ) : (
+                  <img
+                    src={tab.icon}
+                    alt={tab.label}
+                    className="w-[18px] h-[18px]"
+                  />
+                )}
               </div>
 
               <span

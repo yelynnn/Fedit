@@ -1,13 +1,14 @@
 import { useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import Sidebar from "@/components/common/Sidebar";
-import { useChatStore } from "@/stores/ChatStore";
+import { AGENT_TAB, useChatStore } from "@/stores/ChatStore";
 import { useUIStore } from "@/stores/UIStore";
 import NewHeader from "@/components/common/NewHeader";
 import { NewFilterTabPanels } from "@/components/filter/NewFilterTabBar";
 import SessionExpiredModal from "@/components/common/SessionExpiredModal";
 import AgentChat from "@/components/agent/AgentChat";
 import SettingsPage from "@/pages/SettingsPage";
+import AgentPage from "@/pages/AgentPage";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { useFilterStore } from "@/stores/FilterStore";
@@ -44,10 +45,20 @@ function RootNewLayout() {
     openSettingsModal,
   } = useUIStore();
   const selectedTab = useFilterStore((s) => s.selectedTab);
+  // 사이드바 "FEDI Agent" — 전체화면 챗봇. 이 화면에서는 플로팅 버튼을 숨긴다.
+  const isAgentPage = selectedTab === AGENT_TAB;
   const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
   const brandList = useFilterStore((s) => s.brandList);
   const subscription = useSubscriptionStore((s) => s.subscription);
   const subscriptionLoaded = useSubscriptionStore((s) => s.loaded);
+  const fetchSubscription = useSubscriptionStore((s) => s.fetchSubscription);
+
+  // 요금제는 분석 화면(NewFilterTabPanels)에서만 불러오고 있어서, FEDI Agent
+  // 전체화면에서 새로고침하면 한 번도 불러오지 않아 Enterprise도 입력이
+  // 막혔다. 어느 화면으로 들어오든 여기서 한 번은 불러온다.
+  useEffect(() => {
+    if (!subscriptionLoaded) fetchSubscription();
+  }, [subscriptionLoaded, fetchSubscription]);
 
   // feature_viewed — 사이드바 탭 전환 시(최초 진입 포함) 매번 전송한다. 제품은
   // URL이 안 바뀌는 구조라 GA4 자동 페이지 조회로는 못 잡는다. selectedTab은
@@ -124,6 +135,8 @@ function RootNewLayout() {
             ? "none"
             : billing;
         identifyUser(me.email, plan, me.name, monitoredBrands);
+        // 채팅 기록은 브라우저에 저장돼서, 다른 계정으로 로그인하면 비운다
+        if (me.email) useChatStore.getState().syncOwner(me.email);
         if (plan === "trial") trackTrialStartedOnce(me.email, subscription?.plan ?? "basic");
       } catch {
         // 식별 실패는 무시한다 — 화면 동작에 영향을 주면 안 된다.
@@ -234,16 +247,24 @@ function RootNewLayout() {
       <Sidebar />
 
       <div className="flex flex-col flex-1 h-full min-w-0">
-        <NewHeader />
+        {isAgentPage ? (
+          <main className="relative flex-1 min-h-0 bg-white" data-capture-protect>
+            <AgentPage />
+          </main>
+        ) : (
+          <>
+            <NewHeader />
 
-        <main
-          className="relative flex-1 overflow-auto bg-white [contain:layout]"
-          data-capture-protect
-        >
-          <div className="h-full py-8">
-            <NewFilterTabPanels />
-          </div>
-        </main>
+            <main
+              className="relative flex-1 overflow-auto bg-white [contain:layout]"
+              data-capture-protect
+            >
+              <div className="h-full py-8">
+                <NewFilterTabPanels />
+              </div>
+            </main>
+          </>
+        )}
       </div>
 
       {settingsModalTab !== null && <SettingsPage />}
@@ -255,8 +276,10 @@ function RootNewLayout() {
 
       <OnboardingTour />
 
-      {/* FEDI Agent 플로팅 버튼 & 채팅창 */}
-      <div className="fixed z-50 flex flex-col items-end gap-3 bottom-6 right-6">
+      {/* FEDI Agent 플로팅 버튼 & 채팅창 — 전체화면(FEDI Agent 탭)에서는 숨김 */}
+      <div
+        className={`fixed z-50 flex flex-col items-end gap-3 bottom-6 right-6 ${isAgentPage ? "hidden" : ""}`}
+      >
         {isAgentOpen && activeConversationId && (
           <AgentChat
             key={activeConversationId}

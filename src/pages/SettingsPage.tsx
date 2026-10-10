@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import { useChatStore } from "@/stores/ChatStore";
+import { AGENT_TAB, useChatStore } from "@/stores/ChatStore";
+import {
+  formatConversationTime,
+  groupConversationsByDate,
+  searchConversations,
+  visibleConversations,
+} from "@/lib/chatHistory";
 import { useUIStore } from "@/stores/UIStore";
 import { useUserStore } from "@/stores/UserStore";
 import { useFilterStore } from "@/stores/FilterStore";
@@ -219,6 +225,8 @@ export default function SettingsPage() {
     openConversation,
     updateTitle,
     deleteConversation,
+    fetchConversations,
+    listLoading,
   } = useChatStore((s) => s);
 
   const [active, setActive] = useState<Section>(
@@ -610,22 +618,28 @@ export default function SettingsPage() {
     setWithdrawStep("interview");
   };
 
-  const now = Date.now();
-  const DAY = 86400000;
+  const savedConversations = visibleConversations(conversations);
+  const filteredConversations = searchConversations(savedConversations, chatSearch);
+  const conversationGroups = groupConversationsByDate(filteredConversations);
 
-  const filteredConversations = [...conversations]
-    .sort((a, b) => b.updatedAt - a.updatedAt)
-    .filter((c) => c.title.toLowerCase().includes(chatSearch.toLowerCase()));
+  // 채팅 목록 탭을 열 때마다 서버 목록으로 맞춘다(다른 기기에서 한 대화 포함)
+  useEffect(() => {
+    if (active === "FEDI대화") fetchConversations();
+  }, [active, fetchConversations]);
 
-  const recentGroup = filteredConversations.filter(
-    (c) => now - c.updatedAt <= 7 * DAY,
-  );
-  const olderGroup = filteredConversations.filter(
-    (c) => now - c.updatedAt > 7 * DAY && now - c.updatedAt <= 30 * DAY,
-  );
+  const handleDeleteConv = async (id: string) => {
+    try {
+      await deleteConversation(id);
+    } catch {
+      alert("대화를 삭제하지 못했어요. 잠시 후 다시 시도해주세요.");
+    }
+  };
 
+  // 기록에서 고른 대화는 전체화면(사이드바 FEDI Agent)으로 연다
   const handleOpenConv = (id: string) => {
     openConversation(id);
+    useChatStore.getState().closeAgent();
+    useFilterStore.getState().setSelectedTab(AGENT_TAB);
     closeSettingsModal();
   };
 
@@ -864,19 +878,11 @@ export default function SettingsPage() {
                   </span>
                 </h1>
                 <p className="text-base font-medium text-[#6F7173] mt-1 mb-6">
-                  총 {conversations.length}개의 대화
+                  총 {savedConversations.length}개의 대화
                 </p>
 
-                {/* Filters + Search */}
+                {/* 검색 — 목록은 항상 최신순 */}
                 <div className="flex items-center gap-2 mb-5">
-                  <button className="flex items-center gap-1 px-3 py-1.5 border border-line-divider rounded-lg text-sm text-tx-neutral hover:bg-surface-base transition-colors">
-                    최신순
-                    <Icon icon="ph:caret-down" className="w-3.5 h-3.5" />
-                  </button>
-                  <button className="flex items-center gap-1 px-3 py-1.5 border border-line-divider rounded-lg text-sm text-tx-neutral hover:bg-surface-base transition-colors">
-                    전체
-                    <Icon icon="ph:caret-down" className="w-3.5 h-3.5" />
-                  </button>
                   <div className="flex-1" />
                   <div className="flex items-center gap-2 border border-line-divider rounded-lg px-3 py-1.5 bg-white">
                     <input
@@ -893,7 +899,11 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {filteredConversations.length === 0 ? (
+                {filteredConversations.length === 0 && listLoading ? (
+                  <div className="flex items-center justify-center py-16 text-sm text-tx-assistive">
+                    대화 목록을 불러오는 중…
+                  </div>
+                ) : filteredConversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-tx-assistive">
                     <Icon
                       icon="ph:chat-teardrop-text"
@@ -907,13 +917,13 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div>
-                    {recentGroup.length > 0 && (
-                      <div className="mb-4">
+                    {conversationGroups.map((group) => (
+                      <div key={group.label} className="mb-4">
                         <p className="mb-2 text-xs font-semibold text-tx-assistive">
-                          지난 7일
+                          {group.label}
                         </p>
                         <div className="flex flex-col gap-1">
-                          {recentGroup.map((conv) => (
+                          {group.items.map((conv) => (
                             <ChatRow
                               key={conv.id}
                               conv={conv}
@@ -931,42 +941,12 @@ export default function SettingsPage() {
                                 setEditingConvId(null);
                                 setEditingTitle("");
                               }}
-                              onDelete={() => deleteConversation(conv.id)}
+                              onDelete={() => handleDeleteConv(conv.id)}
                             />
                           ))}
                         </div>
                       </div>
-                    )}
-                    {olderGroup.length > 0 && (
-                      <div className="mb-4">
-                        <p className="mb-2 text-xs font-semibold text-tx-assistive">
-                          지난 30일
-                        </p>
-                        <div className="flex flex-col gap-1">
-                          {olderGroup.map((conv) => (
-                            <ChatRow
-                              key={conv.id}
-                              conv={conv}
-                              isActive={conv.id === activeConversationId}
-                              isEditing={editingConvId === conv.id}
-                              editingTitle={editingTitle}
-                              setEditingTitle={setEditingTitle}
-                              onOpen={() => handleOpenConv(conv.id)}
-                              onStartEdit={() => {
-                                setEditingConvId(conv.id);
-                                setEditingTitle(conv.title);
-                              }}
-                              onRename={() => handleRename(conv.id)}
-                              onCancelEdit={() => {
-                                setEditingConvId(null);
-                                setEditingTitle("");
-                              }}
-                              onDelete={() => deleteConversation(conv.id)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
@@ -2066,9 +2046,7 @@ function ChatRow({
   onCancelEdit: () => void;
   onDelete: () => void;
 }) {
-  const now = Date.now();
-  const diffDays = Math.floor((now - conv.updatedAt) / 86400000);
-  const dateStr = diffDays === 0 ? "오늘" : `${diffDays}일전`;
+  const dateStr = formatConversationTime(conv.updatedAt);
 
   return (
     <div
@@ -2077,7 +2055,19 @@ function ChatRow({
         if (!isEditing) onOpen();
       }}
     >
-      <div className="flex-shrink-0 w-5 h-5 border rounded-full border-line-divider" />
+      {/* 대화 아이콘 — 둥근 말풍선에서 왼쪽 아래 모서리만 각진 모양 */}
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        className="flex-shrink-0 text-tx-alt"
+      >
+        <path d="M12 3.5a8.5 8.5 0 1 1 0 17H4.5a1 1 0 0 1-1-1V12A8.5 8.5 0 0 1 12 3.5z" />
+      </svg>
       <div className="flex-1 min-w-0">
         {isEditing ? (
           <input

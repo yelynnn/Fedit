@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import type { Message, AiResponse, AiProduct } from '@/types/chat';
+import MetricBar from './MetricBar';
+import AgentV2Answer from './AgentV2Answer';
 
 export type { Message, AiResponse, AiProduct };
 
@@ -13,22 +15,6 @@ const PLACEHOLDER_COLORS = ['#f1f2f4', '#e9ebef', '#eef0f3', '#e6e8ec', '#f3f4f6
 function compactNum(n: number): string {
   if (n >= 10000) return `${Math.round(n / 1000) / 10}만`;
   return n.toLocaleString('ko-KR');
-}
-
-// 지표 게이지 한 줄: 라벨 + 바 + 숫자 (0~100 실값 기준)
-function MetricBar({ label, value, color }: { label: string; value: number; color: string }) {
-  const pct = Math.max(0, Math.min(100, value));
-  return (
-    <div className="flex items-center gap-1">
-      <span className="text-[9px] text-gray-500 w-[46px] flex-shrink-0">{label}</span>
-      <div className="flex-1 h-[5px] rounded-full bg-gray-100 overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-      </div>
-      <span className="text-[9.5px] font-semibold w-[22px] text-right" style={{ color }}>
-        {Math.round(value)}
-      </span>
-    </div>
-  );
 }
 
 // 앱 내부 경로만 링크로 허용한다("/"로 시작, "//" 프로토콜상대 제외).
@@ -234,11 +220,29 @@ function Markdown({ text }: { text: string }) {
   return <>{blocks}</>;
 }
 
-interface Props {
-  message: Message;
+// 저장된 메시지에 parsed가 없을 때(대화 기록 content만 있는 경우) content의
+// JSON 문자열에서 v2 응답을 복원한다. v2가 없으면 예전처럼 마크다운으로 둔다.
+function parseV2Content(content: string): AiResponse | undefined {
+  const trimmed = content.trim();
+  if (!trimmed.startsWith('{')) return undefined;
+  try {
+    const obj = JSON.parse(trimmed);
+    return obj && typeof obj === 'object' && obj.v2 ? (obj as AiResponse) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
-export default function AgentMessage({ message }: Props) {
+interface Props {
+  message: Message;
+  // v2 답변 안의 대안 질문/선택 버튼을 누르면 바로 전송
+  onSend?: (text: string) => void;
+  sendDisabled?: boolean;
+  // 이 답변을 만든 질문 — v2 "다시" 버튼이 다시 보낸다
+  question?: string;
+}
+
+export default function AgentMessage({ message, onSend, sendDisabled, question }: Props) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false); // 출처 목록 기본 접힘
 
@@ -248,15 +252,37 @@ export default function AgentMessage({ message }: Props) {
 
   if (message.role === 'user') {
     return (
-      <div className="flex justify-end">
-        <div className="bubble-user max-w-[85%] text-sm text-gray-800 shadow-sm leading-relaxed whitespace-pre-line [word-break:keep-all] [overflow-wrap:break-word]">
+      // 참고 화면 .u/.b — 회색 말풍선
+      <div className="self-end max-w-[88%]">
+        <div className="bg-[#F5F5F5] rounded-[14px] px-[13px] py-2.5 text-[13px] leading-[1.55] text-[#111] whitespace-pre-line [word-break:keep-all] [overflow-wrap:break-word]">
           {message.content}
         </div>
       </div>
     );
   }
 
-  const p = message.parsed;
+  const p = message.parsed ?? parseV2Content(message.content);
+
+  // 분석 서버 오류(fedi-v2-unavailable)·차단(guard)은 안내 문구만 보여준다
+  if (message.mode === 'fedi-v2-unavailable' || message.mode === 'guard') {
+    const notice = p?.v2?.answer?.summary || p?.message?.summary || message.content;
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="bubble-bot text-sm text-gray-800 leading-relaxed" aria-live="polite">
+          <p className="text-[14px] text-gray-600 [word-break:keep-all]">{notice}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // v2 답변은 말풍선 없이 참고 화면(.bot) 그대로 — 복사/다시 버튼도 자체 포함
+  if (p?.v2) {
+    return (
+      <div aria-live="polite">
+        <AgentV2Answer v2={p.v2} onSend={onSend} sendDisabled={sendDisabled} question={question} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2">

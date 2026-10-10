@@ -1,53 +1,37 @@
 import { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import AgentMessage from './AgentMessage';
-import type { Message } from '@/types/chat';
+import AgentThread from './AgentThread';
+import { Spin } from './AgentV2Answer';
+import { useAgentConversation } from './useAgentConversation';
 import { useChatStore } from '@/stores/ChatStore';
-import { axiosInstance } from '@/apis/AxiosInstance';
-import { trackFediChatSent } from '@/lib/analytics';
-import {
-  useSubscriptionStore,
-  getEffectivePlan,
-  toBillingPlan,
-} from '@/stores/SubscriptionStore';
-
-const DEFAULT_SUGGESTIONS = [
-  '이번 시즌 여성복 트렌드 키워드',
-  '여성복 스타일 무드별 추천',
-  '경쟁사 여성복 디자인 비교',
-  '여성복 시즌 컬러·소재 제안',
-];
-
-function parseAiResponse(raw: string) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (match) {
-      try { return JSON.parse(match[0]); } catch { return undefined; }
-    }
-    return undefined;
-  }
-}
+import { useUIStore } from '@/stores/UIStore';
+import { useFilterStore } from '@/stores/FilterStore';
 
 interface Props {
   conversationId: string;
   onClose?: () => void;
 }
 
+// 플로팅 FEDI 챗봇 패널. 전체화면은 사이드바 "FEDI Agent"(AgentPage)이고,
+// 같은 현재 대화를 이어서 보여준다.
 export default function AgentChat({ conversationId, onClose }: Props) {
-  const { conversations, saveMessages, updateTitle } = useChatStore((s) => s);
-  const conv = conversations.find((c) => c.id === conversationId);
-  const subscription = useSubscriptionStore((s) => s.subscription);
-  // AI Agent는 Enterprise 전용 기능이다 — 버튼/패널 자체는 모두에게
-  // 노출하되, 실제로 입력해서 보내는 건 Enterprise만 가능하게 막는다.
-  const isEnterprise =
-    toBillingPlan(getEffectivePlan(subscription)) === 'enterprise';
+  const { updateTitle, openNewConversation, closeAgent } = useChatStore((s) => s);
+  const openSettingsModal = useUIStore((s) => s.openSettingsModal);
+  const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
+  const {
+    conv,
+    messages,
+    isEnterprise,
+    planLoaded,
+    isLoading,
+    isLoadingHistory,
+    isBusy,
+    loadingStep,
+    suggestions,
+    send,
+  } = useAgentConversation(conversationId);
 
-  const [messages, setMessages] = useState<Message[]>(conv?.messages ?? []);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(conv?.title ?? '새 대화');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,7 +39,7 @@ export default function AgentChat({ conversationId, onClose }: Props) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [conv?.messages, isLoading]);
 
   useEffect(() => {
     if (editingTitle) titleInputRef.current?.focus();
@@ -73,66 +57,16 @@ export default function AgentChat({ conversationId, onClose }: Props) {
     setEditingTitle(false);
   };
 
-  const handleSend = async (text?: string) => {
-    if (!isEnterprise) return;
+  const handleSend = (text?: string) => {
     const query = (text ?? input).trim();
-    if (!query || isLoading) return;
-
-    const userMsg: Message = {
-      id: `${Date.now()}-user`,
-      role: 'user',
-      content: query,
-    };
-
-    const nextMessages = [...messages, userMsg];
-    setMessages(nextMessages);
-    saveMessages(conversationId, nextMessages);
+    if (!query || isBusy || !isEnterprise) return;
     setInput('');
-    setIsLoading(true);
-
-    try {
-      // FEDI 에이전트 채팅 전송 — feature_viewed(조회)와 분리된 별도 이벤트.
-      // 패널을 열기만 한 게 아니라 실제로 채팅 요청을 보낸 시점 기준. 위
-      // 가드(!isEnterprise, 빈 입력/로딩 중)를 통과한 뒤라 여기가 "요청이 실제로
-      // 나가는" 지점이다.
-      trackFediChatSent();
-      const res = await axiosInstance.post('/chat', { message: query });
-
-      const raw = res.data.answer || '';
-      const parsed = res.data.parsed || parseAiResponse(raw);
-
-      const assistantMsg: Message = {
-        id: `${Date.now()}-assistant`,
-        role: 'assistant',
-        content: raw,
-        parsed,
-      };
-
-      const finalMessages = [...nextMessages, assistantMsg];
-      setMessages(finalMessages);
-      saveMessages(conversationId, finalMessages);
-
-      if (parsed?.chips && parsed.chips.length > 0) {
-        setSuggestions(parsed.chips);
-      }
-    } catch {
-      const errorMessages = [
-        ...nextMessages,
-        {
-          id: `${Date.now()}-error`,
-          role: 'assistant' as const,
-          content: '응답 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
-        },
-      ];
-      setMessages(errorMessages);
-      saveMessages(conversationId, errorMessages);
-    } finally {
-      setIsLoading(false);
-    }
+    send(query);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // 한글 조합 중 Enter는 무시(조합 확정 Enter로 두 번 전송되는 것 방지)
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSend();
     }
@@ -140,12 +74,15 @@ export default function AgentChat({ conversationId, onClose }: Props) {
 
   const currentTitle = conv?.title ?? '새 대화';
 
+  // 참고 화면(fedi-chat-reference/index.html)의 .panel/.hd/.thread/.chips/.in 모양
   return (
-    <div className="panel flex flex-col w-[460px] h-[580px] bg-[#EDECFF] rounded-3xl shadow-2xl overflow-hidden">
+    <div className="panel flex flex-col w-[520px] h-[min(640px,calc(100vh-180px))] bg-white border border-[#E6E6E6] rounded-[18px] shadow-2xl overflow-hidden text-[#111]">
       {/* 헤더 */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/30">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Icon icon="ph:star-four-fill" width={17} className="text-gray-700 flex-shrink-0" />
+      <div className="flex items-center justify-between px-4 py-[13px] border-b border-[#F0F0F0]">
+        <div className="flex items-center gap-[7px] flex-1 min-w-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#111" className="flex-shrink-0">
+            <path d="M12 2l2.2 6.3L21 10l-6.8 1.7L12 18l-2.2-6.3L3 10l6.8-1.7z" />
+          </svg>
           {editingTitle ? (
             <input
               ref={titleInputRef}
@@ -159,7 +96,7 @@ export default function AgentChat({ conversationId, onClose }: Props) {
                   setEditingTitle(false);
                 }
               }}
-              className="flex-1 min-w-0 text-[15px] font-semibold text-gray-800 bg-white/60 rounded-lg px-2 py-0.5 outline-none border border-indigo-300"
+              className="flex-1 min-w-0 text-[14px] font-bold bg-white rounded-lg px-2 py-0.5 outline-none border border-[#E6E6E6]"
             />
           ) : (
             <button
@@ -168,93 +105,130 @@ export default function AgentChat({ conversationId, onClose }: Props) {
                 setEditingTitle(true);
               }}
               title="더블클릭으로 제목 수정"
-              className="text-[15px] font-semibold text-gray-800 truncate text-left hover:text-indigo-700 transition-colors"
+              className="text-[14px] font-bold truncate text-left"
             >
               {currentTitle}
             </button>
           )}
         </div>
-        <span className="flex-shrink-0 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 whitespace-nowrap">
+        <span className="flex-shrink-0 text-[10px] font-bold px-[7px] py-px rounded-full bg-[#EEF0FF] text-[#4F46E5] whitespace-nowrap">
           베타 테스트 중
         </span>
-        <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+        <div className="flex items-center gap-3 flex-shrink-0 ml-3 text-[11.5px] text-[#666]">
           <button
             onClick={() => {
               setTitleDraft(currentTitle);
               setEditingTitle(true);
             }}
             title="제목 수정"
-            className="text-gray-400 hover:text-gray-700 transition-colors"
+            className="px-0.5 py-1 hover:text-[#111]"
           >
             <Icon icon="lucide:pencil" width={13} />
           </button>
-          <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+          {/* 전체화면 — 같은 대화를 사이드바 "FEDI Agent" 화면으로 옮겨서 연다 */}
+          <button
+            onClick={() => {
+              closeAgent();
+              setSelectedTab('FEDI Agent');
+            }}
+            title="전체화면으로 보기"
+            className="px-0.5 py-1 hover:text-[#111]"
+          >
+            <Icon icon="lucide:maximize-2" width={13} />
+          </button>
+          {/* 이전 대화 목록(설정 > FEDI 채팅 목록) — 고르면 그 대화로 다시 열린다 */}
+          <button
+            onClick={() => {
+              closeAgent();
+              openSettingsModal('FEDI대화');
+            }}
+            className="px-0.5 py-1 hover:text-[#111]"
+          >
+            기록
+          </button>
+          <button
+            onClick={() => openNewConversation()}
+            disabled={messages.length === 0}
+            className="px-0.5 py-1 hover:text-[#111] disabled:opacity-40 disabled:hover:text-[#666]"
+          >
+            새 대화
+          </button>
+          <button onClick={onClose} className="px-0.5 py-1 hover:text-[#111]">
             닫기
           </button>
         </div>
       </div>
 
-      {/* 메시지 영역 */}
-      <div className="flex-1 overflow-y-auto hide-scrollbar px-4 py-4 flex flex-col gap-4">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
-            <Icon icon="ph:star-four-fill" width={32} className="text-indigo-300" />
-            <p className="text-sm font-medium">무엇이든 물어보세요</p>
+      {/* 메시지 영역(.thread) */}
+      <div className="flex-1 overflow-y-auto hide-scrollbar p-[14px] flex flex-col gap-3">
+        {isLoadingHistory && (
+          <div className="flex items-center justify-center h-full gap-2 text-[12px] text-[#8A8A8A]">
+            <Spin />
+            대화를 불러오는 중…
           </div>
         )}
 
-        {messages.map((msg) => (
-          <AgentMessage key={msg.id} message={msg} />
-        ))}
-
-        {isLoading && (
-          <div className="flex items-center gap-2 text-xs text-gray-400 px-1">
-            <Icon icon="mdi:loading" width={14} className="animate-spin" />
-            분석 중...
+        {!isLoadingHistory && messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-[#8A8A8A]">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="#C7C7C7">
+              <path d="M12 2l2.2 6.3L21 10l-6.8 1.7L12 18l-2.2-6.3L3 10l6.8-1.7z" />
+            </svg>
+            <p className="text-[13px] font-medium">무엇이든 물어보세요</p>
           </div>
         )}
+
+        <AgentThread
+          messages={messages}
+          isLoading={isLoading}
+          loadingStep={loadingStep}
+          onSend={handleSend}
+          sendDisabled={isBusy || !isEnterprise}
+        />
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 추천 질문 */}
-      <div className="px-4 pb-2">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-0.5">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => handleSend(s)}
-              disabled={isLoading || !isEnterprise}
-              className="flex-shrink-0 text-xs bg-white/80 border border-white/60 rounded-full px-3 py-1.5 text-gray-600 hover:bg-white transition-colors whitespace-nowrap disabled:opacity-50"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+      {/* 연관 질문(.chips) */}
+      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar px-[14px] pt-2.5">
+        {suggestions.map((s) => (
+          <button
+            key={s}
+            onClick={() => handleSend(s)}
+            disabled={isBusy || !isEnterprise}
+            className="flex-none text-[11.5px] px-[11px] py-[7px] border border-[#E6E6E6] rounded-full bg-white text-[#111] hover:bg-[#F5F5F5] whitespace-nowrap disabled:opacity-50"
+          >
+            {s}
+          </button>
+        ))}
       </div>
 
-      {/* 입력창 */}
-      <div className="px-4 pb-4 pt-2">
-        <div className="flex items-center bg-white rounded-2xl px-4 py-2.5 gap-3 shadow-sm">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={!isEnterprise}
-            placeholder={
-              isEnterprise ? '어떤 것을 도와드릴까요?' : 'Enterprise 요금제에서만 이용할 수 있어요'
-            }
-            className="flex-1 text-sm outline-none bg-transparent text-gray-700 placeholder-gray-400 disabled:cursor-not-allowed"
-          />
-          <button
-            onClick={() => handleSend()}
-            disabled={!isEnterprise || !input.trim() || isLoading}
-            className="w-7 h-7 bg-gray-800 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Icon icon="mdi:arrow-up" width={14} className="text-white" />
-          </button>
-        </div>
+      {/* 입력창(.in) */}
+      <div className="flex items-center gap-2 px-[14px] pt-2.5 pb-[14px]">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={!isEnterprise}
+          placeholder={
+            isEnterprise || !planLoaded
+              ? '어떤 것을 도와드릴까요?'
+              : 'Enterprise 요금제에서만 이용할 수 있어요'
+          }
+          className="flex-1 min-w-0 h-10 border border-[#E6E6E6] rounded-xl px-3 text-[13px] outline-none bg-white text-[#111] placeholder-[#8A8A8A] disabled:cursor-not-allowed"
+        />
+        <button
+          onClick={() => handleSend()}
+          disabled={!isEnterprise || !input.trim() || isBusy}
+          aria-label="전송"
+          className={`w-9 h-9 rounded-full grid place-items-center flex-none transition-colors disabled:cursor-not-allowed ${
+            isEnterprise && input.trim() && !isBusy ? 'bg-[#111] text-white' : 'bg-[#E7E7E7] text-[#777]'
+          }`}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </button>
       </div>
     </div>
   );
