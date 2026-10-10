@@ -1,5 +1,9 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores/AuthStore";
+import { useUIStore } from "@/stores/UIStore";
+
+// 관리자가 아닌 사용자가 미공개 기능 API를 부르면 403 FEATURE_NOT_RELEASED가 온다
+export const FEATURE_NOT_RELEASED_MESSAGE = "준비 중인 기능입니다.";
 
 const axiosInstance = axios.create({
   baseURL: `${import.meta.env.VITE_API_BASE_URL}`,
@@ -49,6 +53,14 @@ axiosInstance.interceptors.response.use(
     const status = error?.response?.status;
 
     const isRefreshCall = typeof config?.url === "string" && config.url.includes(REFRESH_URL);
+
+    // 미공개 기능 — 화면에 안내를 띄우고, 각 API가 에러 메시지를 그대로
+    // 보여주는 곳에서도 같은 문구가 나오도록 message를 채워서 넘긴다.
+    if (status === 403 && error?.response?.data?.code === "FEATURE_NOT_RELEASED") {
+      error.response.data = { ...error.response.data, message: FEATURE_NOT_RELEASED_MESSAGE };
+      useUIStore.getState().showNotice(FEATURE_NOT_RELEASED_MESSAGE);
+      return Promise.reject(error);
+    }
 
     // 401이 아니거나, refresh 요청 자체가 실패했거나, 이미 재시도한 요청이면
     // 더 이상 시도하지 않고 바로 세션 만료 처리한다.

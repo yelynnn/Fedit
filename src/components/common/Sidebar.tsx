@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useUIStore } from "@/stores/UIStore";
 import { AGENT_TAB, useChatStore } from "@/stores/ChatStore";
+import { useFeatureReleased } from "@/lib/features";
 import { useUserStore } from "@/stores/UserStore";
 import { resetUser } from "@/lib/analytics";
 import feditLogo from "@/assets/logo/feditLogo.svg";
@@ -38,7 +39,9 @@ export default function Sidebar() {
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const [popupPos, setPopupPos] = useState({ bottom: 0, left: 0 });
 
-  const { name, email, fetchMe } = useUserStore((s) => s);
+  const { name, email, admin, fetchMe } = useUserStore((s) => s);
+  // 미공개 기능(betaPaths)의 메뉴는 관리자가 아니면 숨긴다
+  const isReleased = useFeatureReleased();
   const userName = name || "사용자명";
   const userEmail = email;
 
@@ -128,7 +131,7 @@ export default function Sidebar() {
       <nav
         className={`px-2 flex-shrink-0 ${isCollapsed ? "space-y-4" : ""}`}
       >
-        {TABS_CONFIG.map((tab) => {
+        {TABS_CONFIG.filter((tab) => isReleased(tab.label)).map((tab) => {
           const active = selectedTab === tab.label;
           const stateClasses = active
             ? "bg-brand-subtle hover:bg-brand-subtle-hover"
@@ -259,17 +262,19 @@ export default function Sidebar() {
 
             <div className="w-full h-px my-2 bg-line-divider" />
 
-            {/* 메뉴 항목 */}
-            <button
-              onClick={() => {
-                openSettingsModal("구독");
-                setProfileOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
-            >
-              <Icon icon="ph:sparkle" className="flex-shrink-0 w-5 h-5" />
-              요금제 업그레이드
-            </button>
+            {/* 메뉴 항목 — 관리자는 요금제와 무관하게 모든 기능을 써서 업그레이드 유도를 숨긴다 */}
+            {!admin && (
+              <button
+                onClick={() => {
+                  openSettingsModal("구독");
+                  setProfileOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#242628] text-[14px] font-medium leading-[143%] tracking-[-0.07px] hover:bg-surface-base"
+              >
+                <Icon icon="ph:sparkle" className="flex-shrink-0 w-5 h-5" />
+                요금제 업그레이드
+              </button>
+            )}
             <button
               onClick={() => {
                 openSettingsModal("내정보");

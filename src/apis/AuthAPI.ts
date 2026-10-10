@@ -143,6 +143,11 @@ const PostLogout = async () => {
 export interface Me {
   name: string;
   email: string;
+  // 관리자 계정이면 요금제와 관계없이 모든 기능을 쓸 수 있다
+  admin?: boolean;
+  // 아직 공개하지 않은 기능의 API 경로 접두사(예: ["/fashionshow"]).
+  // 관리자가 아니면 이 경로를 쓰는 메뉴·화면을 숨긴다.
+  betaPaths?: string[];
 }
 
 const GetMe = async (): Promise<Me> => {

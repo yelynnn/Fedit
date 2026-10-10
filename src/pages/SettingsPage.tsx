@@ -287,6 +287,8 @@ export default function SettingsPage() {
   const [isStartingTrial, setIsStartingTrial] = useState(false);
 
   const userEmail = useUserStore((s) => s.email);
+  // 관리자는 요금제와 관계없이 모든 기능을 쓴다 — 결제·해지 버튼을 숨긴다
+  const isAdmin = useUserStore((s) => s.admin);
 
   useEffect(() => {
     fetchSubscription();
@@ -1277,7 +1279,16 @@ export default function SettingsPage() {
                 </h3>
                 <div className="flex items-center justify-between p-5 bg-[#F9FAFB] border border-line-divider rounded-xl mb-8">
                   <div>
-                    {!subscriptionLoaded ? (
+                    {isAdmin ? (
+                      <>
+                        <p className="text-base font-semibold text-tx-strong">
+                          관리자 계정
+                        </p>
+                        <p className="text-sm text-tx-alt mt-0.5">
+                          요금제와 관계없이 모든 기능을 이용할 수 있어요.
+                        </p>
+                      </>
+                    ) : !subscriptionLoaded ? (
                       <>
                         <div className="w-20 h-5 rounded bg-line-divider animate-pulse" />
                         <div className="w-40 h-4 mt-2 rounded bg-line-divider animate-pulse" />
@@ -1348,7 +1359,7 @@ export default function SettingsPage() {
                       </>
                     )}
                   </div>
-                  {currentPlan !== "enterprise" && (
+                  {!isAdmin && currentPlan !== "enterprise" && (
                     <button
                       onClick={() => {
                         if (effectivePlan === "none") {
@@ -1505,7 +1516,8 @@ export default function SettingsPage() {
                           )}
                         </div>
 
-                        {/* 버튼 */}
+                        {/* 버튼 — 관리자는 결제할 일이 없어서 숨긴다 */}
+                        {!isAdmin && (
                         <button
                           disabled={
                             isCurrent ||
@@ -1545,6 +1557,7 @@ export default function SettingsPage() {
                             btnLabel
                           )}
                         </button>
+                        )}
 
                         {/* 기능 목록 */}
                         <ul className="flex flex-col gap-3">
@@ -1574,7 +1587,8 @@ export default function SettingsPage() {
                           ))}
                         </ul>
 
-                        {isCurrent &&
+                        {!isAdmin &&
+                          isCurrent &&
                           plan.key !== "free" &&
                           !trialing &&
                           (subscription?.cancelAtPeriodEnd ? (

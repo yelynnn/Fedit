@@ -32,6 +32,7 @@ import {
 } from "@/lib/analytics";
 import { GetBrandPicks } from "@/apis/AnalysisAPI";
 import { GetMe } from "@/apis/AuthAPI";
+import { useFeatureReleased } from "@/lib/features";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -47,6 +48,23 @@ function RootNewLayout() {
   const selectedTab = useFilterStore((s) => s.selectedTab);
   // 사이드바 "FEDI Agent" — 전체화면 챗봇. 이 화면에서는 플로팅 버튼을 숨긴다.
   const isAgentPage = selectedTab === AGENT_TAB;
+  const isReleased = useFeatureReleased();
+  const notice = useUIStore((s) => s.notice);
+  const hideNotice = useUIStore((s) => s.hideNotice);
+
+  // 미공개 기능 화면에 머물러 있으면(예: 새로고침 전에 보던 탭이 숨겨짐)
+  // 첫 화면으로 옮긴다
+  const isCurrentTabReleased = isReleased(selectedTab);
+  useEffect(() => {
+    if (!isCurrentTabReleased) useFilterStore.getState().setSelectedTab("실시간 랭킹");
+  }, [isCurrentTabReleased]);
+
+  // 안내 문구는 3초 뒤 사라진다
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(hideNotice, 3000);
+    return () => clearTimeout(t);
+  }, [notice, hideNotice]);
   const setSelectedTab = useFilterStore((s) => s.setSelectedTab);
   const brandList = useFilterStore((s) => s.brandList);
   const subscription = useSubscriptionStore((s) => s.subscription);
@@ -128,12 +146,16 @@ function RootNewLayout() {
           hasBrandPicks ? GetBrandPicks().catch(() => []) : Promise.resolve([]),
         ]);
         // 가입만 한 사람은 none, 체험 중이면 trial, 결제해야 basic/pro/enterprise.
+        // 관리자는 화면에서 Enterprise처럼 모든 기능을 쓰지만, 통계에는 실제
+        // 고객과 섞이지 않게 요금제 대신 admin으로 보낸다.
         const billing = toBillingPlan(getEffectivePlan(subscription));
-        const plan = isTrial(subscription)
-          ? "trial"
-          : billing === "free"
-            ? "none"
-            : billing;
+        const plan = me.admin
+          ? "admin"
+          : isTrial(subscription)
+            ? "trial"
+            : billing === "free"
+              ? "none"
+              : billing;
         identifyUser(me.email, plan, me.name, monitoredBrands);
         // 채팅 기록은 브라우저에 저장돼서, 다른 계정으로 로그인하면 비운다
         if (me.email) useChatStore.getState().syncOwner(me.email);
@@ -276,9 +298,12 @@ function RootNewLayout() {
 
       <OnboardingTour />
 
-      {/* FEDI Agent 플로팅 버튼 & 채팅창 — 전체화면(FEDI Agent 탭)에서는 숨김 */}
+      {/* FEDI Agent 플로팅 버튼 & 채팅창 — 전체화면(FEDI Agent 탭)이거나
+          챗봇이 미공개 기능이면 숨김 */}
       <div
-        className={`fixed z-50 flex flex-col items-end gap-3 bottom-6 right-6 ${isAgentPage ? "hidden" : ""}`}
+        className={`fixed z-50 flex flex-col items-end gap-3 bottom-6 right-6 ${
+          isAgentPage || !isReleased(AGENT_TAB) ? "hidden" : ""
+        }`}
       >
         {isAgentOpen && activeConversationId && (
           <AgentChat
@@ -299,6 +324,16 @@ function RootNewLayout() {
           />
         </button>
       </div>
+
+      {notice && (
+        <div
+          role="status"
+          className="fixed z-[200] bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111214] text-white text-[14px] font-medium shadow-[0_6px_18px_0_rgba(0,0,0,0.22)]"
+        >
+          <Icon icon="ph:hourglass-medium" className="w-4 h-4" />
+          {notice}
+        </div>
+      )}
 
       <div id="modal-root" />
 

@@ -5,6 +5,7 @@ import { useUIStore } from "@/stores/UIStore";
 import BrandFilterModal from "../filter/BrandFilterModal";
 import BrandTab from "../filter/BrandTab";
 import { getPlatformBrandCounts } from "@/lib/platformBrandCounts";
+import { useFeatureReleased } from "@/lib/features";
 
 // 사이드바와 동일한 설정 (이 설정은 별도 파일로 분리해서 공통으로 쓰는 것이 가장 좋습니다)
 const TABS_CONFIG = [
@@ -39,6 +40,7 @@ export default function NewHeader() {
   const { isBrandFilterModalOpen, openBrandFilterModal, closeBrandFilterModal } =
     useUIStore((s) => s);
   const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
+  const isReleased = useFeatureReleased();
   const brandList = useFilterStore((s) => s.brandList);
   const platformList = useFilterStore((s) => s.platformList);
 
@@ -101,6 +103,7 @@ export default function NewHeader() {
             </div>
           </div>
 
+          {isReleased("내 보드") && (
           <div
             data-tour="my-board-button"
             onClick={() => setSelectedTab("내 보드")}
@@ -114,6 +117,7 @@ export default function NewHeader() {
               className="w-3.5 h-3.5 text-icon-neutral"
             />
           </div>
+          )}
         </div>
 
         {/* 사용자 아바타

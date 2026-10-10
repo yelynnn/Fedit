@@ -28,6 +28,11 @@ type UIStore = {
   // null이면 사이드바가 평소대로(로컬 저장된 값) 동작, true/false면 온보딩 투어 등에서 강제로 펼치거나 접음
   sidebarCollapseOverride: boolean | null;
   setSidebarCollapseOverride: (value: boolean | null) => void;
+
+  // 화면 아래에 잠깐 뜨는 안내 문구(예: 미공개 기능 호출 시 "준비 중인 기능입니다")
+  notice: string | null;
+  showNotice: (message: string) => void;
+  hideNotice: () => void;
 };
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -54,4 +59,8 @@ export const useUIStore = create<UIStore>((set) => ({
 
   sidebarCollapseOverride: null,
   setSidebarCollapseOverride: (value) => set({ sidebarCollapseOverride: value }),
+
+  notice: null,
+  showNotice: (message) => set({ notice: message }),
+  hideNotice: () => set({ notice: null }),
 }));

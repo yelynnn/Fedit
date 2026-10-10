@@ -36,7 +36,8 @@ export function track(event: string, params: Record<string, any> = {}) {
 export function identifyUser(
   email: string,
   // none: 가입만 함(요금제·체험 없음) / trial: 무료 체험 중 / 그 외: 결제한 요금제
-  plan: "none" | "trial" | "basic" | "pro" | "enterprise",
+  // admin: 관리자 계정 — 실제 고객 통계에 섞이지 않게 요금제와 따로 보낸다
+  plan: "none" | "trial" | "basic" | "pro" | "enterprise" | "admin",
   name?: string,
   monitoredBrands?: string[],
 ) {

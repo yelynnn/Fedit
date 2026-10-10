@@ -54,23 +54,54 @@ export const isBasicPlan = (plan: Subscription["plan"] | undefined): boolean =>
 export const isLockedPlan = (effective: EffectivePlan): boolean =>
   effective === "none" || effective === "expired";
 
+// 관리자 계정은 요금제와 관계없이 모든 기능을 쓴다. 화면 곳곳의 요금제
+// 판정(getEffectivePlan·toBillingPlan·isLockedPlan 등)이 모두 subscription을
+// 보고 있어서, 관리자면 subscription 자체를 "모든 기능이 열린 Enterprise
+// 이용 중"으로 바꿔서 내보낸다 — 잠금·업그레이드 유도가 한 번에 꺼진다.
+// 실제 서버 구독 정보는 rawSubscription에 그대로 둔다.
+const ADMIN_SUBSCRIPTION: Subscription = {
+  plan: "enterprise",
+  status: "active",
+  amount: 0,
+  hasBillingKey: false,
+  nextBillingDate: null,
+  cancelAtPeriodEnd: false,
+  downgradePending: false,
+};
+
 type SubscriptionStore = {
   subscription: Subscription | null;
+  rawSubscription: Subscription | null;
+  isAdmin: boolean;
   loaded: boolean;
   fetchSubscription: () => Promise<void>;
   setSubscription: (subscription: Subscription | null) => void;
+  setAdmin: (isAdmin: boolean) => void;
 };
 
-export const useSubscriptionStore = create<SubscriptionStore>((set) => ({
+export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   subscription: null,
+  rawSubscription: null,
+  isAdmin: false,
   loaded: false,
   fetchSubscription: async () => {
     try {
-      const subscription = await GetSubscription();
-      set({ subscription, loaded: true });
+      get().setSubscription(await GetSubscription());
     } catch {
-      set({ subscription: null, loaded: true });
+      get().setSubscription(null);
     }
   },
-  setSubscription: (subscription) => set({ subscription, loaded: true }),
+  setSubscription: (subscription) =>
+    set({
+      rawSubscription: subscription,
+      subscription: get().isAdmin ? ADMIN_SUBSCRIPTION : subscription,
+      loaded: true,
+    }),
+  setAdmin: (isAdmin) =>
+    set((state) => ({
+      isAdmin,
+      subscription: isAdmin ? ADMIN_SUBSCRIPTION : state.rawSubscription,
+      // 관리자면 구독 응답을 기다릴 필요 없이 바로 판정할 수 있다
+      loaded: isAdmin ? true : state.loaded,
+    })),
 }));
