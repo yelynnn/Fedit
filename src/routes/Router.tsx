@@ -14,6 +14,7 @@ import CorporateVerifyPage from "@/pages/Auth/CorporateVerifyPage";
 import TermsOfServicePage from "@/pages/Auth/TermsOfServicePage";
 import CancellationTermsPage from "@/pages/Auth/CancellationTermsPage";
 import PrivacyPolicyPage from "@/pages/Auth/PrivacyPolicyPage";
+import PrivacyPolicy20260714Page from "@/pages/Auth/PrivacyPolicy20260714Page";
 import BillingSuccessPage from "@/pages/BillingSuccessPage";
 import BillingFailPage from "@/pages/BillingFailPage";
 import KakaoUpgradeAdminPage from "@/pages/admin/KakaoUpgradeAdminPage";
@@ -90,6 +91,11 @@ const router = createBrowserRouter([
       {
         path: "/privacy",
         element: <PrivacyPolicyPage />,
+      },
+      {
+        // 이전 버전 개인정보처리방침(개정 이력)
+        path: "/privacy/2026-07-14",
+        element: <PrivacyPolicy20260714Page />,
       },
       {
         element: <ProtectedRoute />,
