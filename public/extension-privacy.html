@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FEDIT 크롬 확장 개인정보처리방침</title>
+<meta name="description" content="FEDIT 크롬 확장 프로그램이 수집·이용하는 정보와 처리 방식">
+<style>
+  :root { --fg:#111; --muted:#666; --line:#e5e5e5; --bg:#fff; --soft:#f6f6f6; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#eee; --muted:#aaa; --line:#333; --bg:#111; --soft:#1b1b1b; } }
+  * { box-sizing: border-box; }
+  body { word-break: keep-all; overflow-wrap: anywhere; margin:0; background:var(--bg); color:var(--fg); font:15px/1.75 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-size: 26px; line-height:1.3; margin: 0 0 6px; }
+  h2 { font-size: 18px; margin: 40px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  p, li { margin: 6px 0; }
+  ul { padding-left: 20px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+  .box { background: var(--soft); border-radius: 12px; padding: 16px 18px; }
+  table { width:100%; border-collapse: collapse; font-size: 14px; margin: 8px 0; }
+  th, td { text-align:left; vertical-align:top; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; white-space: nowrap; }
+  code { font-size: 13px; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+  a { color: inherit; }
+  @media (max-width: 560px) { table, tbody, tr, th, td { display:block; } th { padding-bottom: 0; border-bottom: 0; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>FEDIT 크롬 확장 개인정보처리방침</h1>
+  <div class="meta">시행일 2026년 10월 18일 · 운영 FEDIT(미피 MIFY)</div>
+
+  <div class="box">
+    FEDIT 크롬 확장 프로그램(이하 “확장”)은 사용자가 보고 있는 쇼핑몰 상품을 FEDIT으로 가져와 AI로 분석하고,
+    사용자의 FEDIT ‘내 보드’에 저장하는 도구입니다. 확장은 이 기능에 필요한 정보만 다루며,
+    사용자가 방문한 사이트 기록을 모으거나 광고에 쓰지 않고, 정보를 판매하지 않습니다.
+  </div>
+
+  <h2>1. 확장이 다루는 정보</h2>
+  <table>
+    <tr><th>상품 페이지 정보</th>
+      <td>사이드패널이 열려 있는 동안 사용자가 보고 있는 탭의 상품 정보 — 페이지 주소(URL), 상품명, 브랜드, 쇼핑몰 이름, 카테고리, 대표 이미지 주소, 상품 설명, 색상, 가격.
+      페이지에 공개된 상품 정보(구조화 데이터·메타 태그)에서만 읽으며, 입력란·결제 정보·쿠키 등은 읽지 않습니다.</td></tr>
+    <tr><th>로그인 정보</th>
+      <td>FEDIT 웹사이트(fedit.mify.im)에 로그인하면 발급되는 로그인 토큰. 웹사이트와 같은 계정으로 확장을 쓰기 위해 사용합니다.
+      비밀번호는 확장이 다루지 않습니다.</td></tr>
+    <tr><th>계정 이용 정보</th>
+      <td>보드 목록, 마지막으로 고른 보드, 이번 달 AI 분석 사용 횟수(요금제별 한도 계산용).</td></tr>
+  </table>
+
+  <h2>2. 언제 읽고, 언제 보내나요</h2>
+  <ul>
+    <li><strong>사이드패널이 열려 있을 때만</strong> 지금 보고 있는 탭의 상품 정보를 읽어 패널에 보여줍니다(탭을 바꾸면 그 탭을 다시 읽습니다). 이때 읽은 정보는 사용자의 브라우저 안에만 있습니다.</li>
+    <li>사용자가 <strong>“AI로 분석하기”</strong>를 누르면 그 상품의 정보(1번의 상품 페이지 정보)가 FEDIT 서버로 전송되어 AI 분석에 쓰입니다.</li>
+    <li>사용자가 <strong>“내 보드에 저장”</strong>을 누르면 그 상품이 사용자 계정의 보드에 저장됩니다.</li>
+    <li>패널이 닫혀 있을 때, 보고 있지 않은 탭, 방문 기록은 읽거나 보내지 않습니다.</li>
+  </ul>
+
+  <h2>3. 이용 목적</h2>
+  <ul>
+    <li>상품 이미지·정보의 AI 분석(유형, 소재, 색상, 핏, 무드 등)과 결과 표시</li>
+    <li>FEDIT 데이터베이스 속 비슷한 상품 추천</li>
+    <li>사용자 보드에 상품 저장</li>
+    <li>요금제별 월 분석 한도 확인</li>
+  </ul>
+
+  <h2>4. 저장 위치와 보관 기간</h2>
+  <ul>
+    <li><strong>브라우저(확장 저장소):</strong> 로그인 토큰과 마지막으로 고른 보드 번호를 <code>chrome.storage.local</code>에 저장합니다. 로그아웃하거나 확장을 삭제하면 지워집니다.</li>
+    <li><strong>FEDIT 서버:</strong> 분석을 요청한 상품의 정보와 분석 결과, 분석 사용 기록, 보드에 저장한 상품을 보관합니다.
+      보드 항목은 사용자가 삭제하거나 회원 탈퇴할 때까지, 분석 사용 기록은 요금 한도 계산과 부정 이용 방지를 위해 필요한 기간 동안 보관합니다.</li>
+    <li>상품 분석 결과는 상품 자체에 대한 정보이므로, 같은 상품을 다른 사용자가 분석할 때 다시 쓰일 수 있습니다. 이때 누가 분석을 요청했는지는 다른 사용자에게 공개되지 않습니다.</li>
+  </ul>
+
+  <h2>5. 제3자 제공</h2>
+  <p>확장이 다루는 정보는 FEDIT 서비스 제공 목적으로만 쓰며, 판매하거나 광고 목적으로 제3자에게 제공하지 않습니다.
+  법령에 따라 요구되는 경우는 예외로 합니다.</p>
+
+  <h2>6. 크롬 웹스토어 사용자 데이터 정책 준수</h2>
+  <p>FEDIT 크롬 확장이 크롬 API로 받은 정보의 사용과 다른 앱으로의 전송은
+  <a href="https://developer.chrome.com/docs/webstore/program-policies/limited-use" target="_blank" rel="noopener">Chrome 웹스토어 사용자 데이터 정책</a>의
+  제한적 사용(Limited Use) 요건을 따릅니다.</p>
+
+  <h2>7. 사용자의 권리</h2>
+  <ul>
+    <li>보드에 저장한 상품은 FEDIT 웹사이트의 ‘내 보드’에서 언제든 삭제할 수 있습니다.</li>
+    <li>확장을 삭제하면 브라우저에 저장된 확장 데이터가 모두 지워집니다.</li>
+    <li>계정·데이터 삭제, 열람 요청은 아래 연락처로 보내주세요.</li>
+  </ul>
+
+  <h2>8. 문의</h2>
+  <p>FEDIT(미피 MIFY) · <a href="mailto:team.mify@gmail.com">team.mify@gmail.com</a></p>
+
+  <h2>9. 변경</h2>
+  <p>이 방침이 바뀌면 이 페이지에 시행일과 함께 알립니다.</p>
+</main>
+</body>
+</html>

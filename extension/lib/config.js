@@ -2,8 +2,8 @@
 export const API_BASE = "https://mify.kro.kr";
 export const WEB_BASE = "https://fedit.mify.im";
 export const LOGIN_URL = `${WEB_BASE}/login`;
-export const BOARD_URL = `${WEB_BASE}/beta`;
-export const PRICING_URL = `${WEB_BASE}/beta`;
+export const BOARD_URL = `${WEB_BASE}/?tab=board`;
+export const PRICING_URL = `${WEB_BASE}/?open=pricing`;
 export const productDetailUrl = (itemcode) => `${WEB_BASE}/beta/product/${encodeURIComponent(itemcode)}`;
 
 // 분석 상태 폴링

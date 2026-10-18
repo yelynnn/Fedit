@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useProductStore } from "@/stores/ProductStore";
 import ProductDetailContent from "./ProductDetailContent";
+import ExtensionItemDetail from "./ExtensionItemDetail";
+import { isExtensionItemCode } from "@/apis/ExtensionAPI";
 
 export default function ProductDetailModal() {
   const { modalProductId, setModalProductId, modalTrendSnapshot, setModalTrendSnapshot } =
@@ -48,6 +50,13 @@ export default function ProductDetailModal() {
           <ProductDetailContent
             previewSnapshot={modalTrendSnapshot}
             onClose={close}
+          />
+        ) : isExtensionItemCode(modalProductId) ? (
+          // 크롬 확장으로 저장한 외부 상품 — 일반 상품 상세 API(/detail)에는 없다
+          <ExtensionItemDetail
+            itemcode={modalProductId!}
+            onClose={close}
+            onItemClick={(id) => setModalProductId(id)}
           />
         ) : (
           <ProductDetailContent

@@ -3,7 +3,7 @@
   "name": "FEDIT – 패션 상품 저장·분석",
   "short_name": "FEDIT",
   "version": "0.1.0",
-  "description": "보고 있는 쇼핑몰 상품을 클릭 한 번으로 FEDIT 내 보드에 저장하고 AI로 유형·소재·색상을 분석합니다.",
+  "description": "보고 있는 쇼핑몰 상품을 AI로 분석하고, 비슷한 상품을 찾고, FEDIT 내 보드에 저장합니다.",
   "minimum_chrome_version": "116",
   "icons": {
     "16": "icons/icon16.png",

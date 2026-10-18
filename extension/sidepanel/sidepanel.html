@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="top">
-    <div class="logo"><img src="../icons/icon48.png" alt="" /> FEDIT</div>
+    <button id="btn-home" class="logo" title="FEDIT 열기"><img src="../icons/icon48.png" alt="" /> FEDIT</button>
     <span id="usage" class="pill" hidden></span>
   </header>
 
@@ -17,7 +17,7 @@
   <main id="view-login" class="view" hidden>
     <div class="empty">
       <h2>FEDIT 계정으로 로그인해 주세요</h2>
-      <p>보고 있는 상품을 AI로 분석하고, 마음에 들면 내 보드에 저장할 수 있어요.</p>
+      <p>보고 있는 상품을 AI로 분석하고, 마음에 들면 내 무드보드에 저장할 수 있어요.</p>
       <button id="btn-login" class="primary">FEDIT 로그인</button>
       <p class="hint">로그인하면 이 패널에 자동으로 연결돼요.</p>
     </div>
@@ -26,13 +26,14 @@
   <main id="view-main" class="view" hidden>
     <section id="product" class="card"></section>
     <button id="btn-analyze" class="primary" disabled>AI로 분석하기</button>
+    <section id="limit" class="card limit" hidden></section>
 
     <section id="result" hidden></section>
     <section id="similar" class="card" hidden></section>
 
     <section id="save-area" class="card" hidden>
       <label class="field">
-        <span>마음에 들면 내 보드에 저장</span>
+        <span>내 무드보드</span>
         <div class="row">
           <select id="board"></select>
           <button id="btn-new-board" class="ghost" title="새 보드">＋</button>
@@ -47,6 +48,11 @@
     </section>
 
     <p id="error" class="error" hidden></p>
+
+    <footer class="foot">
+      <button id="btn-open-board" class="link">내 무드보드 전체 보기 →</button>
+      <button id="btn-open-web" class="link">FEDIT에서 트렌드·경쟁사 분석 이어서 보기 →</button>
+    </footer>
   </main>
 
   <script type="module" src="sidepanel.js"></script>

@@ -2,7 +2,7 @@
 import { api, AuthError, ApiError } from "../lib/api.js";
 import { getTokens } from "../lib/tokens.js";
 import { extractProduct } from "../lib/extract.js";
-import { LOGIN_URL, BOARD_URL, PRICING_URL, productDetailUrl, POLL_INTERVAL_MS, POLL_TIMEOUT_MS } from "../lib/config.js";
+import { WEB_BASE, LOGIN_URL, BOARD_URL, PRICING_URL, productDetailUrl, POLL_INTERVAL_MS, POLL_TIMEOUT_MS } from "../lib/config.js";
 
 const $ = (id) => document.getElementById(id);
 const LAST_BOARD_KEY = "feditLastBoardId";
@@ -67,7 +67,6 @@ function handleError(e) {
   if (e instanceof ApiError && e.code === LIMIT_CODE) {
     state.usage = { ...(state.usage || {}), canAnalyze: false };
     renderUsage(state.usage);
-    renderLimitReached(e.message);
     return;
   }
   showError(e && e.message ? e.message : "문제가 생겼어요. 잠시 후 다시 시도해 주세요.");
@@ -93,14 +92,18 @@ function renderUsage(u) {
 }
 const limitReached = () => Boolean(state.usage && state.usage.canAnalyze === false);
 
-function renderLimitReached(message) {
-  const box = $("result");
+// 한도를 다 쓰면 분석 버튼 아래에 구독 안내를 띄운다(사용량 조회 시점이든 분석 요청이 403 으로 막힌 시점이든)
+function renderLimitReached() {
+  const box = $("limit");
+  const p = state.product;
+  const showingResult = state.result && p && state.resultUrl === p.url && state.result.status !== "failed";
+  if (!limitReached() || showingResult) { box.hidden = true; return; }
   box.hidden = false;
-  box.className = "card";
-  fill(box, 
-    el("p", { class: "notice" }, el("strong", {}, message || "이번 달 AI 분석 한도를 모두 사용했어요.")),
-    el("p", { class: "notice" }, "요금제를 올리면 더 많은 상품을 분석할 수 있어요. 이번 달에 이미 분석한 상품은 다시 볼 수 있어요."),
-    el("div", { class: "actions" }, el("button", { class: "primary", onclick: () => openTab(PRICING_URL) }, "요금제 보기")),
+  fill(box,
+    el("p", { class: "limit-title" }, "요금제를 구독하고 계속 분석해 보세요"),
+    el("p", { class: "notice" }, "요금제를 구독하면 매달 더 많은 상품을 분석하고, FEDIT에서 트렌드 지수·경쟁사 모니터링까지 이어서 볼 수 있어요."),
+    el("button", { class: "primary", onclick: () => openTab(PRICING_URL) }, "요금제 보기"),
+    el("p", { class: "sub" }, "이미 분석한 상품은 계속 보고 무드보드에 저장할 수 있어요."),
   );
 }
 
@@ -223,7 +226,8 @@ function updateButtons() {
   btn.disabled = state.analyzing || !p || !p.thumbnail || limitReached();
   btn.textContent = state.analyzing ? "분석 요청 중…" : limitReached() ? "이번 달 분석 한도를 모두 사용했어요" : failed ? "다시 분석하기" : "AI로 분석하기";
   $("btn-save").disabled = state.saving || !hasResult;
-  $("btn-save").textContent = state.saving ? "저장하는 중…" : "내 보드에 저장";
+  $("btn-save").textContent = state.saving ? "저장하는 중…" : "무드보드에 저장";
+  renderLimitReached();
 }
 
 // 탭 이동·페이지 이동을 따라간다
@@ -393,7 +397,7 @@ function renderResult(r) {
     fill(box, 
       el("div", { class: "status" }, el("div", { class: "spinner" }),
         r.status === "loading" ? "분석 결과를 불러오고 있어요" : "AI가 분석하고 있어요"),
-      r.status === "loading" ? null : el("p", { class: "notice" }, "보통 1분 안에 끝나요. 기다리는 동안 보드에 먼저 저장해도 돼요."),
+      r.status === "loading" ? null : el("p", { class: "notice" }, "보통 1분 안에 끝나요. 기다리는 동안 무드보드에 먼저 저장해도 돼요."),
     );
   }
 }
@@ -405,7 +409,7 @@ async function loadSimilar(itemcode) {
   similarFor = itemcode;
   const box = $("similar");
   box.hidden = false;
-  fill(box, el("p", { class: "section-title" }, "FEDIT DB 속 비슷한 상품"),
+  fill(box, el("p", { class: "section-title" }, "유사상품"),
     el("div", { class: "status" }, el("div", { class: "spinner" }), "찾는 중"));
   let items = [];
   try {
@@ -415,18 +419,17 @@ async function loadSimilar(itemcode) {
   }
   if (similarFor !== itemcode || !state.result || state.result.itemcode !== itemcode) return;
   if (!items.length) {
-    fill(box, el("p", { class: "section-title" }, "FEDIT DB 속 비슷한 상품"),
-      el("p", { class: "notice" }, "FEDIT DB에서 비슷한 상품을 찾지 못했어요."));
+    fill(box, el("p", { class: "section-title" }, "유사상품"),
+      el("p", { class: "notice" }, "FEDIT DB에서 유사상품을 찾지 못했어요."));
     return;
   }
   fill(box,
-    el("p", { class: "section-title" }, "FEDIT DB 속 비슷한 상품"),
+    el("p", { class: "section-title" }, "유사상품"),
     el("div", { class: "similar-grid" }, items.map((it) =>
       el("button", { class: "sim", title: it.product_name || "", onclick: () => openTab(productDetailUrl(it.itemCode)) },
         el("img", { src: it.thumbnail || "", alt: "", loading: "lazy" }),
         el("span", { class: "b" }, it.brand || ""),
         el("span", { class: "n" }, it.product_name || it.itemCode),
-        (it.details || []).length ? el("span", { class: "k" }, it.details.slice(0, 2).join(" · ")) : null,
       ))),
   );
 }
@@ -441,7 +444,7 @@ function setSaveMsg(text, ok = false) {
   m.replaceChildren();
   if (!text) return;
   m.append(text);
-  if (ok) m.append(" ", el("a", { href: "#", onclick: (e) => { e.preventDefault(); openTab(BOARD_URL); } }, "내 보드 열기"));
+  if (ok) m.append(" ", el("a", { href: "#", onclick: (e) => { e.preventDefault(); openTab(BOARD_URL); } }, "무드보드 보기"));
 }
 
 async function onSave() {
@@ -470,6 +473,11 @@ async function onSave() {
     updateButtons();
   }
 }
+
+// ── FEDIT 웹으로 이어가기 ──
+$("btn-home").addEventListener("click", () => openTab(WEB_BASE));
+$("btn-open-web").addEventListener("click", () => openTab(WEB_BASE));
+$("btn-open-board").addEventListener("click", () => openTab(BOARD_URL));
 
 // ── 로그인 ───────────────────────────────────────────────────────────
 $("btn-login").addEventListener("click", () => openTab(LOGIN_URL));
