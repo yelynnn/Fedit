@@ -131,6 +131,50 @@ const GetProductList = async (
   return res.data;
 };
 
+// ── 상품 비교 ─────────────────────────────────────────────────────────
+// GET /products/compare?itemCodes=A&itemCodes=B (최대 4개). 비교표는 행 단위
+// (rows)로 오고, "최고" 칸(best: 상품 인덱스)도 백엔드가 정해 준다.
+
+export type CompareApiItem = {
+  itemcode: string;
+  brand: string | null;
+  product_name: string;
+  thumbnail: string | null;
+  current_price: number | string | null;
+  regular_price: number | string | null;
+};
+
+export type CompareRow = {
+  key: string;
+  label: string;
+  // summary(통합 지수) · performance(성과) · price(가격) · design(디자인) · more(트렌드지수 상세)
+  group?: string;
+  values: (string | null)[];
+  best: number[];
+  // 디자인 행: 값이 있는 상품끼리 모두 같으면 true, 다르면 false, 값 2개 미만이면 null
+  same?: boolean | null;
+};
+
+export type CompareResponse = {
+  items: CompareApiItem[];
+  rows: CompareRow[];
+};
+
+const GetCompare = async (itemCodes: string[]): Promise<CompareResponse> => {
+  const res = await axiosInstance.get("/products/compare", {
+    params: { itemCodes },
+    paramsSerializer: (params) => {
+      const searchParams = new URLSearchParams();
+      (params.itemCodes as string[]).forEach((code) => searchParams.append("itemCodes", code));
+      return searchParams.toString();
+    },
+  });
+  return {
+    items: Array.isArray(res.data?.items) ? res.data.items : [],
+    rows: Array.isArray(res.data?.rows) ? res.data.rows : [],
+  };
+};
+
 const GetPatternList = async (): Promise<string[]> => {
   try {
     const res = await axiosInstance.get("/menu/pattern");
@@ -309,6 +353,7 @@ export {
   GetRelatedItemInfo,
   PostJudge,
   GetPatternList,
+  GetCompare,
   GetMoodList,
   GetSeasonFeelList,
   GetDetailList,

@@ -9,6 +9,9 @@ import SessionExpiredModal from "@/components/common/SessionExpiredModal";
 import AgentChat from "@/components/agent/AgentChat";
 import SettingsPage from "@/pages/SettingsPage";
 import AgentPage from "@/pages/AgentPage";
+import CompareBar from "@/components/compare/CompareBar";
+import ComparePage from "@/components/compare/ComparePage";
+import { useCompareStore } from "@/stores/CompareStore";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { useFilterStore } from "@/stores/FilterStore";
@@ -58,6 +61,14 @@ function RootNewLayout() {
   const isCurrentTabReleased = isReleased(selectedTab);
   const selectedProductId = useProductStore((s) => s.selectedProductId);
   const isProductDetailOpen = selectedTab === "상품 분석" && !!selectedProductId;
+  // 상품 비교 화면(상품 분석 안의 페이지) — 다른 메뉴로 가면 닫는다
+  const comparePageOpen = useCompareStore((s) => s.pageOpen);
+  const isComparePage = selectedTab === "상품 분석" && comparePageOpen;
+  useEffect(() => {
+    if (selectedTab !== "상품 분석") useCompareStore.getState().closePage();
+  }, [selectedTab]);
+  // 상품 분석 화면엔 비교 담기 바가 있어서 플로팅 FEDI 버튼을 그 위로 올린다
+  const isCompareBarShown = selectedTab === "상품 분석" && !isComparePage;
   useEffect(() => {
     if (!isCurrentTabReleased) useFilterStore.getState().setSelectedTab("실시간 랭킹");
   }, [isCurrentTabReleased]);
@@ -296,11 +307,20 @@ function RootNewLayout() {
               className="relative flex-1 overflow-auto bg-white [contain:layout]"
               data-capture-protect
             >
-              {/* 상품 분석에서 상세를 열면 헤더와 상세 박스 사이를 24px로 둔다 */}
-              <div className={`h-full ${isProductDetailOpen ? "pt-6 pb-8" : "py-8"}`}>
-                <NewFilterTabPanels />
+              {/* 상품 분석에서 상세를 열면 헤더와 상세 박스 사이를 24px로 둔다.
+                  상품 분석은 아래에 비교 담기 바가 붙어서 아래 여백을 없앤다 */}
+              <div
+                className={`h-full ${isProductDetailOpen || isComparePage ? "pt-6" : "pt-8"} ${
+                  selectedTab === "상품 분석" ? "pb-0" : "pb-8"
+                }`}
+              >
+                {/* 상품 분석에서 "비교하기"를 누르면 목록 대신 상품 비교 화면 */}
+                {isComparePage ? <ComparePage /> : <NewFilterTabPanels />}
               </div>
             </main>
+
+            {/* 비교 담기 바 — 상품 분석 화면에서만(담은 게 없으면 얇은 바), 비교 화면에선 숨김 */}
+            {selectedTab === "상품 분석" && !isComparePage && <CompareBar />}
           </>
         )}
       </div>
@@ -317,7 +337,9 @@ function RootNewLayout() {
       {/* FEDI Agent 플로팅 버튼 & 채팅창 — 전체화면(FEDI Agent 탭)이거나
           챗봇이 미공개 기능이면 숨김 */}
       <div
-        className={`fixed z-50 flex flex-col items-end gap-3 bottom-6 right-6 ${
+        className={`fixed z-50 flex flex-col items-end gap-3 right-6 ${
+          isCompareBarShown ? "bottom-24" : "bottom-6"
+        } ${
           isAgentPage || !isReleased(AGENT_TAB) ? "hidden" : ""
         }`}
       >

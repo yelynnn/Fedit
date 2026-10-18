@@ -10,8 +10,10 @@ import QuestionTooltip from "@/components/common/QuestionTooltip";
 
 
 
+// 최신 시즌이 위로(첫 번째가 기본 선택)
 const SEASONS = [
   { label: "2026 Fall/Winter", value: "2026FW" },
+  { label: "2026 Spring/Summer", value: "2026SS" },
   { label: "2025 Spring/Summer", value: "2025SS" },
 ];
 

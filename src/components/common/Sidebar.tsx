@@ -210,7 +210,7 @@ export default function Sidebar() {
 
       {/* 프로필 버튼 */}
       <div ref={profileRef} className="flex-shrink-0">
-        <div className="p-2 border-t border-line-divider">
+        <div className="p-2">
           <button
             ref={profileButtonRef}
             onClick={handleProfileButtonClick}
