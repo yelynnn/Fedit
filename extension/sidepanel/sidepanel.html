@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FEDIT</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="logo"><img src="../icons/icon48.png" alt="" /> FEDIT</div>
+    <span id="usage" class="pill" hidden></span>
+  </header>
+
+  <main id="view-loading" class="view"><div class="spinner"></div></main>
+
+  <main id="view-login" class="view" hidden>
+    <div class="empty">
+      <h2>FEDIT 계정으로 로그인해 주세요</h2>
+      <p>보고 있는 상품을 AI로 분석하고, 마음에 들면 내 보드에 저장할 수 있어요.</p>
+      <button id="btn-login" class="primary">FEDIT 로그인</button>
+      <p class="hint">로그인하면 이 패널에 자동으로 연결돼요.</p>
+    </div>
+  </main>
+
+  <main id="view-main" class="view" hidden>
+    <section id="product" class="card"></section>
+    <button id="btn-analyze" class="primary" disabled>AI로 분석하기</button>
+
+    <section id="result" hidden></section>
+    <section id="similar" class="card" hidden></section>
+
+    <section id="save-area" class="card" hidden>
+      <label class="field">
+        <span>마음에 들면 내 보드에 저장</span>
+        <div class="row">
+          <select id="board"></select>
+          <button id="btn-new-board" class="ghost" title="새 보드">＋</button>
+        </div>
+      </label>
+      <div id="new-board" class="row" hidden>
+        <input id="new-board-name" maxlength="30" placeholder="새 보드 이름" />
+        <button id="btn-create-board" class="ghost">만들기</button>
+      </div>
+      <button id="btn-save" class="dark-outline">내 보드에 저장</button>
+      <p id="save-msg" class="notice" hidden></p>
+    </section>
+
+    <p id="error" class="error" hidden></p>
+  </main>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
