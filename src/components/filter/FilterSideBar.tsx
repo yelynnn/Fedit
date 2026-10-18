@@ -107,7 +107,13 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void 
         />
         <NewFilterOption
           filterName="무드"
-          filterList={[]}
+          filterList={data.selectedMoods}
+          onOpen={onOpenFilter}
+        />
+        {/* 계절감(봄·여름·가을·겨울) — 위 "시즌"(26SS 등 연도+시즌)과 다른 항목 */}
+        <NewFilterOption
+          filterName="계절감"
+          filterList={data.selectedSeasonFeels}
           onOpen={onOpenFilter}
         />
       </div>

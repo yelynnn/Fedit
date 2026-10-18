@@ -17,6 +17,10 @@ type Vlm = {
   pattern: string | string[];
   detail: string[];
   color: string[];
+  // 무드(최대 3개)·계절감(봄→여름→가을→겨울→사계절 순). 백엔드 배포 전이면
+  // 키가 없을 수 있다 — 없으면 빈 배열로 본다.
+  mood?: string[];
+  season_feel?: string[];
 };
 
 export type ApiDetail = {

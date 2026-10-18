@@ -1,24 +1,31 @@
 import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
+import { GenderCategories, ColorCategories } from "@/data/FilterCategories";
 import {
-  GenderCategories,
-  ColorCategories,
-  MoodCategories,
-} from "@/data/FilterCategories";
-import { GetPatternList, GetDetailList } from "@/apis/AnalysisAPI";
+  GetPatternList,
+  GetDetailList,
+  GetMoodList,
+  GetSeasonFeelList,
+} from "@/apis/AnalysisAPI";
 import TypeFilterPanel from "./TypeFilterPanel";
 
-type Props = { title: "성별" | "유형" | "색상" | "디테일" | "패턴" | "무드" };
+type Props = {
+  title: "성별" | "유형" | "색상" | "디테일" | "패턴" | "무드" | "계절감";
+};
 
 export default function FilterCheckList({ title }: Props) {
   const { filterList, addFilter, removeFilter } = useFilterStore((s) => s);
   const [patternList, setPatternList] = useState<string[]>([]);
   const [detailList, setDetailList] = useState<string[]>([]);
+  const [moodList, setMoodList] = useState<string[]>([]);
+  const [seasonFeelList, setSeasonFeelList] = useState<string[]>([]);
 
   useEffect(() => {
     if (title === "패턴") GetPatternList().then(setPatternList);
     if (title === "디테일") GetDetailList().then(setDetailList);
+    if (title === "무드") GetMoodList().then(setMoodList);
+    if (title === "계절감") GetSeasonFeelList().then(setSeasonFeelList);
   }, [title]);
 
   const toggle = (value: string) => {
@@ -119,20 +126,15 @@ export default function FilterCheckList({ title }: Props) {
     );
   }
 
-  if (title === "무드") {
-    return (
-      <ul className={gridCls}>
-        {MoodCategories.map((v) => (
-          <li key={v} className="flex items-center gap-2 text-[#6B7A99]">
-            <Icon icon="tabler:lock" />
-            <span>{v}</span>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  const apiData = title === "디테일" ? detailList : patternList;
+  // 디테일·패턴·무드·계절감은 메뉴 API에서 받은 순서 그대로 체크 목록으로 보여준다
+  const apiData =
+    title === "디테일"
+      ? detailList
+      : title === "무드"
+        ? moodList
+        : title === "계절감"
+          ? seasonFeelList
+          : patternList;
   return (
     <ul className={gridCls}>
       {apiData.map((v) => {

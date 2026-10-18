@@ -750,6 +750,21 @@ export default function ProductDetailContent({
                       itemcode={effectiveId ?? ""}
                     />
                   )}
+                  {/* 무드·계절감 — 여러 값은 쉼표로 잇고, 없거나 빈 배열이면 숨김 */}
+                  {hasValue(detailData.vlm?.mood ?? []) && (
+                    <DetailItem
+                      title="무드"
+                      content={detailData.vlm!.mood ?? []}
+                      itemcode={effectiveId ?? ""}
+                    />
+                  )}
+                  {hasValue(detailData.vlm?.season_feel ?? []) && (
+                    <DetailItem
+                      title="계절감"
+                      content={detailData.vlm!.season_feel ?? []}
+                      itemcode={effectiveId ?? ""}
+                    />
+                  )}
                 </div>
               </div>
             </section>

@@ -7,6 +7,8 @@ import {
   GetPatternList,
   GetCategoryList,
   GetSeasonList,
+  GetMoodList,
+  GetSeasonFeelList,
   type CategoryGroup,
 } from "@/apis/AnalysisAPI";
 
@@ -20,12 +22,16 @@ export default function useFilteredData() {
   // "23FW"·"25SS"처럼 "YY"+시즌 조합 코드 원본 목록 — 연도/시즌을 따로
   // 골랐을 때 실제로 존재하는 코드로 풀어 보내는 데 쓴다.
   const [apiSeasons, setApiSeasons] = useState<string[]>([]);
+  const [apiMoods, setApiMoods] = useState<string[]>([]);
+  const [apiSeasonFeels, setApiSeasonFeels] = useState<string[]>([]);
 
   useEffect(() => {
     GetDetailList().then(setApiDetails);
     GetPatternList().then(setApiPatterns);
     GetCategoryList().then(setApiCategories);
     GetSeasonList().then(setApiSeasons);
+    GetMoodList().then(setApiMoods);
+    GetSeasonFeelList().then(setApiSeasonFeels);
   }, []);
 
   const allBrands = useMemo(() => Object.values(brandData).flat(), []);
@@ -33,7 +39,6 @@ export default function useFilteredData() {
   const allGenders = useMemo(() => GenderCategories, []);
   const allDetails = useMemo(() => apiDetails, [apiDetails]);
   const allPatterns = useMemo(() => apiPatterns, [apiPatterns]);
-  // const allMoods = useMemo(() => MoodCategories, []);
   const allTypes = useMemo(
     () => apiCategories.flatMap((c) => [c.label, ...c.items]),
     [apiCategories]
@@ -59,10 +64,14 @@ export default function useFilteredData() {
     () => filterList.filter((item) => allPatterns.includes(item)),
     [filterList, allPatterns]
   );
-  // const selectedMoods = useMemo(
-  //   () => filterList.filter((item) => allMoods.includes(item)),
-  //   [filterList, allMoods]
-  // );
+  const selectedMoods = useMemo(
+    () => filterList.filter((item) => apiMoods.includes(item)),
+    [filterList, apiMoods]
+  );
+  const selectedSeasonFeels = useMemo(
+    () => filterList.filter((item) => apiSeasonFeels.includes(item)),
+    [filterList, apiSeasonFeels]
+  );
   const selectedCategories = useMemo(
     () => filterList.filter((item) => allTypes.includes(item)),
     [filterList, allTypes]
@@ -93,5 +102,7 @@ export default function useFilteredData() {
     selectedPatterns,
     selectedCategories,
     selectedSeasons,
+    selectedMoods,
+    selectedSeasonFeels,
   };
 }

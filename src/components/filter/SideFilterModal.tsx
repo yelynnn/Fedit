@@ -4,7 +4,7 @@ import FilterTabs from "./FilterModalTab";
 import FilterCheckList from "./FilterCheckList";
 import { useFilterStore } from "@/stores/FilterStore";
 
-const TAB_LABELS = ["성별", "유형", "색상", "디테일", "패턴", "무드"];
+const TAB_LABELS = ["성별", "유형", "색상", "디테일", "패턴", "무드", "계절감"];
 
 type Props = { onClose: () => void; initialTab?: string };
 
@@ -34,6 +34,7 @@ export default function SideFilterModal({ onClose, initialTab }: Props) {
         {active === "디테일" && <FilterCheckList title="디테일" />}
         {active === "패턴" && <FilterCheckList title="패턴" />}
         {active === "무드" && <FilterCheckList title="무드" />}
+        {active === "계절감" && <FilterCheckList title="계절감" />}
       </div>
 
       <div className="flex flex-col gap-3 p-4">

@@ -127,6 +127,8 @@ function BrandTab({ isProductTab }: Props) {
     selectedDetails,
     selectedPatterns,
     selectedSeasons,
+    selectedMoods,
+    selectedSeasonFeels,
   } = useFilteredData();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<{
@@ -337,6 +339,8 @@ function BrandTab({ isProductTab }: Props) {
         selectedDetails,
         selectedPatterns,
         selectedSeasons,
+        selectedMoods,
+        selectedSeasonFeels,
         cursor,
         signal,
       });

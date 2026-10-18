@@ -63,6 +63,8 @@ function NewProductAnalysis() {
     selectedDetails,
     selectedPatterns,
     selectedSeasons,
+    selectedMoods,
+    selectedSeasonFeels,
   } = useFilteredData();
   const { brandList, platformList } = useFilterStore();
   // localStorage 복원(zustand persist)이 끝나기 전에는 필터가 전부 빈
@@ -116,6 +118,8 @@ function NewProductAnalysis() {
           selectedDetails,
           selectedPatterns,
           selectedSeasons,
+          selectedMoods,
+          selectedSeasonFeels,
           cursor,
           signal: controller.signal,
         });
@@ -162,6 +166,8 @@ function NewProductAnalysis() {
       selectedDetails,
       selectedPatterns,
       selectedSeasons,
+      selectedMoods,
+      selectedSeasonFeels,
       setResultLists,
     ],
   );
@@ -192,6 +198,8 @@ function NewProductAnalysis() {
     selectedDetails,
     selectedPatterns,
     selectedSeasons,
+    selectedMoods,
+    selectedSeasonFeels,
   ]);
   const lastFetchKeyRef = useRef<string | null>(null);
 

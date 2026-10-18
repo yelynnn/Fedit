@@ -71,6 +71,9 @@ type ProductFilterPayload = {
   selectedDetails: string[];
   selectedPatterns: string[];
   selectedSeasons: string[];
+  // 무드·계절감 — 같은 항목 안은 OR, 다른 필터와는 AND(백엔드)
+  selectedMoods?: string[];
+  selectedSeasonFeels?: string[];
 };
 
 const GetProductList = async (
@@ -89,6 +92,8 @@ const GetProductList = async (
     selectedDetails,
     selectedPatterns,
     selectedSeasons,
+    selectedMoods = [],
+    selectedSeasonFeels = [],
     cursor,
     signal,
   } = payload;
@@ -102,6 +107,8 @@ const GetProductList = async (
     selectedDetails,
     selectedPatterns,
     selectedSeasons,
+    selectedMoods,
+    selectedSeasonFeels,
     size: 50,
     cursor: cursor || undefined,
   };
@@ -137,6 +144,27 @@ const GetDetailList = async (): Promise<string[]> => {
   try {
     const res = await axiosInstance.get("/menu/detail");
     return Array.isArray(res.data?.details) ? res.data.details : [];
+  } catch {
+    return [];
+  }
+};
+
+// 무드 필터 칩 목록(받은 순서 그대로 표시)
+const GetMoodList = async (): Promise<string[]> => {
+  try {
+    const res = await axiosInstance.get("/menu/mood");
+    return Array.isArray(res.data?.moods) ? res.data.moods : [];
+  } catch {
+    return [];
+  }
+};
+
+// 계절감 필터 칩 목록(봄·여름·가을·겨울·사계절). 연도+시즌 코드(26SS 등)인
+// "시즌"과는 다른 항목이다.
+const GetSeasonFeelList = async (): Promise<string[]> => {
+  try {
+    const res = await axiosInstance.get("/menu/season-feel");
+    return Array.isArray(res.data?.seasonFeels) ? res.data.seasonFeels : [];
   } catch {
     return [];
   }
@@ -281,6 +309,8 @@ export {
   GetRelatedItemInfo,
   PostJudge,
   GetPatternList,
+  GetMoodList,
+  GetSeasonFeelList,
   GetDetailList,
   GetCategoryList,
   GetSeasonList,
