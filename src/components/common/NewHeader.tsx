@@ -3,41 +3,36 @@ import { useEffect, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useUIStore } from "@/stores/UIStore";
 import BrandFilterModal from "../filter/BrandFilterModal";
-import BrandTab from "../filter/BrandTab";
+import ExcelDownloadButton from "../filter/ExcelDownloadButton";
 import { getPlatformBrandCounts } from "@/lib/platformBrandCounts";
 import { useFeatureReleased } from "@/lib/features";
+import { useProductStore } from "@/stores/ProductStore";
+import SaveToBoardButton from "../product/SaveToBoardButton";
+import dashboardIcon from "@/assets/etc/dashboardIcon.svg";
+import analysisIcon from "@/assets/etc/analysisIcon.svg";
+import colorIcon from "@/assets/etc/colorIcon.svg";
+import categoryIcon from "@/assets/etc/categoryIcon.svg";
+import runwayIcon from "@/assets/etc/runwayIcon.svg";
 
-// 사이드바와 동일한 설정 (이 설정은 별도 파일로 분리해서 공통으로 쓰는 것이 가장 좋습니다)
-const TABS_CONFIG = [
-  {
-    label: "실시간 랭킹",
-    activeIcon: "material-symbols:dashboard-rounded",
-    inactiveIcon: "material-symbols:dashboard-outline-rounded",
-  },
-  {
-    label: "패션쇼 분석",
-    activeIcon: "ph:dress-fill",
-    inactiveIcon: "ph:dress",
-  },
-  {
-    label: "상품 분석",
-    activeIcon: "fluent:tag-32-filled",
-    inactiveIcon: "fluent:tag-28-regular",
-  },
-  {
-    label: "색상 분석",
-    activeIcon: "zondicons:color-palette",
-    inactiveIcon: "qlementine-icons:color-swatch-16",
-  },
-  {
-    label: "유형 분석",
-    activeIcon: "ph:chart-pie-slice-fill",
-    inactiveIcon: "ph:chart-pie-slice",
-  },
-];
+// 헤더 왼쪽 제목 아이콘 — 사이드바 메뉴 아이콘과 같은 이미지를 쓴다
+const TAB_ICONS: Record<string, { src?: string; iconify?: string }> = {
+  "실시간 랭킹": { src: dashboardIcon },
+  "상품 분석": { src: analysisIcon },
+  "색상 분석": { src: colorIcon },
+  "유형 분석": { src: categoryIcon },
+  "패션쇼 분석": { src: runwayIcon },
+  "내 보드": { iconify: "lucide:layout-panel-left" },
+};
+
+// 헤더 오른쪽 버튼 공통 모양 — 높이 34px, 패딩 4px 8px, 아이콘·글씨 간격 6px,
+// 둥글기 8px, 1px #E4E4E4 테두리, 흰 바탕, Body(md)/small(14px·500) #3D3F41
+const HEADER_BUTTON =
+  "flex h-[34px] shrink-0 cursor-pointer select-none items-center justify-center gap-[6px] rounded-lg border border-[#E4E4E4] bg-white px-2 py-1 text-[14px] font-medium leading-[1.43] tracking-[-0.07px] text-[#3D3F41] transition-colors hover:bg-surface-base";
+// 헤더 버튼 아이콘 크기(13.75 × 16.25, #3D3F41)
+const HEADER_ICON = "h-[16.25px] w-[13.75px] shrink-0 text-[#3D3F41]";
 
 export default function NewHeader() {
-  const { isBrandFilterModalOpen, openBrandFilterModal, closeBrandFilterModal } =
+  const { isBrandFilterModalOpen, openBrandFilterModal, closeBrandFilterModal, showNotice } =
     useUIStore((s) => s);
   const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
   const isReleased = useFeatureReleased();
@@ -56,75 +51,183 @@ export default function NewHeader() {
     brandList.length +
     platformList.reduce((sum, code) => sum + (platformBrandCounts[code] ?? 0), 0);
 
-  // 1. 현재 선택된 탭의 아이콘 정보를 찾습니다.
-  // 찾지 못할 경우(초기값 등)를 대비해 대시보드 아이콘을 기본값으로 설정합니다.
-  const currentTabConfig =
-    TABS_CONFIG.find((tab) => tab.label === selectedTab) || TABS_CONFIG[0];
+  const tabIcon = TAB_ICONS[selectedTab] ?? TAB_ICONS["실시간 랭킹"];
+
+  // 상품 분석에서 상품을 열었으면 "상품 분석 > 아우터 > 자켓 > 상품명" 경로를
+  // 보여준다. 상세가 불러온 정보가 우선이고, 아직 불러오는 중이면 목록에 있던
+  // 같은 상품 정보로 먼저 채운다.
+  const selectedProductId = useProductStore((s) => s.selectedProductId);
+  const setSelectedProductId = useProductStore((s) => s.setSelectedProductId);
+  const productMeta = useProductStore((s) => s.selectedProductMeta);
+  const resultLists = useProductStore((s) => s.resultLists);
+  const isProductDetail = selectedTab === "상품 분석" && !!selectedProductId;
+  const breadcrumb = (() => {
+    if (!isProductDetail) return [];
+    if (productMeta?.itemcode === selectedProductId) {
+      return [productMeta.mainCategory, productMeta.category, productMeta.name];
+    }
+    const row = resultLists.find((p) => p.itemcode === selectedProductId);
+    return row
+      ? [row.categories?.[0]?.main_category, row.categories?.[0]?.category, row.product_name]
+      : [];
+  })()
+    // 빈 값과 바로 앞과 같은 이름(대분류 = 소분류)은 건너뛴다
+    .filter((v, i, arr): v is string => !!v && v !== arr[i - 1]);
 
   return (
-    <header className="relative flex items-center justify-between w-full h-15 px-16 bg-white border-b border-line-divider sticky top-0 z-20">
-      {/* 좌측 타이틀 영역 */}
+    <header className="sticky top-0 z-20 w-full bg-white border-b border-line-divider">
+    <div className="flex items-center justify-between w-full px-16 h-15">
+      {/* 좌측 — 현재 메뉴 아이콘 + 이름, 상품 상세면 경로 */}
+      {isProductDetail ? (
+        <nav className="flex items-center min-w-0 gap-2 mr-6 text-[16px] leading-[1.5] tracking-[-0.08px]">
+          {/* 누르면 상세를 닫고 목록으로 돌아간다 */}
+          <button
+            type="button"
+            onClick={() => setSelectedProductId(null)}
+            className="flex-shrink-0 font-medium text-[#8A8C8E] hover:text-[#242628]"
+          >
+            상품 분석
+          </button>
+          {breadcrumb.map((label, i) => {
+            const isLast = i === breadcrumb.length - 1;
+            return (
+              <span key={`${label}-${i}`} className={`flex items-center gap-2 ${isLast ? "min-w-0" : "flex-shrink-0"}`}>
+                <Icon icon="ph:caret-right" className="flex-shrink-0 w-4 h-4 text-[#A6A8AA]" />
+                <span
+                  title={label}
+                  className={isLast ? "truncate font-semibold text-[#242628]" : "font-medium text-[#8A8C8E]"}
+                >
+                  {label}
+                </span>
+              </span>
+            );
+          })}
+        </nav>
+      ) : (
       <div className="flex items-center gap-2">
-        <div className="rounded-lg p-1 bg-brand-subtle text-tx-strong border border-brand-subtle-hover">
-          {/* 2. 고정된 아이콘 대신 currentTabConfig.activeIcon 사용 */}
-          <Icon
-            icon={currentTabConfig.activeIcon}
-            className="w-5 h-5 text-tx-neutral"
-          />
-        </div>
-        <span className="text-lg font-semibold text-tx-neutral">
+        {tabIcon.src ? (
+          <img src={tabIcon.src} alt="" className="w-6 h-6" />
+        ) : (
+          <Icon icon={tabIcon.iconify!} className="w-6 h-6 text-tx-neutral" />
+        )}
+        {/* Title(sb)/medium — 16px·600·150%·-0.08px, #242628 */}
+        <span className="text-[16px] font-semibold leading-[1.5] tracking-[-0.08px] text-[#242628]">
           {selectedTab || "실시간 랭킹"}
         </span>
       </div>
+      )}
 
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-1">
-          {/* h-15로 헤더 전체 높이(top-15 아래 패널이 시작하는 지점)까지
-              hover 감지 영역을 채운다. 칩(h-10)만 hover 영역이면 칩 아래
-              여백에서 마우스가 그룹을 벗어나 패널이 열리기 전에 닫혀버린다. */}
-          <div className="relative flex items-center h-15 group/brand">
-            <div
-              data-tour="brand-chip"
-              onClick={openBrandFilterModal}
-              className="cursor-pointer flex items-center h-10 px-3 py-2 bg-surface-base rounded-l-2xl hover:bg-surface-base transition-colors"
-            >
-              <span className="text-[15px] font-semibold text-tx-alt mr-2">
-                브랜드
-              </span>
-              <span className="flex items-center justify-center min-w-[42px] h-7 px-2 bg-tx-neutral text-white text-[13px] font-semibold rounded-full">
-                {selectedBrandCount}
-              </span>
-            </div>
+      {/* 우측 — Excel(상품 분석만) · 내 보드 · 관심 브랜드 */}
+      <div className="flex items-center flex-shrink-0 gap-2">
+        {selectedTab === "상품 분석" && <ExcelDownloadButton />}
 
-            <div className="fixed left-0 z-30 invisible w-full transition-all duration-200 opacity-0 pointer-events-none top-15 group-hover/brand:opacity-100 group-hover/brand:visible group-hover/brand:pointer-events-auto">
-              <div className="bg-white border-b border-line-divider shadow-md">
-                <BrandTab isProductTab={selectedTab === "상품 분석"} />
-              </div>
-            </div>
-          </div>
-
-          {isReleased("내 보드") && (
-          <div
+        {isReleased("내 보드") && (
+          <button
+            type="button"
             data-tour="my-board-button"
             onClick={() => setSelectedTab("내 보드")}
-            className="cursor-pointer flex items-center h-10 px-4 bg-surface-base rounded-r-2xl hover:bg-surface-base transition-colors"
+            className={HEADER_BUTTON}
           >
-            <span className="text-[15px] font-semibold text-tx-alt mr-1.5">
-              내 보드
-            </span>
-            <Icon
-              icon="ph:caret-down-bold"
-              className="w-3.5 h-3.5 text-icon-neutral"
-            />
-          </div>
-          )}
-        </div>
+            <Icon icon="lucide:layout-panel-left" className={HEADER_ICON} />
+            내 보드
+          </button>
+        )}
 
-        {/* 사용자 아바타
-        <div className="w-8 h-8 rounded-full bg-[#F5A623] flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-          E
-        </div> */}
+        <button
+          type="button"
+          data-tour="brand-chip"
+          onClick={openBrandFilterModal}
+          className={HEADER_BUTTON}
+        >
+          {/* 초록 아이콘 박스 — 패딩 4px, 둥글기 8px, #E8FFD8 */}
+          <span className="flex items-center p-1 rounded-lg bg-[#E8FFD8]">
+            <Icon icon="ph:storefront-fill" className={HEADER_ICON} />
+          </span>
+          관심 브랜드
+          {/* 지금 선택된 브랜드 개수(플랫폼 전체 선택은 그 플랫폼 브랜드 수로 계산)
+              — 높이·최소 너비 20px, 패딩 4px, #242628, 숫자 10px·500 흰색 */}
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#242628] p-1 text-center text-[10px] font-medium leading-[1.33] text-white">
+            {selectedBrandCount}
+          </span>
+        </button>
       </div>
+
+    </div>
+
+      {/* 상품 상세 줄 — 상품 정보 + 통합 지수 + 내 보드에 저장 · 비교 추가 · 공유 */}
+      {isProductDetail && productMeta?.itemcode === selectedProductId && (
+        // 높이 56px, 위아래 패딩 8px, 요소 간격 12px(좌우는 위 줄과 맞춰 px-16)
+        <div className="flex items-center self-stretch justify-between w-full h-14 gap-3 px-16 py-2">
+          <div className="flex items-center min-w-0 gap-3">
+            {productMeta.imageUrl ? (
+              <img
+                src={productMeta.imageUrl}
+                alt=""
+                className="flex-shrink-0 object-cover w-10 h-10 rounded-lg bg-surface-base"
+              />
+            ) : (
+              <span className="grid flex-shrink-0 w-10 h-10 text-[16px] font-semibold text-white rounded-lg place-items-center bg-[#242628]">
+                {(productMeta.brand || productMeta.name).slice(0, 1)}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-[13px] leading-[1.38] text-[#8A8C8E]">
+                {[productMeta.brand, productMeta.category ?? productMeta.mainCategory]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+              <p className="truncate text-[16px] font-medium leading-[1.5] tracking-[-0.08px] text-[#242628]">
+                {productMeta.name}
+              </p>
+            </div>
+          </div>
+
+          {/* 오른쪽 배지·버튼 사이 가로 간격 12px */}
+          <div className="flex items-center flex-shrink-0 gap-3">
+            {productMeta.trendScore != null && (
+              <span className="rounded-md bg-[#FFEDED] px-2 py-1 text-[13px] font-semibold leading-[1.38] text-[#E5484D]">
+                통합 지수 {Math.round(productMeta.trendScore)}점
+                {productMeta.trendBand ? ` · ${productMeta.trendBand}` : ""}
+              </span>
+            )}
+            <SaveToBoardButton
+              key={productMeta.itemcode}
+              itemcode={productMeta.itemcode}
+              brand={productMeta.brand}
+              category={productMeta.mainCategory ?? productMeta.category}
+              imageUrl={productMeta.imageUrl}
+              className={HEADER_BUTTON}
+              iconClassName={HEADER_ICON}
+            />
+            {/* 비교 기능은 아직 없어서 준비 중 안내만 띄운다 */}
+            <button
+              type="button"
+              onClick={() => showNotice("비교 기능은 준비 중이에요.")}
+              className={HEADER_BUTTON}
+            >
+              <Icon icon="ph:plus" className={HEADER_ICON} />
+              비교 추가
+            </button>
+            {/* 이 상품을 바로 여는 링크(/?product=상품코드)를 복사한다 */}
+            <button
+              type="button"
+              onClick={async () => {
+                const url = `${window.location.origin}/?product=${encodeURIComponent(productMeta.itemcode)}`;
+                try {
+                  await navigator.clipboard.writeText(url);
+                  showNotice("상품 링크를 복사했어요.");
+                } catch {
+                  showNotice("링크를 복사하지 못했어요.");
+                }
+              }}
+              className={HEADER_BUTTON}
+            >
+              <Icon icon="ph:link" className={HEADER_ICON} />
+              공유
+            </button>
+          </div>
+        </div>
+      )}
 
       <BrandFilterModal
         isOpen={isBrandFilterModalOpen}

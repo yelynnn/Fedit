@@ -15,10 +15,12 @@ import {
   type ExcelDownloadUsage,
 } from "@/apis/AnalysisAPI";
 import DateNavNotice from "@/components/main/DateNavNotice";
+import { formatPrice } from "@/lib/price";
 import type { ApiDetail } from "@/types/Product";
 import { formatSalesCount } from "@/lib/utils";
 
-type Props = { isProductTab: boolean };
+// 헤더의 Excel 버튼(상품 분석 화면에서만 노출). 선택한 브랜드(또는 플랫폼)의
+// 상품을 이미지 포함 엑셀로 받는다. 요금제별 한도·진행/중단·안내 말풍선 포함.
 
 const xlsxCols = [
   { header: "브랜드", key: "brand", width: 14 },
@@ -46,14 +48,6 @@ const xlsxCols = [
   { header: "상품 상세 주소", key: "product_detail_url", width: 50 },
 ];
 
-// ProductBox/ProductDetailContent와 동일한 규칙(₩ + 천단위 콤마)으로 맞춘다.
-const formatPrice = (price?: string | number | null) => {
-  if (price === null || price === undefined || price === "") return "";
-  if (typeof price === "string" && /[₩$€¥]/.test(price)) return price;
-  const n = typeof price === "string" ? parseFloat(price) : price;
-  if (!isFinite(n)) return String(price);
-  return `₩${Math.floor(n).toLocaleString("ko-KR")}`;
-};
 
 const colCharsToPx = (w?: number) => Math.floor((w ?? 8.43) * 7 + 5);
 const pxToPt = (px: number) => (px * 72) / 96;
@@ -115,7 +109,7 @@ const EXPORT_TYPE_BY_TAB: Record<string, string> = {
   "패션쇼 분석": "fashion_show", // feature_viewed의 feature_name과 맞춘다
 };
 
-function BrandTab({ isProductTab }: Props) {
+function ExcelDownloadButton() {
   const { brandList, platformList, selectedTab } = useFilterStore((s) => s);
   const currentPlan = useSubscriptionStore((s) =>
     toBillingPlan(getEffectivePlan(s.subscription)),
@@ -176,16 +170,6 @@ function BrandTab({ isProductTab }: Props) {
     };
   }, []);
 
-  useEffect(() => {
-    const id = "brandtab-hide-scrollbar";
-    if (!document.getElementById(id)) {
-      const style = document.createElement("style");
-      style.id = id;
-      style.textContent = `.x-scroll-hide::-webkit-scrollbar{display:none;}`;
-      document.head.appendChild(style);
-    }
-  }, []);
-
   async function downloadXlsxWithImages(rows: ApiDetail[], brandLabel?: string) {
     const ExcelJS = (await import("exceljs")).default;
     const { saveAs } = await import("file-saver");
@@ -240,8 +224,17 @@ function BrandTab({ isProductTab }: Props) {
             : (p.vlm?.pattern ?? "");
         else if (k === "details")
           r[k] = Array.isArray(p.vlm?.detail) ? p.vlm.detail.join(", ") : "";
-        else if (k === "current_price" || k === "regular_price")
-          r[k] = formatPrice((p as any)[k]);
+        // 할인 중이 아닌 상품(할인가 없음)은 현업 엑셀 관행대로 현재가(판매가)를
+        // 정가와 같은 금액으로 채우고 할인율은 0%로 둔다 — 비워 두면 정렬·평균·
+        // 피벗에서 빠지거나 0원으로 계산된다. 백엔드가 준 할인율은 그대로 쓴다.
+        else if (k === "current_price")
+          r[k] = formatPrice(p.current_price) || formatPrice(p.regular_price);
+        else if (k === "regular_price") r[k] = formatPrice(p.regular_price);
+        else if (k === "discount_rate") {
+          const hasRate = p.discount_rate !== null && p.discount_rate !== undefined && p.discount_rate !== "";
+          const noDiscount = !formatPrice(p.current_price) && !!formatPrice(p.regular_price);
+          r[k] = hasRate ? p.discount_rate : noDiscount ? "0%" : "";
+        }
         // 판매량은 화면과 동일하게 표시한다 — 값이 없거나 1 이하(백엔드가
         // 데이터 없을 때 내려주는 값)는 빈칸, 500건 이하는 "500건 이하".
         else if (k === "sales") r[k] = formatSalesCount(p.sales) ?? "";
@@ -489,93 +482,59 @@ function BrandTab({ isProductTab }: Props) {
     downloadAbortControllerRef.current?.abort();
   };
 
+  // 호버 안내 말풍선 문구 — 요금제별 한도와, 지금 못 받는 이유
+  const usageText = usage ? ` (이번 달 ${usage.used}/${usage.limit}회)` : "";
+  const hoverNotice = isFree
+    ? "엑셀 다운로드는 Basic 요금제부터 이용할 수 있어요"
+    : isBasicLike
+      ? isBasicLimitReached
+        ? `월 다운로드 횟수 ${usage?.limit ?? 3}회를 모두 사용했어요`
+        : `Basic 요금제는 한 번에 브랜드 1개만, 월 ${usage?.limit ?? 3}회까지 다운로드할 수 있어요${usageText}`
+      : isPro
+        ? isProLimitReached
+          ? `월 다운로드 횟수 ${usage?.limit ?? 30}회를 모두 사용했어요`
+          : `Pro 요금제는 월 ${usage?.limit ?? 30}회까지 다운로드할 수 있어요${usageText}`
+        : "지금 필터 그대로, 선택한 브랜드 상품을 엑셀로 받아요";
+
   return (
-    <section className="flex justify-between h-14 bg-surface-base px-12 py-2 gap-2 relative pl-32">
-      <div className="flex items-center flex-1 min-w-0 gap-2">
-        <div
-          className="flex-1 min-w-0 overflow-x-auto x-scroll-hide whitespace-nowrap"
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
-          <div className="flex gap-2">
-            {platformList.map((platform) => (
-              <button
-                key={`platform-${platform}`}
-                type="button"
-                className="font-semibold inline-flex px-3 h-10 rounded-lg  bg-fill-primary text-white items-center justify-center text-sm shrink-0"
-              >
-                전체
-              </button>
-            ))}
-            {brandList.map((brand) => (
-              <button
-                key={brand}
-                type="button"
-                className="font-semibold inline-flex px-3 h-10 rounded-lg  bg-fill-primary text-white items-center justify-center text-sm shrink-0"
-              >
-                {brand}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+    // 호버는 버튼이 아니라 감싼 영역에서 감지한다 — 비활성(disabled) 버튼은
+    // 브라우저가 마우스 이벤트를 보내지 않아서, 정작 "왜 못 받는지" 안내가
+    // 필요한 순간(브랜드 여러 개 선택·횟수 소진)에 말풍선이 안 떴다.
+    <div
+      className="relative"
+      onMouseEnter={() => setIsDownloadHovered(true)}
+      onMouseLeave={() => setIsDownloadHovered(false)}
+    >
+      <button
+        type="button"
+        onClick={isDownloading ? handleCancelDownload : handleDownloadClick}
+        disabled={!isDownloading && isDownloadDisabled}
+        // 헤더 버튼 공통 규격(NewHeader의 HEADER_BUTTON과 동일)
+        className={[
+          "flex h-[34px] shrink-0 select-none items-center justify-center gap-[6px] rounded-lg border border-[#E4E4E4] bg-white px-2 py-1 text-[14px] font-medium leading-[1.43] tracking-[-0.07px] text-[#3D3F41] transition-colors",
+          !isDownloading && isDownloadDisabled
+            ? "cursor-not-allowed opacity-40"
+            : "cursor-pointer hover:bg-surface-base",
+        ].join(" ")}
+      >
+        <Icon
+          icon={isDownloading ? "ph:stop-circle-fill" : "ph:file-arrow-down"}
+          className="h-[16.25px] w-[13.75px] shrink-0 text-[#3D3F41]"
+        />
+        {isDownloading
+          ? `다운로드 중 ${downloadProgress?.done ?? 0}/${downloadProgress?.total ?? 0} · 중단`
+          : "Excel"}
+      </button>
 
-      {isProductTab && (
-        <div className="relative">
-          <button
-            onClick={isDownloading ? handleCancelDownload : handleDownloadClick}
-            disabled={!isDownloading && isDownloadDisabled}
-            onMouseEnter={() => setIsDownloadHovered(true)}
-            onMouseLeave={() => setIsDownloadHovered(false)}
-            title={
-              isDownloading
-                ? "눌러서 다운로드를 중단해요. 이미 받은 파일의 횟수는 그대로 유지돼요."
-                : isFree
-                  ? "무료 요금제는 엑셀 다운로드를 이용할 수 없어요. 요금제를 업그레이드해주세요."
-                  : isBasicLimitReached || isProLimitReached
-                    ? `이번 달 엑셀 다운로드 횟수(월 ${usage?.limit ?? (isBasicLike ? 3 : 30)}회)를 모두 사용했어요.`
-                    : isBasicMultiTargetBlocked
-                      ? "Basic 요금제는 브랜드를 1개만 선택했을 때 다운로드할 수 있어요."
-                      : undefined
-            }
-            className={[
-              "flex h-10 shrink-0 select-none items-center justify-center gap-1 rounded-lg border border-line-alt bg-white px-3 py-2 text-base font-semibold text-tx-neutral",
-              !isDownloading && isDownloadDisabled
-                ? "cursor-not-allowed opacity-40"
-                : "cursor-pointer",
-            ].join(" ")}
-          >
-            <Icon
-              icon={isDownloading ? "ph:stop-circle-fill" : "ci:download"}
-              className="w-5"
-            />
-            <p>
-              {isDownloading
-                ? `다운로드 중… (${downloadProgress?.done ?? 0}/${downloadProgress?.total ?? 0}) · 중단`
-                : hasExcelLimit && usage
-                  ? `엑셀 다운로드 (${usage.used}/${usage.limit})`
-                  : "엑셀 다운로드"}
-            </p>
-          </button>
-
-          {isDownloadHovered && isBasicLike && (
-            <DateNavNotice>
-              Basic 요금제는 한 번에 브랜드 1개만, 월 {usage?.limit ?? 3}회까지
-              다운로드할 수 있어요
-            </DateNavNotice>
-          )}
-          {isDownloadHovered && isPro && (
-            <DateNavNotice>
-              Pro 요금제는 월 {usage?.limit ?? 30}회까지 다운로드할 수 있어요
-            </DateNavNotice>
-          )}
-        </div>
+      {isDownloadHovered && (
+        <DateNavNotice>
+          {isDownloading
+            ? "누르면 다운로드를 중단해요. 이미 받은 파일의 횟수는 그대로 유지돼요."
+            : hoverNotice}
+        </DateNavNotice>
       )}
-    </section>
+    </div>
   );
 }
 
-export default BrandTab;
+export default ExcelDownloadButton;

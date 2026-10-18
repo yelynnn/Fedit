@@ -1,15 +1,7 @@
 import type { ApiDetail } from "@/types/Product";
 import defaultImg from "@/assets/logo/defaultImg.svg";
 import { formatSalesCount } from "@/lib/utils";
-
-// 가격 포맷팅 함수 (기존 유지)
-function formatPrice(price?: string | number | null) {
-  if (price === null || price === undefined || price === "") return "";
-  if (typeof price === "string" && /[₩$€¥]/.test(price)) return price;
-  const n = typeof price === "string" ? parseFloat(price) : price;
-  if (!isFinite(n)) return String(price);
-  return `₩${Math.floor(n).toLocaleString("ko-KR")}`;
-}
+import { getDisplayPrices } from "@/lib/price";
 
 export default function ProductBox({ product }: { product: ApiDetail }) {
   const category =
@@ -61,9 +53,9 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
           {product.product_name}
         </span>
 
-        {/* 4. 가격 */}
+        {/* 4. 가격 — 할인가가 없으면(할인 중이 아니면) 정가 */}
         <span className="text-base font-semibold text-tx-default">
-          {formatPrice(product.current_price)}
+          {getDisplayPrices(product).price}
         </span>
 
         {/* 5. 누적 조회수 & 누적 판매 (데이터가 있을 때만 렌더링) */}

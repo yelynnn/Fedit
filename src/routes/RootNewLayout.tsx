@@ -33,6 +33,7 @@ import {
 import { GetBrandPicks } from "@/apis/AnalysisAPI";
 import { GetMe } from "@/apis/AuthAPI";
 import { useFeatureReleased } from "@/lib/features";
+import { useProductStore } from "@/stores/ProductStore";
 
 function RootNewLayout() {
   const { isAgentOpen, activeConversationId, openAgent, closeAgent } =
@@ -55,9 +56,23 @@ function RootNewLayout() {
   // 미공개 기능 화면에 머물러 있으면(예: 새로고침 전에 보던 탭이 숨겨짐)
   // 첫 화면으로 옮긴다
   const isCurrentTabReleased = isReleased(selectedTab);
+  const selectedProductId = useProductStore((s) => s.selectedProductId);
+  const isProductDetailOpen = selectedTab === "상품 분석" && !!selectedProductId;
   useEffect(() => {
     if (!isCurrentTabReleased) useFilterStore.getState().setSelectedTab("실시간 랭킹");
   }, [isCurrentTabReleased]);
+
+  // 공유 링크(/?product=상품코드)로 들어오면 그 상품 상세를 바로 띄우고,
+  // 새로고침 때 다시 뜨지 않게 주소에서 파라미터를 지운다
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const product = params.get("product");
+    if (!product) return;
+    useProductStore.getState().setModalProductId(product);
+    params.delete("product");
+    const query = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+  }, []);
 
   // 안내 문구는 3초 뒤 사라진다
   useEffect(() => {
@@ -281,7 +296,8 @@ function RootNewLayout() {
               className="relative flex-1 overflow-auto bg-white [contain:layout]"
               data-capture-protect
             >
-              <div className="h-full py-8">
+              {/* 상품 분석에서 상세를 열면 헤더와 상세 박스 사이를 24px로 둔다 */}
+              <div className={`h-full ${isProductDetailOpen ? "pt-6 pb-8" : "py-8"}`}>
                 <NewFilterTabPanels />
               </div>
             </main>

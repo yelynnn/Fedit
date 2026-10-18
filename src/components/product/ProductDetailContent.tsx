@@ -30,6 +30,7 @@ import defaultImg from "@/assets/logo/defaultImg.svg";
 import AIAnalysisBox from "./AIAnalysisBox";
 import TrendIndexBoxMock from "./TrendIndexBoxMock";
 import { formatSalesCount } from "@/lib/utils";
+import { getDisplayPrices } from "@/lib/price";
 import { trackFolderSave, trackProductDetailViewed } from "@/lib/analytics";
 
 const hasValue = (v: string | string[] | undefined | null) =>
@@ -37,13 +38,6 @@ const hasValue = (v: string | string[] | undefined | null) =>
     ? v.filter((s) => s.trim() !== "" && s.toLowerCase() !== "nan").length > 0
     : !!v && v.trim() !== "" && v.toLowerCase() !== "nan";
 
-function formatPrice(price?: string | number | null) {
-  if (price === null || price === undefined || price === "") return "";
-  if (typeof price === "string" && /[₩$€¥]/.test(price)) return price;
-  const n = typeof price === "string" ? parseFloat(price) : price;
-  if (!isFinite(n)) return String(price);
-  return `₩${Math.floor(n).toLocaleString("ko-KR")}`;
-}
 
 type RelatedItem = { itemcode?: string; product_image_url?: string };
 type Props = {
@@ -115,6 +109,11 @@ export default function ProductDetailContent({
   } = useProductStore((s) => s);
   const effectiveId = itemcodeOverride ?? selectedProductId;
   const [detailData, setDetailData] = useState<ApiDetail | null>(null);
+  const setSelectedProductMeta = useProductStore((s) => s.setSelectedProductMeta);
+  // 상품 분석 화면 안에서 연 상세(모달이 아님)면 헤더(경로·상품 정보·통합
+  // 지수·내 보드에 저장)에 쓸 정보를 올린다. 이때 상세 안의 폴더 저장 UI는
+  // 헤더로 옮겨 가서 숨긴다(모달 상세에는 그대로 남는다).
+  const isInPageDetail = !itemcodeOverride && !previewSnapshot;
   const [loading, setLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [related, setRelated] = useState<RelatedItem[]>([]);
@@ -438,6 +437,23 @@ export default function ProductDetailContent({
     };
   }, [effectiveId, previewSnapshot]);
 
+  useEffect(() => {
+    if (!isInPageDetail || !detailData) return;
+    // 다른 상품으로 넘어가는 중이면 이전 상품의 지수가 섞이지 않게 같은 상품일 때만 쓴다
+    const index =
+      trendSnapshot?.itemcode === detailData.itemcode ? trendSnapshot.integrated_index : undefined;
+    setSelectedProductMeta({
+      itemcode: detailData.itemcode,
+      name: detailData.product_name,
+      brand: detailData.brand,
+      imageUrl: detailData.thumbnail || detailData.front_image_url || null,
+      mainCategory: detailData.categories?.[0]?.main_category ?? null,
+      category: detailData.categories?.[0]?.category ?? null,
+      trendScore: index?.score ?? null,
+      trendBand: index?.band ?? null,
+    });
+  }, [isInPageDetail, detailData, trendSnapshot, setSelectedProductMeta]);
+
   const mainCategory = useMemo(
     () => detailData?.categories?.[0]?.main_category ?? "",
     [detailData],
@@ -446,6 +462,8 @@ export default function ProductDetailContent({
     () => detailData?.categories?.[0]?.category ?? "",
     [detailData],
   );
+
+  const displayPrices = getDisplayPrices(detailData ?? {});
 
   const releaseText = useMemo(() => {
     if (!detailData?.release_date) return "-";
@@ -573,7 +591,7 @@ export default function ProductDetailContent({
                       {mainCategory} {subCategory && ` / ${subCategory}`}
                     </div>
                   </div>
-                  {!previewSnapshot && (
+                  {!previewSnapshot && !isInPageDetail && (
                     <div className="flex items-center gap-2">
                       <div className="relative" ref={boardDropdownRef}>
                         <div
@@ -644,15 +662,14 @@ export default function ProductDetailContent({
 
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    {detailData.regular_price &&
-                      formatPrice(detailData.regular_price) !==
-                        formatPrice(detailData.current_price) && (
-                        <span className="text-sm font-semibold line-through text-tx-assistive">
-                          {formatPrice(detailData.regular_price)}
-                        </span>
-                      )}
+                    {/* 할인가가 없으면 정가를 판매가로, 취소선은 할인 중일 때만 */}
+                    {displayPrices.originalPrice && (
+                      <span className="text-sm font-semibold line-through text-tx-assistive">
+                        {displayPrices.originalPrice}
+                      </span>
+                    )}
                     <span className="text-base font-semibold text-tx-default">
-                      {formatPrice(detailData.current_price)}
+                      {displayPrices.price || "-"}
                     </span>
                   </div>
 

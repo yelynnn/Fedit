@@ -176,11 +176,25 @@ function NewProductAnalysis() {
     setSelectedProductId(null);
   }, [setSelectedProductId]);
 
-  // 상세 닫힐 때 클릭했던 상품이 보이도록 스크롤 복원
+  // 상세 닫힐 때 클릭했던 상품이 보이도록 스크롤 복원.
+  // scrollIntoView는 바깥 레이아웃(overflow-hidden 영역·main)까지 같이 밀어서
+  // 필터·헤더 쪽이 잘린 채 고정됐다 — 목록의 스크롤 영역 안에서만 옮긴다.
   useLayoutEffect(() => {
     if (isDetailOpen || !clickedItemRef.current) return;
     const el = itemButtonRefs.current[clickedItemRef.current!];
-    el?.scrollIntoView({ block: "center", behavior: "instant" });
+    const section = sectionRef.current;
+    if (!el || !section) return;
+    // 상품에서 가장 가까운, 실제로 스크롤되는 영역(목록 안쪽 → section 순)
+    let scroller: HTMLElement | null = el.parentElement;
+    while (scroller && scroller !== section && scroller.scrollHeight <= scroller.clientHeight) {
+      scroller = scroller.parentElement;
+    }
+    const target = scroller ?? section;
+    const offset =
+      el.getBoundingClientRect().top -
+      target.getBoundingClientRect().top -
+      (target.clientHeight - el.offsetHeight) / 2;
+    target.scrollTop += offset;
   }, [isDetailOpen]);
 
   // brandList 등은 상위(구독/관심 브랜드 로딩, 상세 필터 목록 로딩)가 끝날
@@ -325,7 +339,9 @@ function NewProductAnalysis() {
       </div>
 
       {isDetailOpen && (
-        <aside className="flex-1 min-w-0 h-full px-5 py-8 overflow-y-auto bg-white hide-scrollbar rounded-xl shadow-[0_0_8px_0_rgba(0,0,0,0.15)]">
+        // 테두리를 실선(1px)으로 둔다 — 그림자만 쓰면 화면 높이를 꽉 채운 박스의
+        // 위아래 그림자가 바깥 영역에 잘려 가로선이 흐리게 보였다.
+        <aside className="flex-1 min-w-0 h-full px-5 py-8 overflow-y-auto bg-white hide-scrollbar rounded-xl border border-line-divider shadow-[0_0_8px_0_rgba(0,0,0,0.06)]">
           <ProductDetailContent product={selectedProduct} />
         </aside>
       )}

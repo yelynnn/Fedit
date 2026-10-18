@@ -2,7 +2,6 @@ import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
 import DashBoardPage from "@/pages/DashBoardPage";
 import NewProductAnalysis from "@/pages/filter/NewProductAnalysis";
-import BrandTab from "./BrandTab";
 import NewColorAnalysis from "@/pages/filter/NewColorAnalysis";
 import NewTypeAnalysis from "@/pages/filter/NewTypeAnalysis";
 import { useProductStore } from "@/stores/ProductStore";
@@ -66,9 +65,6 @@ export function NewFilterTabBar() {
           );
         })}
       </nav>
-      {selectedTab !== "실시간 랭킹" && selectedTab !== "내 보드" && (
-        <BrandTab isProductTab={selectedTab === "상품 분석"} />
-      )}
     </div>
   );
 }
