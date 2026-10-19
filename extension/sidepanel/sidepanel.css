@@ -95,3 +95,15 @@ button.link:hover { color: var(--tx-strong); text-decoration: underline; }
 .limit-title { margin: 0; font-weight: 700; color: var(--tx-strong); font-size: 13px; }
 .card.limit .notice { margin: 0; }
 .card.limit .sub { margin: 0; font-size: 11px; color: var(--tx-alt); }
+
+/* 트렌드지수 요약 */
+.trend-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.trend-head .section-title { margin: 0; }
+.pill.soft { color: var(--tx-alt); }
+.trend-score { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.trend-score strong { font-size: 24px; color: var(--tx-strong); }
+.band { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--bg-strong); border: 1px solid var(--line); color: var(--tx-neutral); }
+.band.up { color: var(--danger); border-color: #f3c2c4; background: #fff5f5; }
+.band.down { color: var(--accent); }
+.chg { font-size: 12px; color: var(--tx-alt); }
+.notice.small { font-size: 12px; margin-top: 8px; }

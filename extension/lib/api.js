@@ -83,6 +83,8 @@ export const api = {
   itemStatus: (itemcode) => request(`/board/external-item/${encodeURIComponent(itemcode)}`),
   /** DB(FEDIT 수집 상품) 속 비슷한 상품 — 확장 상품은 VLM 결과로 임베딩 검색, 수집 상품은 웹 상세와 같은 유사상품 */
   similar: (itemcode, limit = 6) => request(`/board/external-item/${encodeURIComponent(itemcode)}/similar?limit=${limit}`),
+  /** 트렌드지수(수집 상품=실측/예측, 확장 상품=유사상품 기준 추정) — 웹 상세와 같은 데이터 */
+  trend: (itemcode) => request(`/trendIndex/${encodeURIComponent(itemcode)}`),
   /** 이미 수집된 상품의 VLM 결과(웹 상세와 같은 데이터) */
   product: (itemcode) => request(`/products?itemCode=${encodeURIComponent(itemcode)}`),
   /** 보드에 담기(정식 상품·확장 상품 공통) */

@@ -156,7 +156,7 @@ async function refreshProduct() {
   state.tabId = tab ? tab.id : null;
   if (!tab) return;
   try {
-    const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: extractProduct });
+    const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: extractProduct, args: [{ full: false }] });
     // 주기적으로 다시 읽을 때 같은 상품이면 다시 그리지 않는다(이미지 깜빡임 방지)
     if (!state.readError && JSON.stringify(result) === JSON.stringify(state.product)) return;
     state.product = result;
@@ -198,11 +198,13 @@ function renderProduct() {
 
 function resetResult() {
   similarFor = null;
+  trendFor = null;
   state.pollToken++;
   state.result = null;
   state.resultUrl = null;
   $("result").hidden = true;
   $("similar").hidden = true;
+  $("trend").hidden = true;
   $("save-area").hidden = true;
   setSaveMsg("");
 }
@@ -260,17 +262,33 @@ async function onAnalyze() {
   updateButtons();
   showError("");
   try {
+    // 분석할 때만 상품 고시·정보 탭까지 펼쳐서 다시 읽는다(크롤러와 같은 방식). 실패하면 미리보기 값으로 진행
+    let full = p;
+    try {
+      const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: state.tabId }, func: extractProduct, args: [{ full: true }] });
+      if (result && result.url === p.url) full = result;
+    } catch { /* 미리보기 값 사용 */ }
     const res = await api.analyze({
-      productUrl: p.url,
+      productUrl: full.productUrl || p.url,
       productName: p.productName,
       brand: p.brand,
       platform: p.platform,
       category: p.category,
       thumbnail: p.thumbnail,
-      description: p.description,
-      color: p.color,
-      regularPrice: p.regularPrice,
-      currentPrice: p.currentPrice,
+      description: full.description || p.description,
+      color: full.color || p.color,
+      regularPrice: full.regularPrice ?? p.regularPrice,
+      currentPrice: full.currentPrice ?? p.currentPrice,
+      // v2: 크롤러 규칙으로 읽은 상세 정보(백엔드가 VLM 소재·분류 힌트로 넘긴다)
+      site: full.site,
+      material: full.material,
+      mainCategory: full.mainCategory,
+      subCategory: full.subCategory,
+      gender: full.gender,
+      manufactureDate: full.manufactureDate,
+      likes: full.likes != null ? Number(full.likes) || null : null,
+      reviews: full.reviews != null ? Number(full.reviews) || null : null,
+      rating: full.rating,
     });
     state.result = res;
     state.resultUrl = p.url;
@@ -362,7 +380,7 @@ function renderResult(r) {
   const box = $("result");
   box.hidden = false;
   box.className = "card";
-  if (r.status === "indexed") loadSimilar(r.itemcode);
+  if (r.status === "indexed") { loadTrend(r.itemcode); loadSimilar(r.itemcode); }
 
   if (r.status === "indexed") {
     const a = r.analysis || {};
@@ -378,10 +396,8 @@ function renderResult(r) {
           ]))
         : el("p", { class: "notice" }, "표시할 분석 항목이 없어요."),
       clean(a.aiDescription) ? el("p", { class: "desc" }, a.aiDescription) : null,
-      r.source === "product"
-        ? el("div", { class: "actions" },
-            el("button", { class: "ghost", onclick: () => openTab(productDetailUrl(r.itemcode)) }, "트렌드 지수·상세 분석 보기"))
-        : null,
+      el("div", { class: "actions" },
+        el("button", { class: "ghost", onclick: () => openTab(productDetailUrl(r.itemcode)) }, "트렌드 지수·상세 분석 보기")),
     );
   } else if (r.status === "failed") {
     fill(box, 
@@ -400,6 +416,58 @@ function renderResult(r) {
       r.status === "loading" ? null : el("p", { class: "notice" }, "보통 1분 안에 끝나요. 기다리는 동안 무드보드에 먼저 저장해도 돼요."),
     );
   }
+}
+
+// ── 트렌드지수 요약 ──────────────────────────────────────────────────
+// 웹 상세의 트렌드지수 카드를 줄인 것: 통합 지수(총점·구간), 세 지표(상위 %·라벨), 네이버 검색량·스토어 찜, 상품 찜·후기
+let trendFor = null;
+const num = (v) => (v == null || v === "" ? null : Number(v));
+const fmt = (v) => (num(v) == null || Number.isNaN(num(v)) ? null : num(v).toLocaleString("ko-KR"));
+const topPct = (v) => (num(v) == null ? null : `상위 ${Math.max(1, Math.round(num(v)))}%`);
+const STAGE_LABEL = { measured: "실측", similar: "예측", market: "준비 중" };
+
+async function loadTrend(itemcode) {
+  if (!itemcode || trendFor === itemcode) return;
+  trendFor = itemcode;
+  const box = $("trend");
+  box.hidden = false;
+  fill(box, el("p", { class: "section-title" }, "트렌드지수"), el("div", { class: "status" }, el("div", { class: "spinner" }), "불러오는 중"));
+  let t = null;
+  try {
+    t = await api.trend(itemcode);
+  } catch (e) {
+    if (e instanceof AuthError) return handleError(e);
+  }
+  if (trendFor !== itemcode || !state.result || state.result.itemcode !== itemcode) return;
+  if (!t) {
+    fill(box, el("p", { class: "section-title" }, "트렌드지수"), el("p", { class: "notice" }, "아직 트렌드지수 데이터가 없어요."));
+    return;
+  }
+  const ii = t.integrated_index || {}, bi = t.brand_index || {}, pi = t.product_index || {}, pp = t.purchase_power_index || {};
+  const stage = t.data_stage || ii.basis;
+  const est = t.similar_estimate;
+  const stageText = stage === "similar" && est && est.similar_count ? `예측 · 유사상품 ${est.similar_count}개 기준` : STAGE_LABEL[stage] || "";
+  const scoreText = ii.score != null ? `${Math.round(num(ii.score))}점` : "준비 중";
+  const change = num(ii.score_change_pct);
+  const rows = [
+    ["브랜드 인지도", [topPct(bi.awareness_pct), bi.awareness_label].filter(Boolean).join(" · ")],
+    ["아이템 관심도", [topPct(pi.interest_pct), pi.interest_label].filter(Boolean).join(" · ")],
+    ["구매 화력도", [topPct(pp.purchase_pct), pp.purchase_label].filter(Boolean).join(" · ")],
+    ["네이버 검색량", fmt(bi.search_volume)],
+    ["브랜드 스토어 찜", fmt(bi.store_likes)],
+    ["상품 찜", fmt(pi.like_count)],
+    ["후기", fmt(pp.review_count)],
+  ].filter(([, v]) => v);
+  fill(box,
+    el("div", { class: "trend-head" },
+      el("p", { class: "section-title" }, "트렌드지수"),
+      stageText ? el("span", { class: `pill ${stage === "measured" ? "" : "soft"}` }, stageText) : null),
+    el("div", { class: "trend-score" },
+      el("strong", {}, scoreText),
+      ii.band ? el("span", { class: `band ${/급상승|상승/.test(ii.band) ? "up" : /하락/.test(ii.band) ? "down" : ""}` }, ii.band) : null,
+      change != null && !Number.isNaN(change) ? el("span", { class: "chg" }, `전날보다 ${change > 0 ? "+" : ""}${change}%`) : null),
+    rows.length ? el("dl", { class: "tags" }, rows.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])) : null,
+  );
 }
 
 // ── DB 속 비슷한 상품 ────────────────────────────────────────────────

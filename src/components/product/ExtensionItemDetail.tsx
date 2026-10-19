@@ -6,9 +6,12 @@ import {
   type ExtensionItem,
   type ExtensionSimilarItem,
 } from "@/apis/ExtensionAPI";
+import ProductDetailContent from "./ProductDetailContent";
 
-// 크롬 확장으로 저장한 외부 상품(EXT…) 상세. 일반 상품 상세(ProductDetailContent)와 달리
-// 트렌드 지수·판매 정보가 없으므로 원본 정보 + VLM 분석 결과 + FEDIT DB 속 비슷한 상품만 보여준다.
+// 크롬 확장으로 저장한 외부 상품(EXT…) 상세.
+// 분석이 끝나면(indexed) 백엔드가 EXT 코드도 수집 상품과 같은 API(/products·/products/detail·/trendIndex)로
+// 내려주므로 일반 상품 상세(ProductDetailContent)를 그대로 쓴다. 트렌드지수는 유사상품 기준 추정치다.
+// 분석 중·실패일 때만 아래의 원본 정보 + 진행 상태 화면을 보여준다.
 
 const POLL_MS = 4000;
 
@@ -96,6 +99,12 @@ export default function ExtensionItemDetail({ itemcode, onClose, onItemClick }: 
   if (!item) {
     return (
       <div className="flex items-center justify-center py-24 text-tx-assistive">불러오는 중...</div>
+    );
+  }
+
+  if (item.status === "indexed") {
+    return (
+      <ProductDetailContent itemcodeOverride={itemcode} onClose={onClose} onItemClick={onItemClick} />
     );
   }
 

@@ -15,7 +15,7 @@
 | `manifest.json` | 권한: sidePanel·activeTab·scripting·storage, 호스트: 백엔드 + 주요 패션몰 14곳(무신사·29CM·W컨셉·자라·COS 등). 그 밖의 사이트는 패널의 "이 사이트에서 FEDIT 사용하기"로 선택 권한 요청 |
 | `background.js` | 아이콘 클릭 → 사이드패널 |
 | `content/fedit-auth-sync.js` | FEDIT 웹 localStorage 토큰 ↔ 확장 토큰 동기화 (refresh token 발급 시각이 최근인 쪽 우선, 웹 로그아웃 시 확장도 로그아웃) |
-| `lib/extract.js` | 상품 정보 추출: JSON-LD(Product/ProductGroup) → og 메타 → 페이지 제목 |
+| `lib/extract.js` | 상품 정보 추출: 무신사·29CM·W컨셉·카페24는 Crawl_Agent 크롤러 규칙 그대로, 그 밖은 범용 규칙(구조화 데이터 → 정보 표 → 화면 경로 → 상세 설명 → 설명문 속 소재). 미리보기는 화면만 읽고, 분석할 때만 상품 고시·정보 탭을 펼쳐 읽는다 |
 | `lib/api.js` | 백엔드 호출, 401 이면 `/auth/refresh` 한 번 후 재시도 |
 | `lib/config.js` | 백엔드·웹 주소, 분석 상태 폴링 주기 |
 | `sidepanel/` | 패널 UI: 상품 카드, 보드 선택·새 보드, 저장, 분석 상태, "이번 달 n/50" |
