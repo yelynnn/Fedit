@@ -545,7 +545,7 @@ async function loadSimilar(itemcode) {
   fill(box,
     el("p", { class: "section-title" }, "유사상품"),
     el("div", { class: "similar-grid" }, items.map((it) =>
-      el("button", { class: "sim", title: it.product_name || "", onclick: () => openTab(productDetailUrl(it.itemCode)) },
+      el("button", { class: "sim", title: it.product_name || "", onclick: () => openTab(it.productUrl || productDetailUrl(it.itemCode)) },
         el("img", { src: it.thumbnail || "", alt: "", loading: "lazy" }),
         el("span", { class: "b" }, it.brand || ""),
         el("span", { class: "n" }, it.product_name || it.itemCode),

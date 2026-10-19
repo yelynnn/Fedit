@@ -24,7 +24,7 @@
 - `POST /board/external-item/analyze` 분석 요청(수집된 상품이면 기존 itemcode, 아니면 VLM 분석 대기). 월 한도에 셈(같은 달 같은 상품은 1회)
 - `GET /board/external-item/{itemcode}` 확장 상품 분석 상태(queued → ai_done → indexed | failed)
 - `GET /products?itemCode=` 수집된 상품의 VLM 결과(웹 상세와 같은 데이터)
-- `GET /board/external-item/{itemcode}/similar` FEDIT DB 속 비슷한 상품(기본: 요금제와 무관하게 전체 브랜드)
+- `GET /board/external-item/{itemcode}/similar` FEDIT DB 속 비슷한 상품(기본: 요금제와 무관하게 전체 브랜드). `productUrl`(원본 상세 페이지)이 있으면 누를 때 그 쇼핑몰 상세로 연다
 - `POST /board/newitem` 보드에 저장(한도와 무관)
 - `GET /board/external-item/usage` 요금제별 월 분석 한도·사용량
 - `GET /board/list`, `POST /board/new`, `POST /auth/refresh`
