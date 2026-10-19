@@ -6,6 +6,9 @@ import { WEB_BASE, LOGIN_URL, BOARD_URL, PRICING_URL, productDetailUrl, POLL_INT
 
 const $ = (id) => document.getElementById(id);
 const LAST_BOARD_KEY = "feditLastBoardId";
+// 분석한 상품 URL → { itemcode, source }. 사이드바를 닫았다 열어도(또는 다시 그 상품에 와도) 결과를 다시 불러온다
+const RESULTS_KEY = "feditAnalyzedItems";
+const RESULTS_MAX = 300;
 const DEFAULT_BOARD_NAME = "크롬 확장";
 const LIMIT_CODE = "EXTENSION_MONTHLY_LIMIT_EXCEEDED";
 
@@ -168,6 +171,53 @@ async function refreshProduct() {
     state.readError = /chrome:\/\/|chrome-extension:|webstore|edge:\/\/|about:|devtools/i.test(m) ? "unsupported" : "permission";
   }
   renderProduct();
+  restoreResult();
+}
+
+// ── 이미 분석한 상품 결과 다시 불러오기(분석 횟수 차감 없음) ───────────
+async function rememberResult(p, res) {
+  try {
+    const { [RESULTS_KEY]: map = {} } = await chrome.storage.local.get(RESULTS_KEY);
+    const v = { itemcode: res.itemcode, source: res.source, at: Date.now() };
+    for (const u of new Set([p.url, p.productUrl].filter(Boolean))) map[u] = v;
+    const keys = Object.keys(map);
+    if (keys.length > RESULTS_MAX) {
+      keys.sort((a, b) => (map[a].at || 0) - (map[b].at || 0)).slice(0, keys.length - RESULTS_MAX).forEach((k) => delete map[k]);
+    }
+    await chrome.storage.local.set({ [RESULTS_KEY]: map });
+  } catch { /* 기억 못 해도 분석 결과는 그대로 보인다 */ }
+}
+
+let restoringUrl = null;
+async function restoreResult() {
+  const p = state.product;
+  if (!p || state.analyzing || restoringUrl === p.url || (state.result && state.resultUrl === p.url)) return;
+  restoringUrl = p.url;
+  try {
+    const { [RESULTS_KEY]: map = {} } = await chrome.storage.local.get(RESULTS_KEY);
+    const saved = map[p.url] || (p.productUrl && map[p.productUrl]);
+    if (!saved || !saved.itemcode || state.product !== p || state.analyzing) return;
+    state.result = { itemcode: saved.itemcode, source: saved.source, status: "loading" };
+    state.resultUrl = p.url;
+    $("save-area").hidden = false;
+    setSaveMsg("");
+    renderResult(state.result);
+    updateButtons();
+    if (saved.source === "product") return loadProductAnalysis(saved.itemcode);
+    const token = ++state.pollToken;
+    const res = await api.itemStatus(saved.itemcode);
+    if (token !== state.pollToken) return;
+    state.result = res;
+    renderResult(res);
+    updateButtons();
+    if (!isFinal(res.status)) poll(res.itemcode);
+  } catch (e) {
+    if (e instanceof AuthError) return handleError(e);
+    // 지워진 상품 등 — 결과 없이 분석 버튼만 보여준다
+    if (state.resultUrl === (p && p.url)) resetResult();
+  } finally {
+    restoringUrl = null;
+  }
 }
 
 function renderProduct() {
@@ -292,6 +342,7 @@ async function onAnalyze() {
     });
     state.result = res;
     state.resultUrl = p.url;
+    rememberResult(full.url === p.url ? full : p, res);
     $("save-area").hidden = false;
     setSaveMsg("");
     api.usage().then(renderUsage).catch(() => {});
