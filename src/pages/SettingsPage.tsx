@@ -621,7 +621,10 @@ export default function SettingsPage() {
   };
 
   const savedConversations = visibleConversations(conversations);
-  const filteredConversations = searchConversations(savedConversations, chatSearch);
+  const filteredConversations = searchConversations(
+    savedConversations,
+    chatSearch,
+  );
   const conversationGroups = groupConversationsByDate(filteredConversations);
 
   // 채팅 목록 탭을 열 때마다 서버 목록으로 맞춘다(다른 기기에서 한 대화 포함)
@@ -1165,22 +1168,24 @@ export default function SettingsPage() {
                     분석에 사용할 브랜드를 관리하세요
                   </p>
 
-                  <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-sm bg-[#EAF2FE]">
+                  {/* 문장 단위로 줄을 나누고, 단어 중간에서 줄이 바뀌지 않게(keep-all) */}
+                  <div className="flex items-start gap-2 px-3 py-2 mb-3 rounded-sm bg-[#EAF2FE]">
                     <Icon
                       icon="material-symbols-light:info-rounded"
                       className="flex-shrink-0 w-5 h-5 text-[#1A75FF]"
                     />
-                    <p className="text-xs font-medium text-[#1A75FF] leading-[133%]">
-                      최대 {brandCap}개까지 고를 수 있어요. 자리가 남아있으면
-                      언제든 추가할 수 있고, 고른 브랜드를 다른 브랜드로 바꾸는
-                      건 결제일마다 1회 가능해요.{" "}
-                      {subscription?.nextBillingDate && (
-                        <>
-                          다음 변경일은{" "}
-                          {formatMonthDay(subscription.nextBillingDate)}이에요.
-                        </>
-                      )}
-                    </p>
+                    <ul className="flex flex-col gap-0.5 pt-0.5 text-xs font-medium text-[#1A75FF] leading-[140%] [word-break:keep-all]">
+                      <li>
+                        관심 브랜드는 최대 {brandCap}개까지 고를 수 있어요.
+                        자리가 남아 있으면 언제든 추가할 수 있어요.
+                      </li>
+                      <li>
+                        고른 브랜드를 다른 브랜드로 바꾸는 건 결제일마다 1회
+                        가능해요.
+                        {subscription?.nextBillingDate &&
+                          ` (다음 변경일 ${formatMonthDay(subscription.nextBillingDate)})`}
+                      </li>
+                    </ul>
                   </div>
 
                   <div className="p-5 border border-line-divider rounded-xl">
@@ -1518,45 +1523,45 @@ export default function SettingsPage() {
 
                         {/* 버튼 — 관리자는 결제할 일이 없어서 숨긴다 */}
                         {!isAdmin && (
-                        <button
-                          disabled={
-                            isCurrent ||
-                            isFreeDisabled ||
-                            (!isContactOnly && !!billingLoading) ||
-                            isStartingTrial
-                          }
-                          onClick={() => {
-                            if (isContactOnly) {
-                              goToInquiry();
-                              return;
+                          <button
+                            disabled={
+                              isCurrent ||
+                              isFreeDisabled ||
+                              (!isContactOnly && !!billingLoading) ||
+                              isStartingTrial
                             }
-                            if (isBasicTrialStart) {
-                              handleStartTrial();
-                              return;
-                            }
-                            if (plan.key === "free") {
-                              if (isTrialAvailable) handleStartTrial();
-                              return;
-                            }
-                            if (plan.key === "basic" || plan.key === "pro") {
-                              setPendingPlan(plan.key);
-                            }
-                          }}
-                          className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
-                            isCurrent || isFreeDisabled
-                              ? "border border-[#E4E4E4] bg-[#E4E4E4] text-[#A1A3A5] cursor-default"
-                              : "border border-line-divider bg-white text-[#3D3F41] hover:bg-surface-base cursor-pointer disabled:opacity-60 disabled:cursor-default"
-                          }`}
-                        >
-                          {isLoading ? (
-                            <Icon
-                              icon="ph:spinner"
-                              className="w-4 h-4 animate-spin"
-                            />
-                          ) : (
-                            btnLabel
-                          )}
-                        </button>
+                            onClick={() => {
+                              if (isContactOnly) {
+                                goToInquiry();
+                                return;
+                              }
+                              if (isBasicTrialStart) {
+                                handleStartTrial();
+                                return;
+                              }
+                              if (plan.key === "free") {
+                                if (isTrialAvailable) handleStartTrial();
+                                return;
+                              }
+                              if (plan.key === "basic" || plan.key === "pro") {
+                                setPendingPlan(plan.key);
+                              }
+                            }}
+                            className={`flex h-[34px] px-2 py-1 justify-center items-center w-full rounded-lg text-sm font-semibold transition-colors ${
+                              isCurrent || isFreeDisabled
+                                ? "border border-[#E4E4E4] bg-[#E4E4E4] text-[#A1A3A5] cursor-default"
+                                : "border border-line-divider bg-white text-[#3D3F41] hover:bg-surface-base cursor-pointer disabled:opacity-60 disabled:cursor-default"
+                            }`}
+                          >
+                            {isLoading ? (
+                              <Icon
+                                icon="ph:spinner"
+                                className="w-4 h-4 animate-spin"
+                              />
+                            ) : (
+                              btnLabel
+                            )}
+                          </button>
                         )}
 
                         {/* 기능 목록 */}

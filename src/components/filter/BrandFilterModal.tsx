@@ -138,15 +138,12 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     brandList.length +
     platformList.reduce((sum, code) => sum + platformBrandCount(code), 0);
 
-  // Basic·Pro 플랜은 관심 브랜드(+ 기본 제공되는 무신사, 개수 상한만 다름)
-  // 만, 무료 플랜은 기본 제공되는 무신사만 이용 가능하다. "기본 제공"은
-  // 상품 분석 화면 등에서 브랜드를 아무것도 고르지 않았을 때 자동으로
-  // 채워지는 값(NewFilterTabBar 참고)일 뿐, 이 모달에서 브랜드를 직접
-  // 골라 담는 것과는 별개다 — 여기서는 무신사 탭을 포함한 모든 카테고리
-  // 탭에서 이미 선택된(=관심 브랜드로 고른) 것 외에는 새로 추가하지
-  // 못하도록 막는다. 무료 플랜은 interestBrandPicks가 항상 비어 있어 아래
-  // isBrandDisabled에서 자연히 전부 잠긴다. "선택된 브랜드" 탭만 예외(이미
-  // 골라둔 것 해제는 허용).
+  // Basic·Pro 플랜은 관심 브랜드(개수 상한만 다름)만 이용 가능하다. 무료
+  // 플랜은 없어졌고, 체험 미시작·만료 계정은 관심 브랜드를 고를 수 없어서
+  // (interestBrandPicks가 항상 비어) 아래 isBrandDisabled에서 전부 잠긴다 —
+  // 이때 서버는 맛보기 범위(샤넬)만 준다. 모든 카테고리 탭에서 관심 브랜드
+  // 외에는 새로 추가하지 못하게 막고, "선택된 브랜드" 탭만 예외(이미 골라둔
+  // 것 해제는 허용).
   const isRestrictedTab = (isBasic || isFree || isPro) && activeTab !== "selected";
 
   const visibleBrands = useMemo(() => {
@@ -295,7 +292,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     if (!keyword.trim() || isApplyingBrand) return;
     if (isFree) {
       alert(
-        "무료 플랜에서는 제공하지 않는 기능이에요. 요금제를 업그레이드하면 이용할 수 있어요.",
+        "멤버십을 시작하면 이용할 수 있는 기능이에요.",
       );
       return;
     }
@@ -344,8 +341,8 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       title={
         disabled
           ? isFree
-            ? "무료 플랜은 무신사 입점 브랜드만 이용할 수 있어요"
-            : `관심 브랜드(최대 ${brandCap}개) 또는 무신사 입점 브랜드만 이용 가능해요`
+            ? "멤버십을 시작하면 관심 브랜드를 골라 볼 수 있어요"
+            : `관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요`
           : undefined
       }
       className={
@@ -489,7 +486,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
         <p className="flex items-center gap-1 text-xs text-icon-alt">
           <Icon icon="ph:info" className="w-3.5 h-3.5 flex-shrink-0" />
           {isFree
-            ? "무료 플랜은 무신사 입점 브랜드만 이용할 수 있어요. 더 많은 브랜드를 보려면 요금제를 업그레이드해주세요."
+            ? "멤버십을 시작하고 관심 브랜드를 고르면 해당 브랜드를 볼 수 있어요."
             : `${isPro ? "Pro" : "Basic"} 플랜은 관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요.`}
         </p>
       )}

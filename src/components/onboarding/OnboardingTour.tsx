@@ -28,7 +28,7 @@ const getStep1NotSelected = (cap: number): Step => ({
   fallbackAnchor: "brand-chip",
   placement: "bottom",
   title: "분석할 브랜드 범위예요",
-  description: `지금은 무신사 기본 데이터예요. 관심 브랜드를 선택하면(최대 ${cap}개) 이 화면이 내 브랜드 기준으로 바뀌어요.`,
+  description: `관심 브랜드를 선택하면(최대 ${cap}개) 이 화면이 내 브랜드 기준으로 바뀌어요.`,
 });
 
 const getStep1Selected = (cap: number): Step => ({
@@ -43,7 +43,7 @@ const STEP_1_FREE_SIGNUP: Step = {
   placement: "bottom",
   title: "분석할 브랜드 범위예요",
   description:
-    "무료 플랜에서는 무신사 기본 데이터만 제공돼요. 관심 브랜드를 선택하면 이 화면이 내 브랜드 기준으로 바뀌어요.",
+    "멤버십을 시작하고 관심 브랜드를 고르면 이 화면이 내 브랜드 기준으로 바뀌어요.",
 };
 
 const STEP_1_PRO: Step = {
@@ -74,8 +74,7 @@ const REST_STEPS: Step[] = [
     anchor: "first-product-card",
     placement: "right",
     title: "카드 한 장에 데이터가 담겨요",
-    description:
-      "브랜드·가격과 함께 누적판매로 실제 성과를, 무신사·29 배지로 판매 채널을 알 수 있어요.",
+    description: "브랜드·가격과 함께 누적판매로 실제 성과를 알 수 있어요.",
     heightTrim: 16,
   },
   {
@@ -83,6 +82,13 @@ const REST_STEPS: Step[] = [
     placement: "bottom",
     title: "참고할 상품은 보드에 모아둬요",
     description: "기획에 쓸 상품을 내 보드에 저장하고 언제든 다시 꺼내 보세요.",
+  },
+  {
+    anchor: "excel-button",
+    placement: "bottom",
+    title: "브랜드 상품 데이터는 엑셀로 받아요",
+    description:
+      "지금 보고 있는 브랜드 그대로 상품 목록을 엑셀 파일로 내려받을 수 있어요.",
   },
 ];
 
@@ -142,7 +148,9 @@ export default function OnboardingTour() {
 
     const tryMeasure = () => {
       if (cancelled) return;
-      const primaryEl = document.querySelector(`[data-tour="${current.anchor}"]`);
+      const primaryEl = document.querySelector(
+        `[data-tour="${current.anchor}"]`,
+      );
       const el =
         primaryEl ??
         (current.fallbackAnchor
@@ -150,7 +158,10 @@ export default function OnboardingTour() {
           : null);
 
       if (el) {
-        el.scrollIntoView({ block: "nearest", behavior: "instant" as ScrollBehavior });
+        el.scrollIntoView({
+          block: "nearest",
+          behavior: "instant" as ScrollBehavior,
+        });
         setRect(el.getBoundingClientRect());
       }
 
@@ -197,7 +208,7 @@ export default function OnboardingTour() {
               <h3 className="type-title-xlarge text-tx-strong">
                 이제 준비가 끝났어요!
               </h3>
-              <p className="type-body-small break-keep text-center text-tx-neutral">
+              <p className="text-center type-body-small break-keep text-tx-neutral">
                 사용법이 헷갈리면 왼쪽 아래 가이드에서
                 <br />
                 투어를 다시 볼 수 있어요.
@@ -239,7 +250,8 @@ export default function OnboardingTour() {
     boxShadow: "0 0 0 4px #fff, 0 0 0 9999px rgba(11,14,15,0.55)",
     pointerEvents: "none",
     zIndex: 9998,
-    transition: "top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease",
+    transition:
+      "top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease",
   };
 
   let tooltipTop = 0;
@@ -279,7 +291,7 @@ export default function OnboardingTour() {
         style={{ top: tooltipTop, left: tooltipLeft }}
       >
         <div
-          className="absolute h-3 w-3 rotate-45 bg-white"
+          className="absolute w-3 h-3 rotate-45 bg-white"
           style={arrowStyle}
         />
 
@@ -309,11 +321,11 @@ export default function OnboardingTour() {
           ))}
         </div>
 
-        <div className="flex w-full items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           <button
             type="button"
             onClick={closeOnboardingTour}
-            className="flex h-7 items-center gap-1 rounded-pill px-2 type-body-small text-tx-default"
+            className="flex items-center gap-1 px-2 h-7 rounded-pill type-body-small text-tx-default"
           >
             건너뛰기
           </button>

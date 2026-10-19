@@ -59,6 +59,39 @@ export const isLockedPlan = (effective: EffectivePlan): boolean =>
 // 보고 있어서, 관리자면 subscription 자체를 "모든 기능이 열린 Enterprise
 // 이용 중"으로 바꿔서 내보낸다 — 잠금·업그레이드 유도가 한 번에 꺼진다.
 // 실제 서버 구독 정보는 rawSubscription에 그대로 둔다.
+// 로컬 개발 전용 — 요금제 상태별 화면을 지금 로그인한 계정으로 확인한다.
+//   /?simulatePlan=none     체험 미시작(not_started)
+//   /?simulatePlan=expired  체험·구독 만료
+//   /?simulatePlan=trial | basic | pro | enterprise
+// 화면 판정만 바뀌고 서버가 주는 데이터(상품 범위 등)는 실제 계정 그대로다.
+// 배포(프로덕션) 빌드에서는 동작하지 않는다.
+export const SIMULATED_SUBSCRIPTION: Subscription | null = (() => {
+  if (!import.meta.env.DEV || typeof window === "undefined") return null;
+  const plan = new URLSearchParams(window.location.search).get("simulatePlan");
+  const base = { amount: 0, hasBillingKey: false, nextBillingDate: null, cancelAtPeriodEnd: false, downgradePending: false };
+  switch (plan) {
+    case "none":
+      return { ...base, plan: "basic", status: "not_started" };
+    case "expired":
+      return { ...base, plan: "basic", status: "expired" };
+    case "trial":
+      return { ...base, plan: "basic", status: "trial" };
+    case "basic":
+    case "pro":
+    case "enterprise":
+      return { ...base, plan, status: "active" };
+    default:
+      return null;
+  }
+})();
+if (SIMULATED_SUBSCRIPTION) {
+  console.info(`[dev] simulatePlan 적용 중: ${SIMULATED_SUBSCRIPTION.plan}/${SIMULATED_SUBSCRIPTION.status}`);
+}
+
+// 화면에 쓸 구독: 개발용 시뮬레이션 > 관리자 > 실제 구독
+const effectiveSubscription = (raw: Subscription | null, isAdmin: boolean) =>
+  SIMULATED_SUBSCRIPTION ?? (isAdmin ? ADMIN_SUBSCRIPTION : raw);
+
 const ADMIN_SUBSCRIPTION: Subscription = {
   plan: "enterprise",
   status: "active",
@@ -94,13 +127,13 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   setSubscription: (subscription) =>
     set({
       rawSubscription: subscription,
-      subscription: get().isAdmin ? ADMIN_SUBSCRIPTION : subscription,
+      subscription: effectiveSubscription(subscription, get().isAdmin),
       loaded: true,
     }),
   setAdmin: (isAdmin) =>
     set((state) => ({
       isAdmin,
-      subscription: isAdmin ? ADMIN_SUBSCRIPTION : state.rawSubscription,
+      subscription: effectiveSubscription(state.rawSubscription, isAdmin),
       // 관리자면 구독 응답을 기다릴 필요 없이 바로 판정할 수 있다
       loaded: isAdmin ? true : state.loaded,
     })),

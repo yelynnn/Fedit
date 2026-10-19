@@ -4,7 +4,8 @@ export const WEB_BASE = "https://fedit.mify.im";
 export const LOGIN_URL = `${WEB_BASE}/login`;
 export const BOARD_URL = `${WEB_BASE}/?tab=board`;
 export const PRICING_URL = `${WEB_BASE}/?open=pricing`;
-export const productDetailUrl = (itemcode) => `${WEB_BASE}/beta/product/${encodeURIComponent(itemcode)}`;
+// 웹 첫 화면이 ?product= 를 읽어 상품 상세(EXT 상품 포함)를 모달로 연다
+export const productDetailUrl = (itemcode) => `${WEB_BASE}/?product=${encodeURIComponent(itemcode)}`;
 
 // 분석 상태 폴링
 export const POLL_INTERVAL_MS = 3000;

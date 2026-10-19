@@ -8,7 +8,11 @@ import { useProductStore } from "@/stores/ProductStore";
 import { useEffect } from "react";
 import RunwayPage from "@/pages/RunwayPage";
 import BoardsPage from "@/pages/BoardsPage";
-import { useSubscriptionStore, isBasicPlan } from "@/stores/SubscriptionStore";
+import {
+  useSubscriptionStore,
+  isBasicPlan,
+  getEffectivePlan,
+} from "@/stores/SubscriptionStore";
 import ProUpgradeOverlay from "@/components/common/ProUpgradeOverlay";
 import { GetBrandPicks } from "@/apis/AnalysisAPI";
 import { useUIStore } from "@/stores/UIStore";
@@ -100,11 +104,17 @@ export function NewFilterTabPanels() {
   //
   // Basic·Pro 둘 다 이제 관심 브랜드(개수 상한만 다름)를 쓰므로 같은 방식으로
   // 처리한다. 둘 다 아니게 되면(Free 등) interestBrandPicks를 비워서 예전
-  // 관심 브랜드가 다른 플랜에서까지 "선택 가능"한 상태로 남지 않게 하고,
-  // 아직 브랜드를 고르지 않았다면 platformList를 무신사(musinsa)로 채운다 —
-  // 개별 브랜드명을 다 나열하면(120개 안팎) 요청 헤더가 너무 커지니, 플랫폼
-  // 코드 하나로 대신 보낸다. 상품 분석 화면이 처음부터 빈 목록이 아니라
-  // 실제 카드로 채워져야 온보딩 투어의 "첫 상품 카드" 스텝도 정상적으로 뜬다.
+  // 관심 브랜드가 다른 플랜에서까지 "선택 가능"한 상태로 남지 않게 한다.
+  //
+  // 관심 브랜드가 없는 계정(체험 미시작·만료·Free, 또는 Basic·Pro인데 0개)은
+  // 브랜드·플랫폼 필터를 아무것도 보내지 않는다 — 백엔드가 맛보기 범위(현재
+  // 샤넬)로 알아서 돌려준다. 예전엔 기본값으로 selectedPlatforms=musinsa를
+  // 보냈는데, "샤넬이면서 무신사" 조건이 돼서 0개가 나왔다. 그때 저장된
+  // 기본값(플랫폼이 무신사 하나뿐이고 고른 브랜드 없음)도 여기서 비운다.
+  // 구독 상태까지 본 요금제로 판단 — 체험 미시작·만료는 plan이 "basic"이어도
+  // 관심 브랜드가 없는 계정이다
+  const effectivePlan = getEffectivePlan(subscription);
+
   useEffect(() => {
     if (!loaded || isBrandPicksEditing) return;
 
@@ -116,13 +126,20 @@ export function NewFilterTabPanels() {
       return;
     }
 
-    const hasBrandCap = isBasicPlan(subscription?.plan) || subscription?.plan === "pro";
+    const hasBrandCap =
+      effectivePlan !== "none" &&
+      effectivePlan !== "expired" &&
+      (isBasicPlan(effectivePlan) || effectivePlan === "pro");
 
     if (!hasBrandCap) {
       setInterestBrandPicks([]);
       const state = useFilterStore.getState();
-      if (state.brandList.length === 0 && state.platformList.length === 0) {
-        setPlatformList(["musinsa"]);
+      if (
+        state.brandList.length === 0 &&
+        state.platformList.length === 1 &&
+        state.platformList[0] === "musinsa"
+      ) {
+        setPlatformList([]);
       }
       return;
     }
@@ -146,8 +163,9 @@ export function NewFilterTabPanels() {
             setPlatformList([]);
           }
         } else {
+          // 관심 브랜드 0개 — 필터 없이 보내서 백엔드 맛보기 범위(샤넬)로 본다
           setBrandList([]);
-          setPlatformList(["musinsa"]);
+          setPlatformList([]);
         }
       })
       .catch(() => {});
@@ -156,6 +174,7 @@ export function NewFilterTabPanels() {
     };
   }, [
     subscription?.plan,
+    effectivePlan,
     loaded,
     isBrandPicksEditing,
     setBrandList,

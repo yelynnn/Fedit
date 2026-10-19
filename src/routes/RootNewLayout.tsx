@@ -67,8 +67,21 @@ function RootNewLayout() {
   useEffect(() => {
     if (selectedTab !== "상품 분석") useCompareStore.getState().closePage();
   }, [selectedTab]);
-  // 상품 분석 화면엔 비교 담기 바가 있어서 플로팅 FEDI 버튼을 그 위로 올린다
-  const isCompareBarShown = selectedTab === "상품 분석" && !isComparePage;
+  // 상품 분석 화면엔 비교 담기 바가 있어서 플로팅 FEDI 버튼을 그 위로 올린다 —
+  // 바 높이(펼침 80px / 얇은 바 40px)에 맞춰 바 위 16px에 둔다
+  const compareItemCount = useCompareStore((s) => s.items.length);
+  const compareBarCollapsed = useCompareStore((s) => s.barCollapsed);
+  const compareBarDismissed = useCompareStore((s) => s.barDismissed);
+  const compareBarMode: "hidden" | "thin" | "full" =
+    selectedTab !== "상품 분석" || isComparePage
+      ? "hidden"
+      : compareItemCount === 0
+        ? compareBarDismissed
+          ? "hidden"
+          : "thin"
+        : compareBarCollapsed
+          ? "thin"
+          : "full";
   useEffect(() => {
     if (!isCurrentTabReleased) useFilterStore.getState().setSelectedTab("실시간 랭킹");
   }, [isCurrentTabReleased]);
@@ -338,7 +351,11 @@ function RootNewLayout() {
           챗봇이 미공개 기능이면 숨김 */}
       <div
         className={`fixed z-50 flex flex-col items-end gap-3 right-6 ${
-          isCompareBarShown ? "bottom-24" : "bottom-6"
+          compareBarMode === "full"
+            ? "bottom-24"
+            : compareBarMode === "thin"
+              ? "bottom-14"
+              : "bottom-6"
         } ${
           isAgentPage || !isReleased(AGENT_TAB) ? "hidden" : ""
         }`}

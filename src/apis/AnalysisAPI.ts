@@ -1,5 +1,6 @@
 import { useFilterStore } from "@/stores/FilterStore";
 import { axiosInstance } from "./AxiosInstance";
+import { SIMULATED_SUBSCRIPTION } from "@/stores/SubscriptionStore";
 
 const GetProductByItemCode = async (itemcode: string) => {
   const response = await axiosInstance.get("/products", {
@@ -264,12 +265,33 @@ const PostJudge = async (payload: JudgePayload): Promise<void> => {
   }
 };
 
+// 로컬 개발에서 ?simulatePlan=trial|basic|pro 로 볼 때는 관심 브랜드 저장·조회를
+// 서버 대신 브라우저에 한다 — 서버는 실제 계정 요금제로 판단해서(예: Enterprise
+// 계정이면 "Basic·Pro만 가능") 체험 계정 흐름을 끝까지 볼 수 없기 때문이다.
+// 고른 브랜드로 상품을 불러오는 건 실제 서버 그대로다. 배포 빌드에선 동작하지 않는다.
+const DEV_PICKS_KEY = "dev-simulated-brand-picks";
+const usesSimulatedPicks = () => {
+  const sim = SIMULATED_SUBSCRIPTION;
+  return !!sim && sim.status !== "not_started" && sim.status !== "expired" && sim.plan !== "enterprise";
+};
+
 const GetBrandPicks = async (): Promise<string[]> => {
+  if (usesSimulatedPicks()) {
+    try {
+      return JSON.parse(localStorage.getItem(DEV_PICKS_KEY) ?? "[]");
+    } catch {
+      return [];
+    }
+  }
   const res = await axiosInstance.get("/brand/picks");
   return Array.isArray(res.data) ? res.data : [];
 };
 
 const PutBrandPicks = async (brandNames: string[]): Promise<void> => {
+  if (usesSimulatedPicks()) {
+    localStorage.setItem(DEV_PICKS_KEY, JSON.stringify(brandNames));
+    return;
+  }
   try {
     await axiosInstance.put("/brand/picks", { brandNames });
   } catch (error: any) {

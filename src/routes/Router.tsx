@@ -1,7 +1,6 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider, useParams } from "react-router-dom";
 import RootLayout from "./RootLayout";
 import FilterLayout from "./FilterLayout";
-import ProductDetailPage from "@/pages/ProductDetailPage";
 import RootNewLayout from "./RootNewLayout";
 import AskPage from "@/pages/AskPage";
 import AskSuccessPage from "@/pages/AskSuccessPage";
@@ -20,6 +19,14 @@ import BillingFailPage from "@/pages/BillingFailPage";
 import KakaoUpgradeAdminPage from "@/pages/admin/KakaoUpgradeAdminPage";
 import ProtectedRoute from "./ProtectedRoute";
 
+// 예전 상세 주소(/beta/product/:id) — 이미 설치된 크롬 확장이 아직 이 주소로 연다.
+// 이 화면은 주소의 상품 코드를 읽지 않아 빈 페이지가 떴으므로, 첫 화면의
+// 공유 링크(?product=)로 넘겨 상품 상세 모달을 띄운다.
+function LegacyProductRedirect() {
+  const { id } = useParams();
+  return <Navigate replace to={id ? `/?product=${encodeURIComponent(id)}` : "/"} />;
+}
+
 const router = createBrowserRouter([
   {
     path: "/beta",
@@ -31,7 +38,7 @@ const router = createBrowserRouter([
       },
       {
         path: "product/:id",
-        element: <ProductDetailPage />,
+        element: <LegacyProductRedirect />,
       },
     ],
   },

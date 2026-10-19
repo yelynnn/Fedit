@@ -2,7 +2,13 @@ import FilterSideBar from "@/components/filter/FilterSideBar";
 import ProductBox from "@/components/product/ProductBox";
 import ProductDetailContent from "@/components/product/ProductDetailContent";
 import { useProductStore } from "@/stores/ProductStore";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import Modal from "react-modal";
 import SideFilterModal from "@/components/filter/SideFilterModal";
 import useFilteredData from "@/lib/filteredData";
@@ -12,12 +18,10 @@ import {
   isBasicPlan,
   getEffectivePlan,
   isLockedPlan,
-  toBillingPlan,
 } from "@/stores/SubscriptionStore";
 import { useUIStore } from "@/stores/UIStore";
 import errorIcon from "@/assets/etc/error.svg";
 import SubscriptionLockOverlay from "@/components/common/SubscriptionLockOverlay";
-import { getBrandCap } from "@/lib/brandCap";
 
 import { GetProductList } from "@/apis/AnalysisAPI";
 import type { ApiDetail } from "@/types/Product";
@@ -83,16 +87,18 @@ function NewProductAnalysis() {
   const isDevBannerForce =
     import.meta.env.DEV &&
     new URLSearchParams(window.location.search).get("showBrandModal") === "1";
-  const currentBillingPlan = toBillingPlan(getEffectivePlan(subscription));
-  const brandCap = getBrandCap(currentBillingPlan);
   // Basic·Pro 플랜인데 저장된 관심 브랜드를 하나도 고르지 않았으면 항상 노출.
   // (지금 화면에서 필터링 중인 brandList가 아니라 저장된 픽 기준으로 판단 —
   // 안 그러면 일부만 보려고 체크를 풀었을 때도 배너가 다시 뜬다. 일부만
   // 고른 상태는 그대로 분석에 쓰이므로 배너를 띄우지 않는다.)
+  // 요금제 판정은 구독 상태까지 본 값으로 한다 — 체험 미시작·만료 계정도
+  // plan 값은 "basic"으로 와서, plan만 보면 관심 브랜드 설정이 없는 계정에
+  // 이 배너가 떠서 "브랜드 선택하기"가 빈 설정 화면으로 갔다.
+  const effectivePlan = getEffectivePlan(subscription);
   const showBrandNotice =
     (isDevBannerForce ||
-      isBasicPlan(subscription?.plan) ||
-      subscription?.plan === "pro") &&
+      isBasicPlan(effectivePlan === "none" || effectivePlan === "expired" ? undefined : effectivePlan) ||
+      effectivePlan === "pro") &&
     interestBrandPicks.length === 0;
 
   const fetchData = useCallback(
@@ -132,7 +138,9 @@ function NewProductAnalysis() {
         // 처음 로드·스크롤 추가 로드·필터 변경 재조회 모두, 이번 회차에 새로
         // 불러온 개수만 보낸다(합계 = 불러와 본 상품 수).
         if (newList.length > 0) {
-          trackProductsLoaded("product_analysis", newList.length, { brandList });
+          trackProductsLoaded("product_analysis", newList.length, {
+            brandList,
+          });
         }
 
         if (!cursor) {
@@ -186,7 +194,11 @@ function NewProductAnalysis() {
     if (!el || !section) return;
     // 상품에서 가장 가까운, 실제로 스크롤되는 영역(목록 안쪽 → section 순)
     let scroller: HTMLElement | null = el.parentElement;
-    while (scroller && scroller !== section && scroller.scrollHeight <= scroller.clientHeight) {
+    while (
+      scroller &&
+      scroller !== section &&
+      scroller.scrollHeight <= scroller.clientHeight
+    ) {
       scroller = scroller.parentElement;
     }
     const target = scroller ?? section;
@@ -274,12 +286,11 @@ function NewProductAnalysis() {
             data-tour="brand-banner"
             className="flex h-[50px] w-[calc(100%-20px)] flex-shrink-0 items-center justify-between gap-2 rounded-lg bg-data-blue-light px-2 py-2"
           >
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <img src={errorIcon} alt="" className="h-5 w-5 flex-shrink-0" />
-              <span className="type-title-small truncate text-tx-neutral">
-                아직 브랜드를 고르지 않았어요. 지금은 무신사 기본 데이터를 보고
-                있어요. 관심 브랜드를 고르면(최대 {brandCap}개) 분석이 더
-                정확해져요.
+            <div className="flex items-center flex-1 min-w-0 gap-2">
+              <img src={errorIcon} alt="" className="flex-shrink-0 w-5 h-5" />
+              <span className="truncate type-title-small text-tx-neutral">
+                아직 관심 브랜드를 고르지 않았어요. 관심 브랜드를 고르면 해당
+                브랜드 상품 목록을 확인할 수 있어요.
               </span>
             </div>
             <button
@@ -295,46 +306,48 @@ function NewProductAnalysis() {
           ref={sectionRef}
           className={`relative h-full flex-1 min-h-0 hide-scrollbar ${isLocked ? "overflow-hidden" : "overflow-auto"}`}
         >
-        {isLocked && <SubscriptionLockOverlay />}
-        <div
-          className={[
-            isDetailOpen
-              ? "flex flex-col overflow-y-auto hide-scrollbar"
-              : "flex flex-wrap overflow-y-auto hide-scrollbar",
-            isLocked ? "pointer-events-none select-none" : "",
-          ].join(" ")}
-          style={isLocked ? { opacity: 0.5, filter: "blur(1.75px)" } : undefined}
-        >
-          {resultLists.map((product, index) => (
-            <button
-              key={product.itemcode}
-              ref={(el) => {
-                itemButtonRefs.current[product.itemcode] = el;
-              }}
-              data-tour={index === 0 ? "first-product-card" : undefined}
-              onClick={() => {
-                clickedItemRef.current = product.itemcode;
-                setSelectedProductId(product.itemcode);
-                setSelectedProduct(product);
-              }}
-              className="text-left"
-            >
-              <ProductBox product={product} />
-            </button>
-          ))}
+          {isLocked && <SubscriptionLockOverlay />}
+          <div
+            className={[
+              isDetailOpen
+                ? "flex flex-col overflow-y-auto hide-scrollbar"
+                : "flex flex-wrap overflow-y-auto hide-scrollbar",
+              isLocked ? "pointer-events-none select-none" : "",
+            ].join(" ")}
+            style={
+              isLocked ? { opacity: 0.5, filter: "blur(1.75px)" } : undefined
+            }
+          >
+            {resultLists.map((product, index) => (
+              <button
+                key={product.itemcode}
+                ref={(el) => {
+                  itemButtonRefs.current[product.itemcode] = el;
+                }}
+                data-tour={index === 0 ? "first-product-card" : undefined}
+                onClick={() => {
+                  clickedItemRef.current = product.itemcode;
+                  setSelectedProductId(product.itemcode);
+                  setSelectedProduct(product);
+                }}
+                className="text-left"
+              >
+                <ProductBox product={product} />
+              </button>
+            ))}
 
-          {!isFetching && nextCursor && resultLists.length > 0 && (
-            <div ref={loadMoreRef} className="w-full h-10" />
-          )}
+            {!isFetching && nextCursor && resultLists.length > 0 && (
+              <div ref={loadMoreRef} className="w-full h-10" />
+            )}
 
-          {isFetching && (
-            <div className="flex items-center justify-center w-full h-24">
-              <div className="text-sm font-medium text-gray-400 animate-pulse">
-                상품 목록을 불러오고 있습니다...
+            {isFetching && (
+              <div className="flex items-center justify-center w-full h-24">
+                <div className="text-sm font-medium text-gray-400 animate-pulse">
+                  상품 목록을 불러오고 있습니다...
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         </section>
       </div>
 

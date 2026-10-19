@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { COMPARE_MAX, useCompareStore } from "@/stores/CompareStore";
 import { useUIStore } from "@/stores/UIStore";
@@ -18,9 +18,11 @@ export default function CompareBar() {
   const remove = useCompareStore((s) => s.remove);
   const showNotice = useUIStore((s) => s.showNotice);
   const setSelectedProductId = useProductStore((s) => s.setSelectedProductId);
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useCompareStore((s) => s.barCollapsed);
+  const setCollapsed = useCompareStore((s) => s.setBarCollapsed);
   // 빈 바에서 X를 누르면 숨긴다 — 상품을 담으면 다시 나타난다
-  const [dismissed, setDismissed] = useState(false);
+  const dismissed = useCompareStore((s) => s.barDismissed);
+  const setDismissed = useCompareStore((s) => s.setBarDismissed);
   const openPage = useCompareStore((s) => s.openPage);
 
   // 새로 담으면 접혀 있어도 펼쳐서 담긴 걸 보여준다
@@ -31,7 +33,7 @@ export default function CompareBar() {
       setDismissed(false);
     }
     prevCountRef.current = items.length;
-  }, [items.length]);
+  }, [items.length, setCollapsed, setDismissed]);
 
   if (dismissed && items.length === 0) return null;
   const canCompare = items.length >= 2;

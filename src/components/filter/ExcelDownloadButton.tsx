@@ -501,6 +501,7 @@ function ExcelDownloadButton() {
     // 브라우저가 마우스 이벤트를 보내지 않아서, 정작 "왜 못 받는지" 안내가
     // 필요한 순간(브랜드 여러 개 선택·횟수 소진)에 말풍선이 안 떴다.
     <div
+      data-tour="excel-button"
       className="relative"
       onMouseEnter={() => setIsDownloadHovered(true)}
       onMouseLeave={() => setIsDownloadHovered(false)}

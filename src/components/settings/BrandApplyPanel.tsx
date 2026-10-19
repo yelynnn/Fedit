@@ -124,7 +124,7 @@ export default function BrandApplyPanel() {
   const handleApplyClick = () => {
     if (!keyword.trim() || isApplying) return;
     if (isFree) {
-      alert("무료 플랜에서는 제공하지 않는 기능이에요. 요금제를 업그레이드하면 이용할 수 있어요.");
+      alert("멤버십을 시작하면 이용할 수 있는 기능이에요.");
       return;
     }
     setShowApplyConfirm(true);
