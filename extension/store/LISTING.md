@@ -129,4 +129,33 @@ FEDIT 로그인 토큰과 사용자가 마지막으로 고른 보드를 브라�
 - [ ] 서버 3개 배포 + 실제 분석·저장 한 번 성공 확인 (심사자가 실제로 눌러봄)
 - [ ] 심사용 테스트 계정 준비 → 대시보드 "테스트 안내(Test instructions)"에 아이디/비밀번호와 사용법 적기
       (로그인이 필요한 확장은 계정을 안 주면 기능 확인 불가로 반려되기 쉬움)
-- [ ] 압축: `extension/` 폴더 안의 파일을 zip (폴더째가 아니라 안의 manifest.json 이 zip 최상위에 오게), `store/` 폴더와 README 는 빼도 됨
+- [ ] 압축: `extension` 폴더에서 `bash scripts/build-zip.sh` → `dist/fedit-extension-<버전>.zip` (개발용 주소 자동 제거, store/·README 제외)
+
+---
+
+## 5. 테스트 안내 (Test instructions) — 심사자용, 영어로
+
+대시보드 "테스트 안내" 칸에 그대로 붙여 넣고, `<ID>` `<PASSWORD>` 만 심사용 계정으로 바꾼다.
+(심사자가 한국어를 못 읽을 수 있으니 영어로)
+
+```
+FEDIT is a fashion trend analysis service for fashion merchandisers and designers. The extension requires a FEDIT account.
+
+Test account
+- ID: <ID>
+- Password: <PASSWORD>
+
+How to test
+1. Sign in at https://fedit.mify.im/login with the account above. The extension picks up the login automatically (no separate login inside the extension).
+2. Open any product detail page on a supported shopping site, e.g. any product on https://www.musinsa.com or https://www.29cm.co.kr
+3. Click the FEDIT icon in the toolbar. The side panel opens and shows the product (image, brand, name, price) read from the page.
+4. Click "AI로 분석하기" (Analyze with AI). The analysis (category, material, fit, color, mood, etc.) appears in about 30–60 seconds, followed by "유사상품" (similar products from the FEDIT database).
+5. Choose a board under "내 무드보드" and click "무드보드에 저장" (Save to moodboard). The item then appears under 내 보드 (My boards) on https://fedit.mify.im.
+
+Notes
+- The free plan allows 50 analyses per month; the test account has enough remaining.
+- The extension reads only the public product information (structured data / meta tags) of the page the user is viewing while the side panel is open. It does not collect browsing history.
+- For shopping sites not in the default list, the panel shows a button that asks the user for permission for that site.
+```
+
+> 심사용 계정은 한도에 걸리지 않게 여유 있는 상태로 두기(관리자 계정은 피하고, 일반 무료 계정 권장)

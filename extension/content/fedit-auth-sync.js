@@ -22,6 +22,27 @@
     localStorage.setItem(REFRESH, t.refreshToken);
   };
 
+  // 확장을 새로고침·업데이트하면 이미 열려 있던 페이지의 이 스크립트는 확장과 연결이 끊긴다
+  // (chrome.storage 호출 시 "Extension context invalidated"). 그때는 조용히 멈추고,
+  // 페이지를 새로 열면 새 스크립트가 다시 동기화한다.
+  let timer = null;
+  const alive = () => {
+    try { return Boolean(chrome.runtime && chrome.runtime.id); } catch { return false; }
+  };
+  const stop = () => {
+    if (timer) clearInterval(timer);
+    timer = null;
+    window.removeEventListener("focus", run);
+    document.removeEventListener("visibilitychange", onVisible);
+  };
+  function run() {
+    if (!alive()) return stop();
+    sync().catch((e) => {
+      if (!alive() || /context invalidated/i.test(String(e && e.message))) stop();
+    });
+  }
+  function onVisible() { if (!document.hidden) run(); }
+
   async function sync() {
     let web;
     try { web = readWeb(); } catch { return; }
@@ -51,11 +72,11 @@
 
   // 확장(사이드패널)이 토큰을 갱신하면 바로 웹에도 반영
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes[KEY]) sync();
+    if (area === "local" && changes[KEY]) run();
   });
 
-  sync();
-  setInterval(sync, 3000);
-  window.addEventListener("focus", sync);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) sync(); });
+  run();
+  timer = setInterval(run, 3000);
+  window.addEventListener("focus", run);
+  document.addEventListener("visibilitychange", onVisible);
 })();
