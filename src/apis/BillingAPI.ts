@@ -13,8 +13,9 @@ export type PlanType = "basic" | "pro" | "basic_secret";
 export type SubscriptionPlan = "free" | PlanType | "enterprise";
 export type SubscriptionStatus =
   | "not_started"
-  // "trial": Basic 기능을 5일간 무료로 쓰는 체험 기간. plan은 "basic"으로
-  // 내려오고, 결제로 전환하면 "active"가 된다.
+  // "trial": 5일간 무료로 쓰는 체험 기간. 기본은 Basic이라 plan이 "basic"으로
+  // 내려오고, 혜택 코드로 가입한 회원은 코드 설정 플랜(예: "pro")으로 내려온다.
+  // 결제로 전환하면 "active"가 된다.
   | "trial"
   | "active"
   | "past_due"
@@ -32,6 +33,15 @@ export interface Subscription {
   trialEndsAt?: string | null;
   cancelAtPeriodEnd?: boolean;
   downgradePending?: boolean;
+  // ── 혜택 코드(블로그 시딩 등)로 가입한 회원만 값이 있다 ──
+  promoCode?: string | null;
+  // 무료 체험 시 열리는 플랜/기간 — 체험 시작 전 버튼 문구용 (예: "pro", 5)
+  promoTrialPlan?: "basic" | "pro" | null;
+  promoTrialDays?: number | null;
+  // 할인 대상 플랜과 할인가, 할인가가 남은 결제 횟수(개월)
+  promoPlan?: "basic" | "pro" | null;
+  promoAmount?: number | null;
+  promoRemainingMonths?: number | null;
 }
 
 const handleError = (error: any, fallbackMessage: string): never => {

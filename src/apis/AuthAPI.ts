@@ -28,7 +28,37 @@ export interface PersonalSignupBody {
   company_name: string;
   company_size: string;
   job_title: string;
+  // 혜택 코드(선택) — 블로그 시딩 등에서 받은 코드(예: FEDIT-SUZY)
+  promo_code?: string;
 }
+
+// 회원가입 화면의 혜택 코드 확인 결과. 유효하지 않은 코드도 200으로 오고
+// valid=false + message로 구분된다.
+export interface PromoCodeCheck {
+  valid: boolean;
+  code?: string;
+  message?: string;
+  trialPlan?: "basic" | "pro";
+  trialDays?: number;
+  discountPlan?: "basic" | "pro";
+  discountAmount?: number;
+  discountMonths?: number;
+}
+
+const GetCheckPromoCode = async (code: string): Promise<PromoCodeCheck> => {
+  try {
+    const res = await axiosInstance.get("/auth/signup/promo-code", {
+      params: { code },
+    });
+    return res.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+      throw new Error(data?.message || "혜택 코드를 확인하지 못했어요.");
+    }
+    throw new Error("서버에 연결할 수 없습니다.");
+  }
+};
 
 const PostPersonalSignup = async (body: PersonalSignupBody) => {
   try {
@@ -180,6 +210,7 @@ const DeleteWithdraw = async (feedback: string[]) => {
 
 export {
   PostPersonalSignup,
+  GetCheckPromoCode,
   PostCorporateAuthRequest,
   PostCorporateSignupConfirm,
   PostLogin,

@@ -313,7 +313,7 @@ export default function SettingsPage() {
   // 실제 결제 요청에 보낼 plan_code는 이거랑 별개로 아래 checkoutPlan에서
   // pendingPlan === "basic"일 때만 "basic_secret"으로 바꿔서 보낸다 — Pro는
   // 비밀 링크로 들어와도 정가 그대로다.
-  const planDefs = isSecretEntry
+  const basePlanDefs = isSecretEntry
     ? PLAN_DEFS.map((plan) =>
         plan.key === "basic"
           ? {
@@ -327,6 +327,34 @@ export default function SettingsPage() {
             : plan,
       )
     : PLAN_DEFS;
+
+  // 혜택 코드(블로그 시딩 등)로 가입한 회원 — 서버가 내려준 할인 대상 플랜 카드를
+  // 할인가로 보여준다. 실제 청구 금액은 서버가 결제 이력으로 회차를 세서 정하므로,
+  // 여기서는 표시만 바꾸고 결제 요청 plan_code는 그대로(pro/basic) 보낸다.
+  const promoPlan = subscription?.promoPlan ?? null;
+  const promoAmount = subscription?.promoAmount ?? null;
+  const promoRemainingMonths = subscription?.promoRemainingMonths ?? 0;
+  const isPromoDiscountActive =
+    !!promoPlan && !!promoAmount && promoRemainingMonths > 0;
+  const planDefs = isPromoDiscountActive
+    ? basePlanDefs.map((plan) =>
+        plan.key === promoPlan
+          ? {
+              ...plan,
+              badge: "혜택 코드",
+              discount: `첫 ${promoRemainingMonths}개월 할인 · 이후 ${plan.price}`,
+              price: `${(promoAmount ?? 0).toLocaleString("ko-KR")}원`,
+            }
+          : plan,
+      )
+    : basePlanDefs;
+
+  // 무료 체험 때 열리는 플랜 — 기본은 Basic, 혜택 코드 가입자는 코드 설정(예: Pro).
+  const trialPlanKey: "basic" | "pro" =
+    subscription?.promoTrialPlan === "pro" ? "pro" : "basic";
+  const trialStartLabel = subscription?.promoTrialPlan
+    ? `${trialPlanKey === "pro" ? "Pro" : "Basic"} ${subscription?.promoTrialDays ?? 5}일 무료 체험 시작하기`
+    : "5일 무료 체험 시작하기";
 
   // 결제 요청에 실제로 실어 보낼 plan_code — 비밀 링크 유입 + Basic이면
   // basic_secret(첫 달 특가)으로 바꿔 보낸다. Pro는 비밀 링크로 들어와도
@@ -1371,8 +1399,11 @@ export default function SettingsPage() {
                           // 아직 체험 미시작 → 5일 무료 체험 시작
                           if (!isStartingTrial) handleStartTrial();
                         } else if (trialing || currentPlan === "free") {
-                          // 체험 중이거나 레거시 free → 결제로 전환
-                          setPendingPlan("basic");
+                          // 체험 중이거나 레거시 free → 결제로 전환. 체험 중이면
+                          // 체험하던 플랜(혜택 코드 가입자는 Pro일 수 있음)으로 결제한다.
+                          setPendingPlan(
+                            trialing && currentPlan === "pro" ? "pro" : "basic",
+                          );
                         } else {
                           goToInquiry();
                         }
@@ -1387,7 +1418,7 @@ export default function SettingsPage() {
                       }`}
                     >
                       {effectivePlan === "none"
-                        ? "5일 무료 체험 시작하기"
+                        ? trialStartLabel
                         : trialing
                           ? "결제하기"
                           : currentPlan === "free"
@@ -1411,7 +1442,8 @@ export default function SettingsPage() {
                     // "요금제 미선택" 상태에서 현재 플랜으로 잘못 표시되지 않는다.
                     // Basic 체험 중에는 이 열을 "현재 플랜"이 아니라 "결제하기"로
                     // 노출한다(체험 → 유료 전환 유도).
-                    const isTrialBasic = plan.key === "basic" && trialing;
+                    // 체험 중인 플랜 열(기본 Basic, 혜택 코드 가입자는 Pro일 수 있음).
+                    const isTrialBasic = plan.key === currentPlan && trialing;
                     const isCurrent = isTrialBasic
                       ? false
                       : plan.key === "free"
@@ -1419,14 +1451,18 @@ export default function SettingsPage() {
                         : plan.key === currentPlan;
                     const isDowngrade =
                       PLAN_RANK[plan.key] < PLAN_RANK[currentPlan];
+                    // Pro 체험 중 Basic 열처럼, 체험보다 낮은 플랜을 결제하는 건
+                    // 다운그레이드가 아니라 그 플랜으로 결제를 시작하는 것이다.
+                    const isPaidStartFromTrial = trialing && isDowngrade;
                     // effectivePlan === "none": 아직 무료 체험도 시작 안 한 상태.
                     const isTrialAvailable = effectivePlan === "none";
                     // Enterprise만 결제 대상이 아니라 항상 "문의하기" — Basic·
                     // Pro는 둘 다 실제 결제 버튼으로 동작한다.
                     const isContactOnly = plan.key === "enterprise";
                     // Basic 열은 체험 미시작이면 "5일 무료 체험", 그 외엔 결제.
+                    // (혜택 코드 가입자는 체험 플랜 열 — 예: Pro 열이 체험 시작을 겸한다.)
                     const isBasicTrialStart =
-                      plan.key === "basic" && isTrialAvailable;
+                      plan.key === trialPlanKey && isTrialAvailable;
                     const btnLabel = isCurrent
                       ? "현재 플랜"
                       : isContactOnly
@@ -1442,7 +1478,7 @@ export default function SettingsPage() {
                               : plan.key === "basic" || plan.key === "pro"
                                 ? plan.key === "basic" && isSecretEntry
                                   ? "비밀 특가로 시작하기"
-                                  : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isDowngrade ? "다운그레이드" : "업그레이드"}`
+                                  : `${plan.label}${PLAN_PARTICLE[plan.key]} ${isPaidStartFromTrial ? "결제하기" : isDowngrade ? "다운그레이드" : "업그레이드"}`
                                 : "문의하기";
                     const isLoading =
                       billingLoading === plan.key ||
@@ -1969,7 +2005,15 @@ export default function SettingsPage() {
                 {planDefs.find((p) => p.key === pendingPlan)?.sub}에 정기결제가
                 시작됩니다. 진행 전 아래 내용을 확인해주세요.
               </p>
-              {pendingPlan === "basic" && !isSecretEntry && (
+              {isPromoDiscountActive && pendingPlan === promoPlan && (
+                <p className="mt-2 text-xs leading-relaxed text-tx-assistive">
+                  혜택 코드 할인으로 첫 {promoRemainingMonths}개월은 월{" "}
+                  {promoAmount?.toLocaleString("ko-KR")}원이 청구되고, 이후에는
+                  정가({PLAN_DEFS.find((p) => p.key === pendingPlan)?.price})가
+                  청구돼요.
+                </p>
+              )}
+              {pendingPlan === "basic" && !isSecretEntry && !(isPromoDiscountActive && promoPlan === "basic") && (
                 <p className="mt-2 text-xs leading-relaxed text-tx-assistive">
                   결제 이력이 없는 계정의 첫 결제 시 29,000원(최초 1회)이
                   청구되고, 다음 결제부터 정가(59,000원)가 청구돼요. 이미 결제한

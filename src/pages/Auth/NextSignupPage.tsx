@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle, ChevronDown, ChevronRight } from "lucide-react";
 import LoginHeader from "@/components/common/LoginHeader";
 import Footer from "@/components/common/Footer";
-import { PostPersonalSignup } from "@/apis/AuthAPI";
+import { GetCheckPromoCode, PostPersonalSignup } from "@/apis/AuthAPI";
 import {
   isLandingEntry,
   clearLandingEntry,
@@ -29,7 +29,39 @@ interface PrevData {
   job?: string;
   companySize?: string;
   agreed?: boolean;
+  promoCode?: string;
 }
+
+// 혜택 코드 입력값 정리 — 서버와 같은 규칙(공백 제거·대문자).
+const normalizePromoCode = (raw: string) => raw.replace(/\s+/g, "").toUpperCase();
+
+type PromoStatus =
+  | { state: "idle" }
+  | { state: "checking" }
+  | { state: "valid"; message: string }
+  | { state: "invalid"; message: string };
+
+const describePromo = (check: {
+  trialPlan?: string;
+  trialDays?: number;
+  discountPlan?: string;
+  discountAmount?: number;
+  discountMonths?: number;
+}) => {
+  const planLabel = (p?: string) => (p === "pro" ? "Pro" : "Basic");
+  const parts: string[] = [];
+  if (check.trialDays) {
+    parts.push(`${planLabel(check.trialPlan)} ${check.trialDays}일 무료 체험`);
+  }
+  if (check.discountMonths && check.discountAmount) {
+    parts.push(
+      `첫 ${check.discountMonths}개월 월 ${check.discountAmount.toLocaleString("ko-KR")}원`,
+    );
+  }
+  return parts.length > 0
+    ? `혜택 코드가 적용됐어요 · ${parts.join(" + ")}`
+    : "혜택 코드가 적용됐어요.";
+};
 
 const NextSignupPage = () => {
   const navigate = useNavigate();
@@ -40,6 +72,8 @@ const NextSignupPage = () => {
   const [job, setJob] = useState(prevData?.job ?? "");
   const [companySize, setCompanySize] = useState(prevData?.companySize ?? "");
   const [isTermsAgreed] = useState(prevData?.agreed ?? false);
+  const [promoCode, setPromoCode] = useState(prevData?.promoCode ?? "");
+  const [promoStatus, setPromoStatus] = useState<PromoStatus>({ state: "idle" });
 
   const [customJob, setCustomJob] = useState("");
   const [isJobOpen, setIsJobOpen] = useState(false);
@@ -50,12 +84,50 @@ const NextSignupPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const effectiveJob = job === "기타" ? customJob : job;
+  const normalizedPromoCode = normalizePromoCode(promoCode);
+
+  // 혜택 코드는 선택 입력 — 입력 후 "적용" 버튼을 눌러야 서버에 확인한다.
+  const applyPromoCode = async (raw: string) => {
+    const code = normalizePromoCode(raw);
+    if (code === "") return;
+    setPromoStatus({ state: "checking" });
+    try {
+      const result = await GetCheckPromoCode(code);
+      setPromoStatus(
+        result.valid
+          ? { state: "valid", message: describePromo(result) }
+          : {
+              state: "invalid",
+              message: result.message || "유효하지 않은 혜택 코드예요.",
+            },
+      );
+    } catch (error: any) {
+      setPromoStatus({ state: "invalid", message: error.message });
+    }
+  };
+
+  // 약관 화면에 다녀오면 입력해둔 코드가 되살아나므로, 그때는 한 번 다시 적용해둔다.
+  useEffect(() => {
+    if (prevData?.promoCode) applyPromoCode(prevData.promoCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePromoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPromoCode(e.target.value.toUpperCase());
+    // 코드를 고치면 다시 적용 버튼을 눌러야 한다.
+    setPromoStatus({ state: "idle" });
+  };
+
+  // 코드를 입력했다면 적용까지 끝나고 유효할 때만 가입을 진행한다(비워두면 상관없음).
+  const isPromoOk =
+    normalizedPromoCode === "" || promoStatus.state === "valid";
 
   const isFormValid =
     companyName.trim() !== "" &&
     effectiveJob.trim() !== "" &&
     companySize.trim() !== "" &&
-    isTermsAgreed;
+    isTermsAgreed &&
+    isPromoOk;
 
   const handlePrev = () => {
     navigate(-1);
@@ -76,6 +148,7 @@ const NextSignupPage = () => {
         company_name: companyName,
         company_size: companySize,
         job_title: effectiveJob,
+        ...(normalizedPromoCode ? { promo_code: normalizedPromoCode } : {}),
       });
       if (isLandingEntry()) {
         clearLandingEntry();
@@ -83,7 +156,11 @@ const NextSignupPage = () => {
       }
       // 개인 회원가입 완료 — GA4/메타 전환 이벤트. 가입만 한 상태라 요금제는
       // 없다(체험 시작은 trial_started가 체험이 실제로 열릴 때 따로 나간다).
-      track("sign_up", { signup_method: "email", account_type: "personal" });
+      track("sign_up", {
+        signup_method: "email",
+        account_type: "personal",
+        ...(normalizedPromoCode ? { promo_code: normalizedPromoCode } : {}),
+      });
       setShowSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (error: any) {
@@ -106,6 +183,13 @@ const NextSignupPage = () => {
             <p className="text-[17px] font-semibold tracking-[-0.04em] text-tx-default">
               회원가입이 완료되었어요!
             </p>
+            {normalizedPromoCode && (
+              <p className="text-center text-[13px] font-medium leading-[1.5] tracking-[-0.03em] text-tx-alt">
+                혜택 코드가 적용됐어요.
+                <br />
+                로그인 후 설정 &gt; 요금제에서 무료 체험을 시작해보세요.
+              </p>
+            )}
             <p className="text-[13px] font-medium tracking-[-0.03em] text-icon-neutral">
               잠시 후 로그인 페이지로 이동합니다.
             </p>
@@ -177,6 +261,13 @@ const NextSignupPage = () => {
                 setIsCompanySizeOpen(false);
               }}
             />
+
+            <PromoCodeField
+              value={promoCode}
+              onChange={handlePromoChange}
+              onApply={() => applyPromoCode(promoCode)}
+              status={promoStatus}
+            />
           </div>
 
           {errorMessage && (
@@ -196,6 +287,7 @@ const NextSignupPage = () => {
                     companyName,
                     job: effectiveJob,
                     companySize,
+                    promoCode,
                     agreed: isTermsAgreed,
                   },
                 },
@@ -243,6 +335,84 @@ const NextSignupPage = () => {
       </main>
 
       <Footer />
+    </div>
+  );
+};
+
+interface PromoCodeFieldProps {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onApply: () => void;
+  status: PromoStatus;
+}
+
+// 혜택 코드(선택) — 블로그 등에서 받은 코드를 입력하고 "적용"을 누르면
+// 바로 아래에 적용 결과(적용됨 / 틀림 / 만료 / 마감)가 나온다.
+const PromoCodeField = ({ value, onChange, onApply, status }: PromoCodeFieldProps) => {
+  const hasValue = value.trim() !== "";
+  const isChecking = status.state === "checking";
+  const borderClass =
+    status.state === "invalid"
+      ? "border-rising focus:border-rising"
+      : status.state === "valid"
+        ? "border-[#1A75FF] focus:border-[#1A75FF]"
+        : "border-line-alt focus:border-fill-primary";
+  return (
+    <div>
+      <label className="mb-[8px] block text-[14px] font-semibold tracking-[-0.03em] text-tx-default">
+        혜택 코드가 있다면 입력해주세요.
+        <span className="ml-[4px] text-[13px] font-medium text-tx-assistive">
+          (선택)
+        </span>
+      </label>
+
+      <div className="flex gap-[8px]">
+        <input
+          type="text"
+          value={value}
+          onChange={onChange}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && hasValue && !isChecking) {
+              e.preventDefault();
+              onApply();
+            }
+          }}
+          placeholder="예) FEDIT-ABCD"
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={50}
+          className={`h-[44px] min-w-0 flex-1 rounded-[7px] border px-[12px] text-[14px] font-medium tracking-[-0.03em] text-tx-default outline-none transition placeholder:text-tx-assistive ${borderClass}`}
+        />
+        <button
+          type="button"
+          onClick={onApply}
+          disabled={!hasValue || isChecking}
+          className={`h-[44px] w-[76px] shrink-0 rounded-[7px] text-[14px] font-semibold tracking-[-0.03em] transition ${
+            hasValue && !isChecking
+              ? "bg-fill-primary text-white hover:bg-[#111111]"
+              : "cursor-not-allowed bg-surface-base text-icon-alt"
+          }`}
+        >
+          {isChecking ? "확인 중" : "적용"}
+        </button>
+      </div>
+
+      {status.state === "idle" && hasValue && (
+        <p className="mt-[6px] text-[13px] font-medium tracking-[-0.03em] text-tx-assistive">
+          적용 버튼을 눌러 코드를 확인해주세요.
+        </p>
+      )}
+      {status.state === "valid" && (
+        <p className="mt-[6px] text-[13px] font-medium tracking-[-0.03em] text-[#1A75FF]">
+          {status.message}
+        </p>
+      )}
+      {status.state === "invalid" && (
+        <p className="mt-[6px] text-[13px] font-medium tracking-[-0.03em] text-rising">
+          {status.message}
+        </p>
+      )}
     </div>
   );
 };
