@@ -247,6 +247,7 @@ function renderProduct() {
 }
 
 function resetResult() {
+  stopProgress();
   similarFor = null;
   trendFor = null;
   state.pollToken++;
@@ -313,7 +314,7 @@ async function onAnalyze() {
   state.analyzing = true;
   updateButtons();
   showError("");
-  showSteps(0, "상품 페이지를 읽고 있어요");
+  startProgress();
   try {
     // 분석할 때만 상품 고시·정보 탭까지 펼쳐서 다시 읽는다(크롤러와 같은 방식). 실패하면 미리보기 값으로 진행
     let full = p;
@@ -358,6 +359,7 @@ async function onAnalyze() {
     }
   } catch (e) {
     // 요청 전에 실패하면 진행 단계 카드는 걷어낸다
+    stopProgress();
     if (!state.result || state.resultUrl !== p.url) $("result").hidden = true;
     handleError(e);
   } finally {
@@ -436,6 +438,7 @@ function renderResult(r) {
   const box = $("result");
   box.hidden = false;
   box.className = "card";
+  if (r.status !== "queued" && r.status !== "ai_done") stopProgress();
   if (r.status === "indexed") { loadTrend(r.itemcode); loadSimilar(r.itemcode); }
 
   if (r.status === "indexed") {
@@ -468,24 +471,51 @@ function renderResult(r) {
   } else if (r.status === "loading") {
     fill(box, el("div", { class: "status" }, el("div", { class: "spinner" }), "분석 결과를 불러오고 있어요"));
   } else {
-    showSteps(1, "AI가 분석하고 있어요");
+    setProgress(1);
   }
 }
 
 // 분석 진행 단계: 페이지 읽기 → AI 분석 → 트렌드지수 계산(마지막 단계는 결과가 나온 뒤 트렌드지수 카드에서 보인다)
-const STEPS = ["페이지 읽는 중", "AI 분석 중", "트렌드지수 계산 중"];
+const STEPS = ["상품 페이지 읽기", "AI 분석", "트렌드지수 계산"];
+// 표시 단계는 5초마다 하나씩 넘어간다(실제 처리가 더 빠르면 그 단계를 바로 보여준다). 결과가 나오면 멈춘다.
+const STEP_MS = 5000;
+const STEP_TEXT = ["상품 페이지를 읽고 있어요", "AI가 분석하고 있어요", "트렌드지수를 계산하고 있어요"];
+let progress = null;    // { start, real, shown, timer }
+function startProgress() {
+  stopProgress();
+  progress = { start: Date.now(), real: 0, shown: -1, timer: setInterval(drawProgress, 500) };
+  drawProgress();
+}
+function setProgress(real) {
+  if (!progress) progress = { start: Date.now(), real, shown: -1, timer: setInterval(drawProgress, 500) };
+  progress.real = Math.max(progress.real, real);
+  drawProgress();
+}
+function stopProgress() {
+  if (progress) clearInterval(progress.timer);
+  progress = null;
+}
+function drawProgress() {
+  if (!progress) return;
+  const step = Math.min(STEPS.length - 1, Math.max(progress.real, Math.floor((Date.now() - progress.start) / STEP_MS)));
+  if (step === progress.shown) return;   // 같은 단계면 다시 그리지 않는다(스피너 깜빡임 방지)
+  progress.shown = step;
+  showSteps(step, STEP_TEXT[step]);
+}
 function stepList(active) {
   return el("ol", { class: "steps" }, STEPS.map((t, i) =>
-    el("li", { class: i < active ? "done" : i === active ? "on" : "" }, el("span", { class: "dot" }, i < active ? "✓" : String(i + 1)), t)));
+    el("li", { class: i < active ? "done" : i === active ? "on" : "" },
+      el("span", { class: "ic", "aria-hidden": "true" }, i < active ? "✓" : i === active ? el("span", { class: "spinner sm" }) : ""),
+      i === active ? `${t} 중` : t)));
 }
 function showSteps(active, text) {
   const box = $("result");
   box.hidden = false;
   box.className = "card";
   fill(box,
-    el("div", { class: "status" }, el("div", { class: "spinner" }), text),
+    el("p", { class: "section-title" }, text),
     stepList(active),
-    active === 1 ? el("p", { class: "notice" }, "보통 10~20초 걸려요. 기다리는 동안 무드보드에 먼저 저장해도 돼요.") : null);
+    active >= 1 ? el("p", { class: "notice" }, "보통 10~20초 걸려요. 기다리는 동안 무드보드에 먼저 저장해도 돼요.") : null);
 }
 
 // ── 트렌드지수 요약 ──────────────────────────────────────────────────
@@ -501,7 +531,7 @@ async function loadTrend(itemcode) {
   trendFor = itemcode;
   const box = $("trend");
   box.hidden = false;
-  fill(box, el("p", { class: "section-title" }, "트렌드지수"), el("div", { class: "status" }, el("div", { class: "spinner" }), "트렌드지수 계산 중"), stepList(2));
+  fill(box, el("p", { class: "section-title" }, "트렌드지수"), stepList(2));
   let t = null;
   try {
     t = await api.trend(itemcode);
@@ -582,7 +612,36 @@ let compareSort = "price";
 let compareOpen = null; // 펼친 유사상품 itemCode
 
 const man = (v) => `${(Math.round(v / 1000) / 10).toFixed(1).replace(/\.0$/, "")}만`;
-const pctOf = (v, d) => ((v - d.lo) / (d.hi - d.lo)) * 100;
+// 가격 차이가 크면(최고/최저 6배 이상) 로그 축으로 — 한 상품만 아주 비싸도 나머지가 한쪽에 뭉치지 않게
+const pctOf = (v, d) => (d.log
+  ? ((Math.log(v) - Math.log(d.lo)) / (Math.log(d.hi) - Math.log(d.lo))) * 100
+  : ((v - d.lo) / (d.hi - d.lo)) * 100);
+// 축 눈금: 1·2·5 단위로 최대 5개(라벨이 겹치지 않게)
+function niceStep(span, maxTicks) {
+  const raw = span / Math.max(1, maxTicks - 1);
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  return [1, 2, 5, 10].map((m) => m * pow).find((s) => s >= raw) || 10 * pow;
+}
+function axisOf(min, max) {
+  if (min > 0 && max / min >= 6) {
+    const lo = 10 ** Math.floor(Math.log10(min)), hi = 10 ** Math.ceil(Math.log10(max));
+    const cands = [];
+    for (let e = lo; e <= hi; e *= 10) for (const m of [1, 2, 5]) if (e * m >= lo && e * m <= hi) cands.push(e * m);
+    const d = { log: true, lo: Math.max(lo, cands.filter((t) => t <= min).pop() || lo), hi: cands.find((t) => t >= max) || hi };
+    // 라벨 사이가 18% 이상 떨어지도록 거른다(로그 축에서 1·2·5 가 촘촘하면 일부만)
+    const ticks = [];
+    for (const t of cands.filter((t) => t >= d.lo && t <= d.hi)) {
+      if (!ticks.length || pctOf(t, d) - pctOf(ticks[ticks.length - 1], d) >= 18) ticks.push(t);
+    }
+    if (ticks[ticks.length - 1] !== d.hi) { if (pctOf(d.hi, d) - pctOf(ticks[ticks.length - 1], d) < 18) ticks.pop(); ticks.push(d.hi); }
+    return { ...d, ticks };
+  }
+  const step = niceStep(max - min || max * 0.2, 5);
+  const lo = Math.max(0, Math.floor(min / step) * step), hi = Math.max(lo + step, Math.ceil(max / step) * step);
+  const ticks = [];
+  for (let t = lo; t <= hi + 1; t += step) ticks.push(t);
+  return { log: false, lo, hi, ticks };
+}
 function chevron() {
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("viewBox", "0 0 16 16");
@@ -608,12 +667,7 @@ function priceStats(items) {
   const m = vals.length >> 1;
   const median = vals.length % 2 ? vals[m] : (vals[m - 1] + vals[m]) / 2;
   const min = Math.min(vals[0], base), max = Math.max(vals[vals.length - 1], base);
-  const span = max - min;
-  const step = span > 400000 ? 100000 : span > 150000 ? 50000 : span > 60000 ? 20000 : 10000;
-  const lo = Math.max(0, Math.floor(min / step) * step), hi = Math.max(lo + step, Math.ceil(max / step) * step);
-  const ticks = [];
-  for (let t = lo; t <= hi + 1; t += step) ticks.push(t);
-  return { base, items: priced, median, lo, hi, ticks, min: vals[0], max: vals[vals.length - 1] };
+  return { base, items: priced, median, ...axisOf(min, max), min: vals[0], max: vals[vals.length - 1] };
 }
 
 function priceSummary(d) {
@@ -640,12 +694,14 @@ function priceChart(d, { big = false, onPick = null, picked = null } = {}) {
   }
   const midX = pctOf(d.median, d), meX = pctOf(d.base, d);
   const close = Math.abs(midX - meX) < (big ? 30 : 36);
+  // 라벨이 카드 밖으로 나가지 않게: 가장자리 근처면 안쪽으로 붙인다
+  const edge = (x) => (x > 82 ? ";transform:translateX(-100%)" : x < 18 ? ";transform:none" : "");
   box.append(
     ...d.ticks.map((t, i) => el("span", { class: "ptick", style: `left:${pctOf(t, d)}%` })),
     el("span", { class: "pmid", style: `left:${midX}%` }),
-    el("span", { class: "pflag mid", style: `left:${midX}%${close && midX < meX ? ";transform:translateX(-100%)" : close ? ";transform:none" : ""}` },
+    el("span", { class: "pflag mid", style: `left:${midX}%${close && midX < meX ? ";transform:translateX(-100%)" : close ? ";transform:none" : edge(midX)}` },
       `${big ? "시장 " : ""}중앙 ${man(d.median)}`),
-    el("span", { class: "pflag me", style: `left:${meX}%${close && meX <= midX ? ";transform:translateX(-100%)" : close ? ";transform:none" : ""}` },
+    el("span", { class: "pflag me", style: `left:${meX}%${close && meX <= midX ? ";transform:translateX(-100%)" : close ? ";transform:none" : edge(meX)}` },
       `이 상품 ${man(d.base)}`),
     ...dots.map((dot) => {
       const attrs = { class: `pdot${picked === dot.it.itemCode ? " sel" : ""}`,
