@@ -255,6 +255,8 @@ function resetResult() {
   $("result").hidden = true;
   $("similar").hidden = true;
   $("trend").hidden = true;
+  $("price").hidden = true;
+  closeCompare();
   $("save-area").hidden = true;
   setSaveMsg("");
 }
@@ -549,11 +551,12 @@ async function loadSimilar(itemcode) {
     el("div", { class: "status" }, el("div", { class: "spinner" }), "찾는 중"));
   let items = [];
   try {
-    items = (await api.similar(itemcode, 6)) || [];
+    items = (await api.similar(itemcode, SIMILAR_LIMIT)) || [];
   } catch (e) {
     if (e instanceof AuthError) return handleError(e);
   }
   if (similarFor !== itemcode || !state.result || state.result.itemcode !== itemcode) return;
+  renderPrice(items);
   if (!items.length) {
     fill(box, el("p", { class: "section-title" }, "유사상품"),
       el("p", { class: "notice" }, "FEDIT DB에서 유사상품을 찾지 못했어요."));
@@ -561,12 +564,191 @@ async function loadSimilar(itemcode) {
   }
   fill(box,
     el("p", { class: "section-title" }, "유사상품"),
-    el("div", { class: "similar-grid" }, items.map((it) =>
+    el("div", { class: "similar-grid" }, items.slice(0, 6).map((it) =>
       el("button", { class: "sim", title: it.product_name || "", onclick: () => openTab(it.productUrl || productDetailUrl(it.itemCode)) },
         el("img", { src: it.thumbnail || "", alt: "", loading: "lazy" }),
         el("span", { class: "b" }, it.brand || ""),
         el("span", { class: "n" }, it.product_name || it.itemCode),
       ))),
+  );
+}
+
+// ── 가격 위치 · 유사상품 가격 비교 ─────────────────────────────────────
+// 유사상품(수집 상품) 가격 분포에서 지금 보는 상품이 어디쯤인지. 가격은 할인가 우선(백엔드 price).
+const SIMILAR_LIMIT = 10;
+const SVG_NS = "http://www.w3.org/2000/svg";
+let priceData = null;   // { base, items, median, lo, hi, ticks }
+let compareSort = "price";
+let compareOpen = null; // 펼친 유사상품 itemCode
+
+const man = (v) => `${(Math.round(v / 1000) / 10).toFixed(1).replace(/\.0$/, "")}만`;
+const pctOf = (v, d) => ((v - d.lo) / (d.hi - d.lo)) * 100;
+function chevron() {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("class", "chev");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", "M4 6l4 4 4-4");
+  svg.append(path);
+  return svg;
+}
+function diffChip(price, base) {
+  const d = Math.round(((price - base) / base) * 100);
+  if (d === 0) return el("span", { class: "diff same" }, "같은 가격");
+  return el("span", { class: `diff ${d < 0 ? "cheap" : "dear"}` }, `${Math.abs(d)}% ${d < 0 ? "저렴" : "비쌈"}`);
+}
+
+function priceStats(items) {
+  const p = state.product;
+  const base = num(p && p.currentPrice) || num(p && p.regularPrice);
+  const priced = items.filter((it) => num(it.price) > 0);
+  if (!base || priced.length < 2) return null;
+  const vals = priced.map((it) => num(it.price)).sort((a, b) => a - b);
+  const m = vals.length >> 1;
+  const median = vals.length % 2 ? vals[m] : (vals[m - 1] + vals[m]) / 2;
+  const min = Math.min(vals[0], base), max = Math.max(vals[vals.length - 1], base);
+  const span = max - min;
+  const step = span > 400000 ? 100000 : span > 150000 ? 50000 : span > 60000 ? 20000 : 10000;
+  const lo = Math.max(0, Math.floor(min / step) * step), hi = Math.max(lo + step, Math.ceil(max / step) * step);
+  const ticks = [];
+  for (let t = lo; t <= hi + 1; t += step) ticks.push(t);
+  return { base, items: priced, median, lo, hi, ticks, min: vals[0], max: vals[vals.length - 1] };
+}
+
+function priceSummary(d) {
+  const cheaper = d.items.filter((it) => num(it.price) < d.base).length;
+  const n = d.items.length;
+  const vsMid = Math.round(((d.base - d.median) / d.median) * 100);
+  const where = cheaper === n ? "가장 비싸요" : cheaper === 0 ? "가장 저렴해요" : `${n - cheaper + 1}번째로 비싸요`;
+  return el("p", { class: "price-sum" }, `유사상품 ${n}개 중 `, el("b", {}, where), " · 중앙값보다 ",
+    el("b", {}, `${vsMid > 0 ? "+" : ""}${vsMid}%`));
+}
+
+/** 가격 축 그래프. 점이 겹치지 않게 가까운 점은 위아래 줄로 비켜 놓는다. onPick 이 있으면 점을 누를 수 있다. */
+function priceChart(d, { big = false, onPick = null, picked = null } = {}) {
+  const box = el("div", { class: `pchart${big ? " big" : ""}`, role: "img",
+    "aria-label": `유사상품 ${d.items.length}개 가격 분포, 중앙값 ${man(d.median)}, 이 상품 ${man(d.base)}` });
+  const lanes = [];
+  const laneY = (i) => (i === 0 ? 0 : (i % 2 ? -1 : 1) * Math.ceil(i / 2));
+  const gap = big ? 3.5 : 4.5;
+  const dots = d.items.map((it) => ({ it, x: pctOf(num(it.price), d) })).sort((a, b) => a.x - b.x);
+  for (const dot of dots) {
+    let lane = lanes.findIndex((last) => dot.x - last >= gap);
+    if (lane < 0) { lane = lanes.length; lanes.push(dot.x); } else lanes[lane] = dot.x;
+    dot.y = laneY(lane);
+  }
+  const midX = pctOf(d.median, d), meX = pctOf(d.base, d);
+  const close = Math.abs(midX - meX) < (big ? 30 : 36);
+  box.append(
+    ...d.ticks.map((t, i) => el("span", { class: "ptick", style: `left:${pctOf(t, d)}%` })),
+    el("span", { class: "pmid", style: `left:${midX}%` }),
+    el("span", { class: "pflag mid", style: `left:${midX}%${close && midX < meX ? ";transform:translateX(-100%)" : close ? ";transform:none" : ""}` },
+      `${big ? "시장 " : ""}중앙 ${man(d.median)}`),
+    el("span", { class: "pflag me", style: `left:${meX}%${close && meX <= midX ? ";transform:translateX(-100%)" : close ? ";transform:none" : ""}` },
+      `이 상품 ${man(d.base)}`),
+    ...dots.map((dot) => {
+      const attrs = { class: `pdot${picked === dot.it.itemCode ? " sel" : ""}`,
+        style: `left:${dot.x}%;--lane:${dot.y}`, title: `${dot.it.brand || ""} ${man(num(dot.it.price))}` };
+      if (onPick) return el("button", { ...attrs, type: "button", "aria-label": `${dot.it.brand || ""} ${man(num(dot.it.price))}`, onclick: () => onPick(dot.it.itemCode) });
+      return el("span", attrs);
+    }),
+    el("span", { class: "pdot me", style: `left:${meX}%;--lane:0` }),
+    ...d.ticks.map((t, i) => el("span", { class: "plab", style: `left:${pctOf(t, d)}%${i === 0 ? ";transform:none" : i === d.ticks.length - 1 ? ";transform:translateX(-100%)" : ""}` }, man(t))),
+  );
+  return box;
+}
+
+function renderPrice(items) {
+  const box = $("price");
+  priceData = priceStats(items);
+  if (!priceData) { box.hidden = true; return; }
+  box.hidden = false;
+  fill(box,
+    el("p", { class: "section-title" }, "가격 위치"),
+    priceChart(priceData),
+    priceSummary(priceData),
+    el("button", { class: "ghost wide", onclick: openCompare }, "유사상품과 가격 비교하기 →"),
+  );
+}
+
+// 패널 안 비교 화면: 다른 영역을 잠시 숨기고 #compare 만 보여준다. ← 분석 결과 로 돌아온다.
+let hiddenBeforeCompare = null;
+function openCompare() {
+  if (!priceData) return;
+  const main = $("view-main");
+  hiddenBeforeCompare = [...main.children].map((n) => [n, n.hidden]);
+  for (const [n] of hiddenBeforeCompare) n.hidden = n.id !== "compare";
+  compareOpen = null;
+  renderCompare();
+  main.scrollTop = 0;
+  window.scrollTo(0, 0);
+}
+function closeCompare() {
+  if (!hiddenBeforeCompare) return;
+  for (const [n, h] of hiddenBeforeCompare) n.hidden = h;
+  hiddenBeforeCompare = null;
+  $("compare").hidden = true;
+  $("price").scrollIntoView({ block: "nearest" });
+}
+
+const ATTR_ROWS = [["소재", "material"], ["핏", "fit"], ["기장", "length"], ["넥라인", "neckline"], ["소매", "sleeve"],
+  ["패턴", "pattern"], ["디테일", "detail"], ["색상", "color"]];
+
+function renderCompare() {
+  const d = priceData, p = state.product || {};
+  const box = $("compare");
+  box.hidden = false;
+  const order = compareSort === "price"
+    ? [...d.items].sort((a, b) => num(b.price) - num(a.price))
+    : d.items;
+  const pick = (code) => { compareOpen = compareOpen === code ? null : code; renderCompare();
+    const row = box.querySelector(`[data-code="${CSS.escape(code)}"]`); if (row) row.scrollIntoView({ block: "nearest" }); };
+  const sortBtn = (key, label) => el("button", { type: "button", class: compareSort === key ? "on" : "",
+    "aria-pressed": String(compareSort === key), onclick: () => { compareSort = key; renderCompare(); } }, label);
+  const vsMid = Math.round(((d.base - d.median) / d.median) * 100);
+  fill(box,
+    el("button", { class: "back", type: "button", onclick: closeCompare }, "← 분석 결과"),
+    el("div", { class: "product" },
+      p.thumbnail ? el("img", { src: p.thumbnail, alt: "" }) : el("img", { alt: "" }),
+      el("div", { class: "meta" },
+        el("span", { class: "brand" }, p.brand || p.platform || ""),
+        el("span", { class: "name" }, p.productName || ""),
+        el("span", { class: "sub" }, `${d.base.toLocaleString("ko-KR")}원`))),
+    el("section", { class: "card" },
+      el("p", { class: "section-title" }, "가격 위치"),
+      el("p", { class: "notice small0" }, "회색 점은 유사상품, 파란 점이 지금 보는 상품이에요. 점을 누르면 아래에서 그 상품이 펼쳐져요."),
+      priceChart(d, { big: true, onPick: pick, picked: compareOpen }),
+      el("div", { class: "pstats" },
+        el("div", {}, el("span", {}, "시장 중앙"), el("b", {}, man(d.median))),
+        el("div", {}, el("span", {}, "가격 범위"), el("b", {}, `${man(d.min)}~${man(d.max)}`)),
+        el("div", {}, el("span", {}, "이 상품"), el("b", {}, `${vsMid > 0 ? "+" : ""}${vsMid}%`)))),
+    el("section", { class: "card" },
+      el("div", { class: "trend-head" },
+        el("p", { class: "section-title" }, `유사상품 ${d.items.length}개`),
+        el("div", { class: "seg", role: "group", "aria-label": "정렬" }, sortBtn("price", "가격순"), sortBtn("similar", "유사도순"))),
+      el("div", { class: "pbase" }, el("span", {}, "기준 · 지금 보는 상품"), el("b", {}, man(d.base))),
+      el("ul", { class: "plist" }, order.map((it) => {
+        const open = compareOpen === it.itemCode;
+        const attrs = ATTR_ROWS.map(([k, f]) => [k, clean(it[f])]).filter(([, v]) => v);
+        return el("li", { "data-code": it.itemCode, class: open ? "open" : "" },
+          el("button", { type: "button", class: "prow", "aria-expanded": String(open), onclick: () => pick(it.itemCode) },
+            el("img", { src: it.thumbnail || "", alt: "", loading: "lazy" }),
+            el("span", { class: "info" },
+              el("span", { class: "bn" }, it.brand || ""),
+              el("span", { class: "pn" }, it.product_name || it.itemCode),
+              el("span", { class: "mt" }, [clean(it.material), clean(it.fit)].filter(Boolean).join(" · "))),
+            el("span", { class: "pr" }, el("strong", {}, man(num(it.price))), diffChip(num(it.price), d.base)),
+            chevron()),
+          open ? el("div", { class: "pattrs" },
+            attrs.length
+              ? el("dl", { class: "tags" }, attrs.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, v)]))
+              : el("p", { class: "notice" }, "표시할 속성이 없어요."),
+            el("div", { class: "pfoot" },
+              el("span", {}, [it.likes != null ? `찜 ${fmt(it.likes)}` : null, it.reviews != null ? `후기 ${fmt(it.reviews)}` : null].filter(Boolean).join(" · ")),
+              el("button", { type: "button", class: "link", onclick: () => openTab(it.productUrl || productDetailUrl(it.itemCode)) }, "쇼핑몰에서 보기 ↗"))) : null);
+      })),
+    ),
   );
 }
 
