@@ -8,5 +8,5 @@ export const PRICING_URL = `${WEB_BASE}/?open=pricing`;
 export const productDetailUrl = (itemcode) => `${WEB_BASE}/?product=${encodeURIComponent(itemcode)}`;
 
 // 분석 상태 폴링
-export const POLL_INTERVAL_MS = 3000;
+export const POLL_INTERVAL_MS = 1000;
 export const POLL_TIMEOUT_MS = 5 * 60 * 1000;

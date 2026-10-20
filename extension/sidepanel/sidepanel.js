@@ -311,6 +311,7 @@ async function onAnalyze() {
   state.analyzing = true;
   updateButtons();
   showError("");
+  showSteps(0, "상품 페이지를 읽고 있어요");
   try {
     // 분석할 때만 상품 고시·정보 탭까지 펼쳐서 다시 읽는다(크롤러와 같은 방식). 실패하면 미리보기 값으로 진행
     let full = p;
@@ -354,6 +355,8 @@ async function onAnalyze() {
       if (!isFinal(res.status)) poll(res.itemcode);
     }
   } catch (e) {
+    // 요청 전에 실패하면 진행 단계 카드는 걷어낸다
+    if (!state.result || state.resultUrl !== p.url) $("result").hidden = true;
     handleError(e);
   } finally {
     state.analyzing = false;
@@ -446,7 +449,7 @@ function renderResult(r) {
               : v),
           ]))
         : el("p", { class: "notice" }, "표시할 분석 항목이 없어요."),
-      clean(a.aiDescription) ? el("p", { class: "desc" }, a.aiDescription) : null,
+      // AI 개요는 문장 품질 개선 전이라 사이드패널에서는 숨긴다(FEDIT 웹 상세에서는 그대로 보인다)
       el("div", { class: "actions" },
         el("button", { class: "ghost", onclick: () => openTab(productDetailUrl(r.itemcode)) }, "트렌드 지수·상세 분석 보기")),
     );
@@ -460,13 +463,27 @@ function renderResult(r) {
       el("div", { class: "status" }, "분석이 오래 걸리고 있어요"),
       el("p", { class: "notice" }, "보드에 저장해 두면 결과를 내 보드에서 나중에 확인할 수 있어요."),
     );
+  } else if (r.status === "loading") {
+    fill(box, el("div", { class: "status" }, el("div", { class: "spinner" }), "분석 결과를 불러오고 있어요"));
   } else {
-    fill(box, 
-      el("div", { class: "status" }, el("div", { class: "spinner" }),
-        r.status === "loading" ? "분석 결과를 불러오고 있어요" : "AI가 분석하고 있어요"),
-      r.status === "loading" ? null : el("p", { class: "notice" }, "보통 1분 안에 끝나요. 기다리는 동안 무드보드에 먼저 저장해도 돼요."),
-    );
+    showSteps(1, "AI가 분석하고 있어요");
   }
+}
+
+// 분석 진행 단계: 페이지 읽기 → AI 분석 → 트렌드지수 계산(마지막 단계는 결과가 나온 뒤 트렌드지수 카드에서 보인다)
+const STEPS = ["페이지 읽는 중", "AI 분석 중", "트렌드지수 계산 중"];
+function stepList(active) {
+  return el("ol", { class: "steps" }, STEPS.map((t, i) =>
+    el("li", { class: i < active ? "done" : i === active ? "on" : "" }, el("span", { class: "dot" }, i < active ? "✓" : String(i + 1)), t)));
+}
+function showSteps(active, text) {
+  const box = $("result");
+  box.hidden = false;
+  box.className = "card";
+  fill(box,
+    el("div", { class: "status" }, el("div", { class: "spinner" }), text),
+    stepList(active),
+    active === 1 ? el("p", { class: "notice" }, "보통 10~20초 걸려요. 기다리는 동안 무드보드에 먼저 저장해도 돼요.") : null);
 }
 
 // ── 트렌드지수 요약 ──────────────────────────────────────────────────
@@ -482,7 +499,7 @@ async function loadTrend(itemcode) {
   trendFor = itemcode;
   const box = $("trend");
   box.hidden = false;
-  fill(box, el("p", { class: "section-title" }, "트렌드지수"), el("div", { class: "status" }, el("div", { class: "spinner" }), "불러오는 중"));
+  fill(box, el("p", { class: "section-title" }, "트렌드지수"), el("div", { class: "status" }, el("div", { class: "spinner" }), "트렌드지수 계산 중"), stepList(2));
   let t = null;
   try {
     t = await api.trend(itemcode);
