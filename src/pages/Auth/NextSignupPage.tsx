@@ -377,7 +377,6 @@ const PromoCodeField = ({ value, onChange, onApply, status }: PromoCodeFieldProp
               onApply();
             }
           }}
-          placeholder="예) FEDIT-ABCD"
           autoCapitalize="characters"
           autoComplete="off"
           spellCheck={false}
