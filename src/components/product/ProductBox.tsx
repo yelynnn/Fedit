@@ -58,20 +58,25 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
           {getDisplayPrices(product).price}
         </span>
 
-        {/* 5. 누적 조회수 & 누적 판매 (데이터가 있을 때만 렌더링) */}
+        {/* 5. 누적 조회수 & 누적 판매 (데이터가 있을 때만 렌더링) — 한 줄 가로 배치.
+            카드 높이가 고정이라 줄바꿈되면 아래 칩이 잘린다. 카드 폭(내용 196px)에
+            "누적조회수 …"·"누적판매 …"가 같이 들어가지 않아 라벨을 줄였고, 그래도 넘치면
+            판매 칩 끝을 말줄임한다. */}
         {(() => {
           const salesText = formatSalesCount(product.sales);
+          const chip =
+            "flex min-w-0 items-center gap-1 whitespace-nowrap rounded bg-[var(--color-fill-normal-interaction-pressed)] px-1.5 py-1 type-title-xsmall text-tx-alt";
           return (
             (product.views || salesText) && (
-              <div className="flex flex-wrap gap-1">
+              <div className="flex w-full gap-1">
                 {product.views && (
-                  <div className="flex items-center justify-center gap-1 rounded bg-[var(--color-fill-normal-interaction-pressed)] px-2 py-1 type-title-xsmall text-tx-alt">
-                    누적조회수 {Number(product.views).toLocaleString("ko-KR")}
+                  <div className={`${chip} shrink-0`}>
+                    조회수 {Number(product.views).toLocaleString("ko-KR")}
                   </div>
                 )}
                 {salesText && (
-                  <div className="flex items-center justify-center gap-1 rounded bg-[var(--color-fill-normal-interaction-pressed)] px-2 py-1 type-title-xsmall text-tx-alt">
-                    누적판매 {salesText}
+                  <div className={chip} title={`누적판매 ${salesText}`}>
+                    <span className="truncate">판매 {salesText}</span>
                   </div>
                 )}
               </div>
