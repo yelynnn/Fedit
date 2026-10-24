@@ -9,6 +9,7 @@ import {
   toBillingPlan,
 } from "@/stores/SubscriptionStore";
 import { GetBrandList, GetBrandPicks, PutBrandPicks } from "@/apis/AnalysisAPI";
+import { findTabForKeyword, useScrollActiveTabIntoView } from "@/lib/brandTabSearch";
 import pointIcon from "@/assets/etc/pointIcon.svg";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 import { getBrandCap } from "@/lib/brandCap";
@@ -127,6 +128,9 @@ export default function InterestBrandModal({
     const brands = cat?.brands ?? [];
     return [...brands].sort((a, b) => a.localeCompare(b, "ko"));
   }, [activeTab, categories]);
+
+  const tabBarRef = useRef<HTMLDivElement>(null);
+  useScrollActiveTabIntoView(tabBarRef, activeTab);
 
   const visibleBrands = useMemo(() => {
     const k = keyword.trim().toLowerCase();
@@ -415,7 +419,12 @@ export default function InterestBrandModal({
           <div className="flex items-center gap-2 rounded-xl border border-[#E4E4E4] px-4 py-3">
             <input
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
+              onChange={(e) => {
+                setKeyword(e.target.value);
+                // 지금 탭에 없으면 그 브랜드가 있는 탭으로 옮긴다
+                const tab = findTabForKeyword(categories, sourceBrands, e.target.value);
+                if (tab) setActiveTab(tab);
+              }}
               placeholder="브랜드를 검색하세요."
               className="flex-1 text-sm outline-none placeholder:text-[#A1A3A5]"
             />
@@ -425,12 +434,16 @@ export default function InterestBrandModal({
             />
           </div>
 
-          <div className="mt-4 flex items-center gap-6 overflow-x-auto whitespace-nowrap border-b border-[#E4E4E4]">
+          <div
+            ref={tabBarRef}
+            className="mt-4 flex items-center gap-6 overflow-x-auto whitespace-nowrap border-b border-[#E4E4E4]"
+          >
             {categories.map((c) => {
               const active = c.label === activeTab;
               return (
                 <button
                   key={c.label}
+                  data-tab={c.label}
                   onClick={() => setActiveTab(c.label)}
                   className={[
                     "pb-2.5 -mb-px shrink-0 text-[15px] font-semibold transition-colors",

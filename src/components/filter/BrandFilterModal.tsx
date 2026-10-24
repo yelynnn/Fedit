@@ -8,6 +8,7 @@ import {
   toBillingPlan,
 } from "@/stores/SubscriptionStore";
 import { GetBrandList, PostBrandApply } from "@/apis/AnalysisAPI";
+import { findTabForKeyword, useScrollActiveTabIntoView } from "@/lib/brandTabSearch";
 import { getBrandCap } from "@/lib/brandCap";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 import cancelIcon from "@/assets/etc/cancel.svg";
@@ -127,6 +128,8 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     const cat = categories.find((c) => c.label === activeTab);
     return cat?.brands ?? [];
   }, [activeTab, brandList, categories]);
+
+  useScrollActiveTabIntoView(scrollRef, activeTab);
 
   const activePlatformCode = PLATFORM_LABEL_TO_CODE[activeTab];
   const isPlatformFullySelected =
@@ -377,7 +380,12 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       <div className="flex items-center justify-between h-12 gap-2 px-3 bg-white border rounded-md border-line-alt">
         <input
           value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
+          onChange={(e) => {
+            setKeyword(e.target.value);
+            // 지금 탭에 없으면 그 브랜드가 있는 탭으로 옮긴다
+            const tab = findTabForKeyword(categories, sourceBrands, e.target.value);
+            if (tab) setActiveTab(tab);
+          }}
           placeholder="브랜드를 입력하세요."
           className="flex-1 text-sm bg-transparent outline-none placeholder:text-icon-alt"
         />
@@ -438,6 +446,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
               return (
                 <button
                   key={key}
+                  data-tab={key}
                   onClick={() => setActiveTab(key)}
                   className={[
                     "pb-1 -mb-px shrink-0",

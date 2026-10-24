@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GetBrandList, PostBrandApply } from "@/apis/AnalysisAPI";
+import { findTabForKeyword, useScrollActiveTabIntoView } from "@/lib/brandTabSearch";
 import { INDEX_LETTERS, getIndexKey } from "@/lib/hangulIndex";
 import {
   useSubscriptionStore,
@@ -66,6 +67,9 @@ export default function BrandApplyPanel() {
     const cat = categories.find((c) => c.label === activeTab);
     return cat?.brands ?? [];
   }, [activeTab, categories]);
+
+  const tabBarRef = useRef<HTMLDivElement>(null);
+  useScrollActiveTabIntoView(tabBarRef, activeTab);
 
   const visibleBrands = useMemo(() => {
     const k = keyword.trim().toLowerCase();
@@ -161,7 +165,12 @@ export default function BrandApplyPanel() {
       <div className="flex items-center gap-2 px-4 py-3 border rounded-xl border-line-alt">
         <input
           value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
+          onChange={(e) => {
+            setKeyword(e.target.value);
+            // 지금 탭에 없으면 그 브랜드가 있는 탭으로 옮긴다
+            const tab = findTabForKeyword(categories, sourceBrands, e.target.value);
+            if (tab) setActiveTab(tab);
+          }}
           placeholder="브랜드를 검색하세요."
           className="flex-1 text-sm outline-none placeholder:text-icon-alt"
         />
@@ -179,12 +188,16 @@ export default function BrandApplyPanel() {
         <div className="py-10 text-sm text-center text-red-500">{err}</div>
       ) : (
         <>
-          <div className="flex items-center gap-6 mt-4 overflow-x-auto border-b whitespace-nowrap border-line-divider">
+          <div
+            ref={tabBarRef}
+            className="flex items-center gap-6 mt-4 overflow-x-auto border-b whitespace-nowrap border-line-divider"
+          >
             {categories.map((c) => {
               const active = c.label === activeTab;
               return (
                 <button
                   key={c.label}
+                  data-tab={c.label}
                   type="button"
                   onClick={() => {
                     setActiveTab(c.label);
