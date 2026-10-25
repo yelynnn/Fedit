@@ -66,9 +66,10 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .steps li.done { color: var(--tx-neutral); }
 .steps li.done .ic { color: var(--ok); }
 .spinner.sm { width: 12px; height: 12px; border-width: 2px; }
-.tags { display: grid; grid-template-columns: 72px 1fr; gap: 6px 10px; margin-top: 12px;
+/* 라벨 칸은 가장 긴 라벨 폭에 맞춘다(고정 폭이면 "브랜드 인지도"가 두 줄로 끊겼다) */
+.tags { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin-top: 12px;
   font: var(--typo-body-md-small); letter-spacing: var(--typo-body-md-small-ls); }
-.tags dt { color: var(--tx-alt); } .tags dd { margin: 0; color: var(--tx-strong); word-break: keep-all; }
+.tags dt { color: var(--tx-alt); white-space: nowrap; } .tags dd { margin: 0; color: var(--tx-strong); word-break: keep-all; }
 .desc { margin: 12px 0 0; color: var(--tx-neutral); font: var(--typo-label-rg-small); letter-spacing: var(--typo-label-rg-small-ls); }
 .actions { display: flex; gap: 8px; margin-top: 12px; }
 .actions button { flex: 1; }
@@ -158,10 +159,11 @@ button.pdot::after { content: ""; position: absolute; inset: -8px; }
 #compare[hidden] { display: none; }
 #compare .back { align-self: flex-start; background: none; border: 0; padding: 0; height: 40px; color: var(--tx); cursor: pointer; }
 .notice.small0 { margin: -4px 0 6px; font: var(--typo-label-rg-xsmall); letter-spacing: var(--typo-label-rg-xsmall-ls); }
-.pstats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+/* 칸 폭을 내용에 맞춰 나눈다 — 가격 범위(2.5만~61.9만)처럼 긴 값이 줄바꿈되지 않게 */
+.pstats { display: grid; grid-template-columns: repeat(3, auto); gap: 6px; margin-top: 8px; }
 .pstats div { background: var(--bg-strong); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 1px; }
 .pstats span { color: var(--tx-alt); font: var(--typo-body-md-xsmall); letter-spacing: var(--typo-body-md-xsmall-ls); }
-.pstats b { color: var(--tx-strong); font: var(--typo-title-sb-small); letter-spacing: var(--typo-title-sb-small-ls); font-variant-numeric: tabular-nums; }
+.pstats b { white-space: nowrap; color: var(--tx-strong); font: var(--typo-title-sb-small); letter-spacing: var(--typo-title-sb-small-ls); font-variant-numeric: tabular-nums; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg button { border: 0; background: transparent; color: var(--tx-alt); padding: 4px 10px; height: auto; cursor: pointer;
   font: var(--typo-title-sb-xsmall); letter-spacing: var(--typo-title-sb-xsmall-ls); }

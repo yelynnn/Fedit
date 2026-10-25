@@ -76,6 +76,11 @@ function handleError(e) {
 }
 
 // ── 사용량(월 분석 한도) ──────────────────────────────────────────────
+// 한 달은 달력 월이 아니라 결제일(구독 중) 또는 가입일 기준 — 서버가 다시 채워지는 시각(resetsAt)을 준다
+function resetDateText(u) {
+  const d = u && u.resetsAt ? new Date(u.resetsAt) : null;
+  return d && !isNaN(d) ? `${d.getMonth() + 1}월 ${d.getDate()}일` : "";
+}
 function renderUsage(u) {
   state.usage = u;
   const pill = $("usage");
@@ -87,8 +92,9 @@ function renderUsage(u) {
       pill.textContent = "분석 무제한";
       pill.className = "pill";
     } else if (u.limit != null) {
-      pill.textContent = `이번 달 분석 ${u.used}/${u.limit}`;
+      pill.textContent = `분석 ${u.used}/${u.limit}`;
       pill.className = u.remaining <= 5 ? "pill warn" : "pill";
+      pill.title = resetDateText(u) ? `${resetDateText(u)}에 다시 채워져요` : "";
     }
   }
   updateButtons();
@@ -106,7 +112,7 @@ function renderLimitReached() {
     el("p", { class: "limit-title" }, "요금제를 구독하고 계속 분석해 보세요"),
     el("p", { class: "notice" }, "요금제를 구독하면 매달 더 많은 상품을 분석하고, FEDIT에서 트렌드 지수·경쟁사 모니터링까지 이어서 볼 수 있어요."),
     el("button", { class: "primary", onclick: () => openTab(PRICING_URL) }, "요금제 보기"),
-    el("p", { class: "sub" }, "이미 분석한 상품은 계속 보고 무드보드에 저장할 수 있어요."),
+    el("p", { class: "sub" }, `${resetDateText(state.usage) ? `${resetDateText(state.usage)}에 분석 한도가 다시 채워져요. ` : ""}이미 분석한 상품은 계속 보고 무드보드에 저장할 수 있어요.`),
   );
 }
 
@@ -279,7 +285,7 @@ function updateButtons() {
   // 결과가 나와 있으면(실패 제외) 분석 버튼은 감춘다
   btn.hidden = Boolean(hasResult && !failed);
   btn.disabled = state.analyzing || !p || !p.thumbnail || limitReached();
-  btn.textContent = state.analyzing ? "분석 요청 중…" : limitReached() ? "이번 달 분석 한도를 모두 사용했어요" : failed ? "다시 분석하기" : "AI로 분석하기";
+  btn.textContent = state.analyzing ? "분석 요청 중…" : limitReached() ? "분석 한도를 모두 사용했어요" : failed ? "다시 분석하기" : "AI로 분석하기";
   $("btn-save").disabled = state.saving || !hasResult;
   $("btn-save").textContent = state.saving ? "저장하는 중…" : "무드보드에 저장";
   renderLimitReached();
