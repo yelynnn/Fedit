@@ -705,9 +705,9 @@ function priceChart(d, { big = false, onPick = null, picked = null } = {}) {
   box.append(
     ...d.ticks.map((t, i) => el("span", { class: "ptick", style: `left:${pctOf(t, d)}%` })),
     el("span", { class: "pmid", style: `left:${midX}%` }),
-    el("span", { class: "pflag mid", style: `left:${midX}%${close && midX < meX ? ";transform:translateX(-100%)" : close ? ";transform:none" : edge(midX)}` },
+    el("span", { class: "pflag mid", "data-x": midX, style: `left:${midX}%${close && midX < meX ? ";transform:translateX(-100%)" : close ? ";transform:none" : edge(midX)}` },
       `${big ? "시장 " : ""}중앙 ${man(d.median)}`),
-    el("span", { class: "pflag me", style: `left:${meX}%${close && meX <= midX ? ";transform:translateX(-100%)" : close ? ";transform:none" : edge(meX)}` },
+    el("span", { class: "pflag me", "data-x": meX, style: `left:${meX}%${close && meX <= midX ? ";transform:translateX(-100%)" : close ? ";transform:none" : edge(meX)}` },
       `이 상품 ${man(d.base)}`),
     ...dots.map((dot) => {
       const attrs = { class: `pdot${picked === dot.it.itemCode ? " sel" : ""}`,
@@ -718,7 +718,44 @@ function priceChart(d, { big = false, onPick = null, picked = null } = {}) {
     el("span", { class: "pdot me", style: `left:${meX}%;--lane:0` }),
     ...d.ticks.map((t, i) => el("span", { class: "plab", style: `left:${pctOf(t, d)}%${i === 0 ? ";transform:none" : i === d.ticks.length - 1 ? ";transform:translateX(-100%)" : ""}` }, man(t))),
   );
+  // 위 style 은 첫 그림용 — 실제 글자 폭을 재서 다시 놓는다(패널 폭이 바뀌어도)
+  const ro = new ResizeObserver(() => {
+    if (!box.isConnected) { ro.disconnect(); return; }
+    placeFlags(box, big);
+  });
+  ro.observe(box);
   return box;
+}
+
+/** "시장 중앙"·"이 상품" 라벨을 실제 폭으로 재서 차트 밖으로 나가지 않게, 서로 겹치지 않게 놓는다.
+ *  둘이 한 줄에 다 안 들어가면 "이 상품"을 한 줄 아래로 내린다. */
+function placeFlags(box, big) {
+  const W = box.clientWidth;
+  const mid = box.querySelector(".pflag.mid"), me = box.querySelector(".pflag.me");
+  if (!W || !mid || !me) return;
+  const GAP = 8;
+  const clamp = (left, w) => Math.min(Math.max(left, 0), Math.max(W - w, 0));
+  const make = (f) => {
+    const x = (parseFloat(f.dataset.x) / 100) * W, w = f.offsetWidth;
+    return { f, x, w, left: clamp(x - w / 2, w) };
+  };
+  const a = make(mid), b = make(me);
+  const [l, r] = a.x <= b.x ? [a, b] : [b, a];
+  me.style.top = "";
+  if (l.left + l.w + GAP > r.left) {
+    if (l.w + GAP + r.w <= W) {
+      // 왼쪽 라벨은 점 왼쪽에, 오른쪽 라벨은 점 오른쪽에 붙이고, 그래도 겹치면 서로 밀어낸다
+      l.left = clamp(l.x - l.w, l.w);
+      r.left = clamp(Math.max(r.x, l.left + l.w + GAP), r.w);
+      l.left = clamp(Math.min(l.left, r.left - GAP - l.w), l.w);
+    } else {
+      me.style.top = big ? "18px" : "14px";
+    }
+  }
+  for (const { f, left } of [a, b]) {
+    f.style.left = `${left}px`;
+    f.style.transform = "none";
+  }
 }
 
 function renderPrice(items) {
