@@ -561,7 +561,7 @@ async function loadTrend(itemcode) {
   fill(box,
     el("div", { class: "trend-head" },
       el("p", { class: "section-title" }, "트렌드지수"),
-      stageText ? el("span", { class: `pill ${stage === "measured" ? "" : "soft"}` }, stageText) : null),
+      stageText ? el("span", { class: `pill ${stage === "measured" ? "" : `soft stage-${stage}`}` }, stageText) : null),
     el("div", { class: "trend-score" },
       el("strong", {}, scoreText),
       ii.band ? el("span", { class: `band ${/급상승|상승/.test(ii.band) ? "up" : /하락/.test(ii.band) ? "down" : ""}` }, ii.band) : null,

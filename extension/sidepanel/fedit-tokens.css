@@ -1,0 +1,206 @@
+/* FEDIT 디자인 토큰 — Figma(🎀 FEDIT)에서 내보낸 파일 그대로.
+   컬러: Semantic: Color / Light.tokens.json, 타이포: fedit-typography.css.
+   사이드패널은 라이트 모드만 쓴다. 값을 바꿀 땐 Figma에서 다시 내보내 이 파일만 고친다. */
+
+/* Pretendard — 타이포 토큰이 "Pretendard" 패밀리를 쓴다(웹은 같은 CDN의 Variable 버전) */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css");
+
+/* ── Semantic: Color (Light) ─────────────────────────────────────── */
+:root {
+  /* Fill */
+  --color-fill-normal: #ffffff;
+  --color-fill-normal-strong: #f9fafb;
+  --color-fill-normal-hover: rgba(11, 14, 15, 0.05);
+  --color-fill-normal-pressed: rgba(11, 14, 15, 0.08);
+  --color-fill-normal-inactive: #e4e4e4;
+  --color-fill-primary: #242628;
+  --color-fill-primary-hover: #0b0e0f;
+  --color-fill-primary-pressed: #242628;
+
+  /* Text */
+  --color-text-strong: #0b0e0f;
+  --color-text-normal: #242628;
+  --color-text-neutral: #3d3f41;
+  --color-text-alternative: #6f7173;
+  --color-text-assistive: #a1a3a5;
+  --color-text-inverse: #ffffff;
+  --color-text-primary: #0b0e0f;
+
+  /* Line */
+  --color-line-strong: #3d3f41;
+  --color-line-normal: #56585a;
+  --color-line-neutral: #babcbe;
+  --color-line-alternative: #e4e4e4;
+  --color-line-assistive: #f6f8fa;
+  --color-line-inverse: #ffffff;
+
+  /* Icon */
+  --color-icon-strong: #242628;
+  --color-icon-normal: #3d3f41;
+  --color-icon-neutral: #6f7173;
+  --color-icon-alternative: #a1a3a5;
+  --color-icon-assistive: #babcbe;
+  --color-icon-inverse: #ffffff;
+
+  /* Accent */
+  --color-accent-brand: #6be016;
+  --color-accent-brand-subtle: #f4ffee;
+  --color-accent-brand-subtle-hover: #e8ffd8;
+  --color-accent-brand-subtle-pressed: #ccfca9;
+
+  /* Trend */
+  --color-trend-rising: #ff4242;
+  --color-trend-rising-subtle: #feecec;
+  --color-trend-rising-medium: #ff8c8c;
+  --color-trend-falling: #0066ff;
+  --color-trend-falling-subtle: #eaf2fe;
+  --color-trend-falling-medium: #69a5ff;
+  --color-trend-steady: #6f7173;
+  --color-trend-steady-subtle: #eceef0;
+  --color-trend-inactive: #e4e4e4;
+
+  /* Data */
+  --color-data-blue: #1a75ff;
+  --color-data-blue-medium: #9ec5ff;
+  --color-data-blue-lighten: #eaf2fe;
+  --color-data-blue-assistive: #f7fbff;
+  --color-data-violet: #9e86fc;
+  --color-data-violet-medium: #c0b0ff;
+  --color-data-violet-lighten: #f0ecfe;
+  --color-data-violet-assistive: #fbfaff;
+  --color-data-pink: #f2639b;
+  --color-data-pink-medium: #f694ba;
+  --color-data-pink-lighten: #fde8f0;
+  --color-data-pink-assistive: #fff4f8;
+  --color-data-red-orange: #ff7b2e;
+  --color-data-red-orange-medium: #ffbd96;
+  --color-data-red-orange-lighten: #fed9c4;
+  --color-data-red-orange-assistive: #feeee5;
+  --color-data-orange: #ff9200;
+  --color-data-orange-medium: #ffd49c;
+  --color-data-orange-lighten: #fef4e6;
+  --color-data-orange-assistive: #fffcf7;
+  --color-data-red: #ff4242;
+  --color-data-red-medium: #ff8c8c;
+  --color-data-red-lighten: #feecec;
+  --color-data-red-assistive: #fffafa;
+
+  /* System */
+  --color-system-success: #00bf40;
+  --color-system-error: #ff4242;
+  --color-system-warning: #ff9200;
+  --color-system-info: #0066ff;
+
+  /* Static */
+  --color-static-white: #ffffff;
+  --color-static-black: #030303;
+
+  /* Surface */
+  --color-surface-basement: #f6f8fa;
+  --color-surface-default: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-surface-floating: #ffffff;
+
+  /* Overlay */
+  --color-overlay-dim: rgba(0, 0, 0, 0.5);
+  --color-overlay-dim-strong: rgba(0, 0, 0, 0.75);
+  --color-overlay-scrim-weak: rgba(0, 0, 0, 0.25);
+  --color-overlay-lighten-weak: rgba(255, 255, 255, 0.25);
+  --color-overlay-lighten-strong: rgba(255, 255, 255, 0.75);
+
+  /* Source — 예측(추론)·시장 기준 데이터 태그 */
+  --color-source-predicted: #6541f2;
+  --color-source-predicted-subtle: #f0ecfe;
+  --color-source-market: #006f82;
+  --color-source-market-subtle: #defaff;
+
+  /* Diagnosis */
+  --color-diagnosis-healthy: #006e25;
+  --color-diagnosis-healthy-subtle: #d9ffe6;
+  --color-diagnosis-opportunity: #6541f2;
+  --color-diagnosis-opportunity-medium: #c0b0ff;
+  --color-diagnosis-opportunity-subtle: #f0ecfe;
+  --color-diagnosis-attention: #9c5800;
+  --color-diagnosis-attention-subtle: #fef4e6;
+  --color-diagnosis-neutral: #56585a;
+  --color-diagnosis-neutral-subtle: #e4e4e4;
+}
+
+/* ── Typography (fedit-typography.css) ───────────────────────────── */
+:root {
+  --font-family-pretendard: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-family-inter: "Inter", system-ui, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Display */
+  --typo-display: var(--font-weight-semibold) 28px/1.36 var(--font-family-pretendard);
+  --typo-display-ls: -0.022em;
+  /* Headline */
+  --typo-headline: var(--font-weight-semibold) 24px/1.33 var(--font-family-pretendard);
+  --typo-headline-ls: -0.02em;
+  /* Title(sb)/xlarge */
+  --typo-title-sb-xlarge: var(--font-weight-semibold) 20px/1.4 var(--font-family-pretendard);
+  --typo-title-sb-xlarge-ls: -0.012em;
+  /* Title(sb)/large */
+  --typo-title-sb-large: var(--font-weight-semibold) 18px/1.44 var(--font-family-pretendard);
+  --typo-title-sb-large-ls: -0.005em;
+  /* Title(sb)/medium */
+  --typo-title-sb-medium: var(--font-weight-semibold) 16px/1.5 var(--font-family-pretendard);
+  --typo-title-sb-medium-ls: -0.005em;
+  /* Title(sb)/small */
+  --typo-title-sb-small: var(--font-weight-semibold) 14px/1.43 var(--font-family-pretendard);
+  --typo-title-sb-small-ls: -0.005em;
+  /* Title(sb)/xsmall */
+  --typo-title-sb-xsmall: var(--font-weight-semibold) 12px/1.33 var(--font-family-pretendard);
+  --typo-title-sb-xsmall-ls: 0;
+  /* Body(md)/large */
+  --typo-body-md-large: var(--font-weight-medium) 18px/1.44 var(--font-family-pretendard);
+  --typo-body-md-large-ls: -0.005em;
+  /* Body(md)/medium */
+  --typo-body-md-medium: var(--font-weight-medium) 16px/1.5 var(--font-family-pretendard);
+  --typo-body-md-medium-ls: -0.005em;
+  /* Body(md)/small */
+  --typo-body-md-small: var(--font-weight-medium) 14px/1.43 var(--font-family-pretendard);
+  --typo-body-md-small-ls: -0.005em;
+  /* Body(md)/xsmall */
+  --typo-body-md-xsmall: var(--font-weight-medium) 12px/1.33 var(--font-family-pretendard);
+  --typo-body-md-xsmall-ls: 0;
+  /* Label(rg)/medium */
+  --typo-label-rg-medium: var(--font-weight-regular) 16px/1.5 var(--font-family-pretendard);
+  --typo-label-rg-medium-ls: -0.005em;
+  /* Label(rg)/small */
+  --typo-label-rg-small: var(--font-weight-regular) 14px/1.43 var(--font-family-pretendard);
+  --typo-label-rg-small-ls: -0.005em;
+  /* Label(rg)/xsmall */
+  --typo-label-rg-xsmall: var(--font-weight-regular) 12px/1.33 var(--font-family-pretendard);
+  --typo-label-rg-xsmall-ls: 0;
+  /* Fallback/Title(sb)/xsmall */
+  --typo-fallback-title-sb-xsmall: var(--font-weight-semibold) 12px/1.33 var(--font-family-inter);
+  --typo-fallback-title-sb-xsmall-ls: 0;
+  /* Fallback/Body(md)/small */
+  --typo-fallback-body-md-small: var(--font-weight-medium) 14px/1.43 var(--font-family-inter);
+  --typo-fallback-body-md-small-ls: -0.005em;
+  /* Fallback/Title(sb)/medium */
+  --typo-fallback-title-sb-medium: var(--font-weight-semibold) 16px/1.5 var(--font-family-inter);
+  --typo-fallback-title-sb-medium-ls: -0.005em;
+}
+
+.typo-display { font: var(--typo-display); letter-spacing: var(--typo-display-ls); }
+.typo-headline { font: var(--typo-headline); letter-spacing: var(--typo-headline-ls); }
+.typo-title-sb-xlarge { font: var(--typo-title-sb-xlarge); letter-spacing: var(--typo-title-sb-xlarge-ls); }
+.typo-title-sb-large { font: var(--typo-title-sb-large); letter-spacing: var(--typo-title-sb-large-ls); }
+.typo-title-sb-medium { font: var(--typo-title-sb-medium); letter-spacing: var(--typo-title-sb-medium-ls); }
+.typo-title-sb-small { font: var(--typo-title-sb-small); letter-spacing: var(--typo-title-sb-small-ls); }
+.typo-title-sb-xsmall { font: var(--typo-title-sb-xsmall); letter-spacing: var(--typo-title-sb-xsmall-ls); }
+.typo-body-md-large { font: var(--typo-body-md-large); letter-spacing: var(--typo-body-md-large-ls); }
+.typo-body-md-medium { font: var(--typo-body-md-medium); letter-spacing: var(--typo-body-md-medium-ls); }
+.typo-body-md-small { font: var(--typo-body-md-small); letter-spacing: var(--typo-body-md-small-ls); }
+.typo-body-md-xsmall { font: var(--typo-body-md-xsmall); letter-spacing: var(--typo-body-md-xsmall-ls); }
+.typo-label-rg-medium { font: var(--typo-label-rg-medium); letter-spacing: var(--typo-label-rg-medium-ls); }
+.typo-label-rg-small { font: var(--typo-label-rg-small); letter-spacing: var(--typo-label-rg-small-ls); }
+.typo-label-rg-xsmall { font: var(--typo-label-rg-xsmall); letter-spacing: var(--typo-label-rg-xsmall-ls); }
+.typo-fallback-title-sb-xsmall { font: var(--typo-fallback-title-sb-xsmall); letter-spacing: var(--typo-fallback-title-sb-xsmall-ls); }
+.typo-fallback-body-md-small { font: var(--typo-fallback-body-md-small); letter-spacing: var(--typo-fallback-body-md-small-ls); }
+.typo-fallback-title-sb-medium { font: var(--typo-fallback-title-sb-medium); letter-spacing: var(--typo-fallback-title-sb-medium-ls); }
