@@ -465,11 +465,11 @@ export default function ProductDetailContent({
 
   const displayPrices = getDisplayPrices(detailData ?? {});
 
+  // 신상 업데이트 — 쇼핑몰 출시일, 없으면 크롤링한 날
   const releaseText = useMemo(() => {
-    if (!detailData?.release_date) return "-";
-    return dayjs(detailData.release_date).isValid()
-      ? dayjs(detailData.release_date).format("YYYY.MM.DD")
-      : detailData.release_date;
+    const date = detailData?.release_date || detailData?.crawled_date;
+    if (!date) return "-";
+    return dayjs(date).isValid() ? dayjs(date).format("YYYY.MM.DD") : date;
   }, [detailData]);
 
   // "유사한 스타일 아이템" 섹션은 정식 상품(itemcode)이든 랭킹 상품
@@ -584,11 +584,15 @@ export default function ProductDetailContent({
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between ">
                   <div className="flex flex-col gap-1">
-                    <span className="text-sm font-semibold text-tx-default">
+                    {/* 브랜드 — Body(md)/small, Text/Normal/Normal */}
+                    <span className="type-body-small text-tx-default">
                       {detailData.brand || "-"}
                     </span>
-                    <div className="mb-4 text-xs text-tx-assistive">
-                      {mainCategory} {subCategory && ` / ${subCategory}`}
+                    {/* 카테고리 — Body(md)/small, Text/Normal/Neutral, 항목 간격 4px */}
+                    <div className="flex items-center gap-1 mb-4 type-body-small text-tx-neutral">
+                      {mainCategory && <span>{mainCategory}</span>}
+                      {mainCategory && subCategory && <span>/</span>}
+                      {subCategory && <span>{subCategory}</span>}
                     </div>
                   </div>
                   {!previewSnapshot && !isInPageDetail && (
@@ -656,7 +660,11 @@ export default function ProductDetailContent({
                   )}
                 </div>
 
-                <h1 className="mb-5 text-2xl font-semibold leading-tight break-all text-tx-strong">
+                {/* 상품명 — Headline, Text/Normal/Strong, 2줄 넘으면 말줄임 */}
+                <h1
+                  title={detailData.product_name}
+                  className="mb-5 self-stretch line-clamp-2 overflow-hidden text-ellipsis break-all type-headline text-tx-strong"
+                >
                   {detailData.product_name}
                 </h1>
 

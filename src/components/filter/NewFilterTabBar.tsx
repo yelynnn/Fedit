@@ -190,12 +190,19 @@ export function NewFilterTabPanels() {
 
   return (
     <div className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-      {selectedTab === "실시간 랭킹" && <DashBoardPage />}
-      {selectedTab === "패션쇼 분석" && <RunwayPage />}
-      {selectedTab === "상품 분석" && <NewProductAnalysis />}
-      {selectedTab === "색상 분석" && <NewColorAnalysis />}
-      {selectedTab === "유형 분석" && <NewTypeAnalysis />}
-      {selectedTab === "내 보드" && <BoardsPage />}
+      {/* 상품 분석은 칸마다 따로 스크롤해서 여백을 화면 안에서 둔다. 나머지는 위아래 24px를
+          내용과 함께 스크롤되게 둔다(모든 화면 공통) */}
+      {selectedTab === "상품 분석" ? (
+        <NewProductAnalysis />
+      ) : (
+        <div className="py-6">
+          {selectedTab === "실시간 랭킹" && <DashBoardPage />}
+          {selectedTab === "패션쇼 분석" && <RunwayPage />}
+          {selectedTab === "색상 분석" && <NewColorAnalysis />}
+          {selectedTab === "유형 분석" && <NewTypeAnalysis />}
+          {selectedTab === "내 보드" && <BoardsPage />}
+        </div>
+      )}
 
       {isLocked && <ProUpgradeOverlay key={selectedTab} featureName={selectedTab} />}
     </div>

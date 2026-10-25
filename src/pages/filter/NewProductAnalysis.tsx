@@ -269,12 +269,15 @@ function NewProductAnalysis() {
 
   return (
     <div className="flex h-full gap-5 px-4 overflow-hidden">
-      <FilterSideBar
-        onOpenFilter={(tab) => {
-          setFilterInitialTab(tab);
-          setFilterOpen(true);
-        }}
-      />
+      {/* 위 24px — 목록은 스크롤 안쪽에 여백을 둬서 스크롤하면 헤더 바로 아래까지 올라간다 */}
+      <div className="pt-6 shrink-0">
+        <FilterSideBar
+          onOpenFilter={(tab) => {
+            setFilterInitialTab(tab);
+            setFilterOpen(true);
+          }}
+        />
+      </div>
       <div
         className={[
           "flex h-full flex-col gap-3 overflow-hidden",
@@ -284,7 +287,7 @@ function NewProductAnalysis() {
         {showBrandNotice && !isDetailOpen && (
           <div
             data-tour="brand-banner"
-            className="flex h-[50px] w-[calc(100%-20px)] flex-shrink-0 items-center justify-between gap-2 rounded-lg bg-data-blue-light px-2 py-2"
+            className="mt-6 flex h-[50px] w-[calc(100%-20px)] flex-shrink-0 items-center justify-between gap-2 rounded-lg bg-data-blue-light px-2 py-2"
           >
             <div className="flex items-center flex-1 min-w-0 gap-2">
               <img src={errorIcon} alt="" className="flex-shrink-0 w-5 h-5" />
@@ -312,6 +315,7 @@ function NewProductAnalysis() {
               isDetailOpen
                 ? "flex flex-col overflow-y-auto hide-scrollbar"
                 : "flex flex-wrap overflow-y-auto hide-scrollbar",
+              showBrandNotice && !isDetailOpen ? "pb-6" : "py-6",
               isLocked ? "pointer-events-none select-none" : "",
             ].join(" ")}
             style={
@@ -354,7 +358,7 @@ function NewProductAnalysis() {
       {isDetailOpen && (
         // 테두리를 실선(1px)으로 둔다 — 그림자만 쓰면 화면 높이를 꽉 채운 박스의
         // 위아래 그림자가 바깥 영역에 잘려 가로선이 흐리게 보였다.
-        <aside className="flex-1 min-w-0 h-full px-5 py-8 overflow-y-auto bg-white hide-scrollbar rounded-xl border border-line-divider shadow-[0_0_8px_0_rgba(0,0,0,0.06)]">
+        <aside className="flex-1 min-w-0 mt-6 h-[calc(100%-24px)] px-5 py-8 overflow-y-auto bg-white hide-scrollbar rounded-xl border border-line-divider shadow-[0_0_8px_0_rgba(0,0,0,0.06)]">
           <ProductDetailContent product={selectedProduct} />
         </aside>
       )}

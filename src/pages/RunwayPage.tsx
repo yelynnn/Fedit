@@ -105,7 +105,7 @@ function RunwayPage() {
   }, [seasonValue]);
 
   return (
-    <div className="relative min-h-screen px-16 mx-auto">
+    <div className="relative px-16 mx-auto">
       <div className="mb-2">
         <div className="flex items-center gap-3">
           <h1 className="text-[28px] font-semibold text-[#111] tracking-tight">

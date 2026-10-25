@@ -84,7 +84,6 @@ export default function ComparePage() {
   const setModalProductId = useProductStore((s) => s.setModalProductId);
   const showNotice = useUIStore((s) => s.showNotice);
   const closePage = useCompareStore((s) => s.closePage);
-  const clear = useCompareStore((s) => s.clear);
 
   const [data, setData] = useState<CompareResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -165,38 +164,9 @@ export default function ComparePage() {
     gridTemplateColumns: `160px repeat(${data?.items.length ?? 0}, minmax(0, 292px))`,
   };
   return (
-    <div className="h-full px-16 pb-8 overflow-y-auto">
+    <div className="h-full px-16 py-6 overflow-y-auto">
       <div className="mx-auto w-full max-w-[1400px]">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <h2 className="text-[20px] font-semibold text-[#242628]">상품 비교</h2>
-            <span className="text-[14px] text-[#8A8C8E]">{items.length}개</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={closePage}
-              className="flex h-[34px] items-center gap-1.5 rounded-lg border border-[#E4E4E4] bg-white px-2 py-1 text-[14px] font-medium text-[#3D3F41] hover:bg-surface-base"
-            >
-              <Icon icon="ph:arrow-left" className="w-4 h-4" />
-              상품 목록으로
-            </button>
-            {/* 초기화 — 비교함을 비우고 상품 목록으로 돌아간다 */}
-            <button
-              type="button"
-              onClick={() => {
-                clear();
-                closePage();
-                showNotice("비교함을 비웠어요");
-              }}
-              className="flex h-[34px] items-center gap-1.5 rounded-lg border border-[#E4E4E4] bg-white px-2 py-1 text-[14px] font-medium text-[#3D3F41] hover:bg-surface-base"
-            >
-              <Icon icon="ph:arrow-counter-clockwise" className="w-4 h-4" />
-              초기화
-            </button>
-          </div>
-        </div>
-
+        {/* 제목·뒤로가기·비교 초기화는 상단 헤더(NewHeader)에 있다 */}
         <div className="relative">
           {!data && loading && (
             <div className="flex items-center justify-center gap-2 py-24 text-[14px] text-[#8A8C8E]">
@@ -238,9 +208,10 @@ export default function ComparePage() {
                         type="button"
                         onClick={() => remove(item.itemcode)}
                         aria-label="비교에서 빼기"
-                        className="absolute right-4 top-4 text-[#A1A3A5] hover:text-[#242628]"
+                        // 삭제 — 높이 34px, 패딩 8px 12px, 완전 둥근 테두리 #E4E4E4, Body(md)/small #3D3F41
+                        className="absolute right-4 top-4 flex h-[34px] items-center justify-center gap-2 rounded-full border border-[#E4E4E4] bg-white px-3 py-2 text-[14px] font-medium leading-[1.43] tracking-[-0.07px] text-[#3D3F41] hover:bg-surface-base"
                       >
-                        <Icon icon="ph:x" className="w-4 h-4" />
+                        삭제
                       </button>
                       <div className={`h-[84px] w-[84px] shrink-0 overflow-hidden rounded ${thumbBg}`}>
                         {item.thumbnail && <img src={item.thumbnail} alt="" className="object-cover w-full h-full" />}

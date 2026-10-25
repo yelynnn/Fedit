@@ -21,11 +21,11 @@ interface CompareStore {
   // 상품 분석 안에서 비교 화면(페이지)을 보고 있는지 — 저장하지 않는다
   pageOpen: boolean;
   // 하단 비교 담기 바 상태 — 플로팅 FEDI 버튼 높이를 맞추려고 여기 둔다(저장 안 함)
-  // collapsed: 펼친 바를 접음, dismissed: 빈 바를 X로 닫음
+  // collapsed: 담은 게 있을 때 펼친 바를 접음, emptyOpen: 빈 바를 펼침(기본은 얇은 바)
   barCollapsed: boolean;
-  barDismissed: boolean;
+  barEmptyOpen: boolean;
   setBarCollapsed: (v: boolean) => void;
-  setBarDismissed: (v: boolean) => void;
+  setBarEmptyOpen: (v: boolean) => void;
   openPage: () => void;
   closePage: () => void;
   add: (item: CompareItem) => AddResult;
@@ -40,9 +40,9 @@ export const useCompareStore = create<CompareStore>()(
       items: [],
       pageOpen: false,
       barCollapsed: false,
-      barDismissed: false,
+      barEmptyOpen: false,
       setBarCollapsed: (v) => set({ barCollapsed: v }),
-      setBarDismissed: (v) => set({ barDismissed: v }),
+      setBarEmptyOpen: (v) => set({ barEmptyOpen: v }),
       openPage: () => set({ pageOpen: true }),
       closePage: () => set({ pageOpen: false }),
       add: (item) => {

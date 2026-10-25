@@ -38,6 +38,8 @@ export type ApiDetail = {
   rating: number | null;
   vlm?: Vlm | null;
   release_date: string | null;
+  // 마지막으로 크롤링한 날 — 출시일이 없을 때 "신상 업데이트"에 대신 쓴다(서버 배포 전엔 없음)
+  crawled_date?: string | null;
   ai_description: string | null;
   product_detail_url?: string | null;
   views?: string | number | null;

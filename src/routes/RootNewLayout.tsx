@@ -59,8 +59,6 @@ function RootNewLayout() {
   // 미공개 기능 화면에 머물러 있으면(예: 새로고침 전에 보던 탭이 숨겨짐)
   // 첫 화면으로 옮긴다
   const isCurrentTabReleased = isReleased(selectedTab);
-  const selectedProductId = useProductStore((s) => s.selectedProductId);
-  const isProductDetailOpen = selectedTab === "상품 분석" && !!selectedProductId;
   // 상품 비교 화면(상품 분석 안의 페이지) — 다른 메뉴로 가면 닫는다
   const comparePageOpen = useCompareStore((s) => s.pageOpen);
   const isComparePage = selectedTab === "상품 분석" && comparePageOpen;
@@ -71,13 +69,13 @@ function RootNewLayout() {
   // 바 높이(펼침 80px / 얇은 바 40px)에 맞춰 바 위 16px에 둔다
   const compareItemCount = useCompareStore((s) => s.items.length);
   const compareBarCollapsed = useCompareStore((s) => s.barCollapsed);
-  const compareBarDismissed = useCompareStore((s) => s.barDismissed);
+  const compareBarEmptyOpen = useCompareStore((s) => s.barEmptyOpen);
   const compareBarMode: "hidden" | "thin" | "full" =
     selectedTab !== "상품 분석" || isComparePage
       ? "hidden"
       : compareItemCount === 0
-        ? compareBarDismissed
-          ? "hidden"
+        ? compareBarEmptyOpen
+          ? "full"
           : "thin"
         : compareBarCollapsed
           ? "thin"
@@ -320,13 +318,9 @@ function RootNewLayout() {
               className="relative flex-1 overflow-auto bg-white [contain:layout]"
               data-capture-protect
             >
-              {/* 상품 분석에서 상세를 열면 헤더와 상세 박스 사이를 24px로 둔다.
-                  상품 분석은 아래에 비교 담기 바가 붙어서 아래 여백을 없앤다 */}
-              <div
-                className={`h-full ${isProductDetailOpen || isComparePage ? "pt-6" : "pt-8"} ${
-                  selectedTab === "상품 분석" ? "pb-0" : "pb-8"
-                }`}
-              >
+              {/* 위아래 24px 여백은 각 화면이 스크롤되는 내용 안에 둔다 — 여기(스크롤 바깥)에
+                  두면 스크롤할 때 위아래에 흰 띠가 고정으로 남았다 */}
+              <div className="h-full">
                 {/* 상품 분석에서 "비교하기"를 누르면 목록 대신 상품 비교 화면 */}
                 {isComparePage ? <ComparePage /> : <NewFilterTabPanels />}
               </div>

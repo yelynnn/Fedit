@@ -117,7 +117,7 @@ export default function BoardsPage() {
   };
 
   return (
-    <div className="px-12 py-8 min-h-full">
+    <div className="px-12">
       {selectedBoard ? (
         <div>
           <div className="flex items-center gap-3 mb-6">

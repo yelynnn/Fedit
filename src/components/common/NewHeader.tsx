@@ -31,6 +31,10 @@ const HEADER_BUTTON =
   "flex h-[34px] shrink-0 cursor-pointer select-none items-center justify-center gap-[6px] rounded-lg border border-[#E4E4E4] bg-white px-2 py-1 text-[14px] font-medium leading-[1.43] tracking-[-0.07px] text-[#3D3F41] transition-colors hover:bg-surface-base";
 // 헤더 버튼 아이콘 크기(13.75 × 16.25, #3D3F41)
 const HEADER_ICON = "h-[16.25px] w-[13.75px] shrink-0 text-[#3D3F41]";
+// 저장됨·비교 추가됨 상태 — Fill/Primary/Normal 배경, Text/Normal/Inverse 글자, Body(md)/small
+const HEADER_BUTTON_ACTIVE =
+  "flex h-[34px] shrink-0 cursor-pointer select-none items-center justify-center gap-[6px] rounded-lg border border-fill-primary bg-fill-primary px-2 py-1 text-[14px] font-medium leading-[1.43] tracking-[-0.07px] text-tx-inverse transition-colors hover:bg-fill-primary-hover";
+const HEADER_ICON_ACTIVE = "h-4 w-4 shrink-0 text-tx-inverse";
 
 export default function NewHeader() {
   const { isBrandFilterModalOpen, openBrandFilterModal, closeBrandFilterModal, showNotice } =
@@ -69,6 +73,7 @@ export default function NewHeader() {
   const compareItems = useCompareStore((s) => s.items);
   const addCompare = useCompareStore((s) => s.add);
   const removeCompare = useCompareStore((s) => s.remove);
+  const clearCompare = useCompareStore((s) => s.clear);
   const isInCompare = compareItems.some((i) => i.itemcode === selectedProductId);
   const breadcrumb = (() => {
     if (!isProductDetail) return [];
@@ -85,19 +90,36 @@ export default function NewHeader() {
 
   return (
     <header className="sticky top-0 z-20 w-full bg-white border-b border-line-divider">
-    <div className="flex items-center justify-between w-full px-16 h-15">
-      {/* 좌측 — 현재 메뉴 아이콘 + 이름, 상품 상세면 경로 */}
-      {isProductDetail || isComparePage ? (
+    <div className="flex items-center justify-between w-full px-16 h-[50px]">
+      {/* 좌측 — 현재 메뉴 아이콘 + 이름, 상품 상세면 경로, 비교 화면이면 ← 상품 비교 n개 아이템 */}
+      {isComparePage ? (
+        <div className="flex items-center min-w-0 gap-3 mr-6">
+          <button
+            type="button"
+            onClick={closeComparePage}
+            aria-label="상품 목록으로"
+            className={`${HEADER_BUTTON} w-[34px] px-0`}
+          >
+            <Icon icon="ph:arrow-left" className="w-5 h-5 text-[#3D3F41]" />
+          </button>
+          <span className="text-[16px] font-semibold leading-[1.5] tracking-[-0.08px] text-[#242628]">
+            상품 비교
+          </span>
+          <span className="text-[14px] font-medium leading-[1.43] tracking-[-0.07px] text-tx-assistive">
+            {compareItems.length}개 아이템
+          </span>
+        </div>
+      ) : isProductDetail ? (
         <nav className="flex items-center min-w-0 gap-2 mr-6 text-[16px] leading-[1.5] tracking-[-0.08px]">
           {/* 누르면 상세(또는 비교 화면)를 닫고 목록으로 돌아간다 */}
           <button
             type="button"
-            onClick={() => (isComparePage ? closeComparePage() : setSelectedProductId(null))}
+            onClick={() => setSelectedProductId(null)}
             className="flex-shrink-0 font-medium text-[#8A8C8E] hover:text-[#242628]"
           >
             상품 분석
           </button>
-          {(isComparePage ? ["상품 비교"] : breadcrumb).map((label, i, crumbs) => {
+          {breadcrumb.map((label, i, crumbs) => {
             const isLast = i === crumbs.length - 1;
             return (
               <span key={`${label}-${i}`} className={`flex items-center gap-2 ${isLast ? "min-w-0" : "flex-shrink-0"}`}>
@@ -129,9 +151,24 @@ export default function NewHeader() {
       </div>
       )}
 
-      {/* 우측 — Excel(상품 분석만) · 내 보드 · 관심 브랜드 */}
+      {/* 우측 — Excel(상품 분석만) 또는 비교 초기화(비교 화면) · 내 보드 · 관심 브랜드 */}
       <div className="flex items-center flex-shrink-0 gap-2">
         {selectedTab === "상품 분석" && !isComparePage && <ExcelDownloadButton />}
+        {isComparePage && (
+          // 비교함을 비우고 상품 목록으로 돌아간다
+          <button
+            type="button"
+            onClick={() => {
+              clearCompare();
+              closeComparePage();
+              showNotice("비교함을 비웠어요");
+            }}
+            className={HEADER_BUTTON}
+          >
+            <Icon icon="ph:arrow-counter-clockwise" className={HEADER_ICON} />
+            비교 초기화
+          </button>
+        )}
 
         {isReleased("내 보드") && (
           <button
@@ -210,6 +247,8 @@ export default function NewHeader() {
               imageUrl={productMeta.imageUrl}
               className={HEADER_BUTTON}
               iconClassName={HEADER_ICON}
+              activeClassName={HEADER_BUTTON_ACTIVE}
+              activeIconClassName={HEADER_ICON_ACTIVE}
             />
             {/* 비교 담기(최대 4개) — 이미 담긴 상품이면 다시 누를 때 빠진다 */}
             <button
@@ -229,10 +268,13 @@ export default function NewHeader() {
                   showNotice(`최대 ${COMPARE_MAX}개까지 비교할 수 있어요`);
                 }
               }}
-              className={HEADER_BUTTON}
+              className={isInCompare ? HEADER_BUTTON_ACTIVE : HEADER_BUTTON}
             >
-              <Icon icon={isInCompare ? "ph:check" : "ph:plus"} className={HEADER_ICON} />
-              {isInCompare ? "비교 담김" : "비교 추가"}
+              <Icon
+                icon={isInCompare ? "ph:check-bold" : "ph:plus"}
+                className={isInCompare ? HEADER_ICON_ACTIVE : HEADER_ICON}
+              />
+              {isInCompare ? "비교 추가됨" : "비교 추가"}
             </button>
             {/* 이 상품을 바로 여는 링크(/?product=상품코드)를 복사한다 */}
             <button

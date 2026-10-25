@@ -21,6 +21,9 @@ interface Props {
   imageUrl?: string | null;
   className: string;
   iconClassName: string;
+  // 저장된 상태의 버튼·아이콘 클래스(없으면 기본 클래스 그대로)
+  activeClassName?: string;
+  activeIconClassName?: string;
 }
 
 export default function SaveToBoardButton({
@@ -30,6 +33,8 @@ export default function SaveToBoardButton({
   imageUrl,
   className,
   iconClassName,
+  activeClassName,
+  activeIconClassName,
 }: Props) {
   const [boards, setBoards] = useState<BoardListItem[]>([]);
   // 이 상품이 들어 있는 보드 id
@@ -144,9 +149,13 @@ export default function SaveToBoardButton({
       <button
         type="button"
         onClick={() => (boards.length === 0 ? setCreateOpen(true) : setOpen((v) => !v))}
-        className={className}
+        className={isSaved && activeClassName ? activeClassName : className}
       >
-        <Icon icon={isSaved ? "ph:bookmark-simple-fill" : "ph:bookmark-simple"} className={iconClassName} />
+        {isSaved && activeIconClassName ? (
+          <Icon icon="ph:check-bold" className={activeIconClassName} />
+        ) : (
+          <Icon icon={isSaved ? "ph:bookmark-simple-fill" : "ph:bookmark-simple"} className={iconClassName} />
+        )}
         {isSaved ? "내 보드에 저장됨" : "내 보드에 저장"}
       </button>
 

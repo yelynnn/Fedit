@@ -33,7 +33,17 @@ export default function Sidebar() {
   const [storedCollapsed, setStoredCollapsed] = useState(
     () => localStorage.getItem("sidebar-collapsed") === "true",
   );
-  const isCollapsed = sidebarCollapseOverride ?? storedCollapsed;
+  // 상품 분석은 칸이 많아 들어가면 자동으로 접는다. 거기서 직접 펼친 건 상품 분석에
+  // 있는 동안만 유지하고, 다른 메뉴로 가면 저장해 둔 원래 상태로 돌아간다.
+  const isAnalysis = selectedTab === "상품 분석";
+  const [analysisExpanded, setAnalysisExpanded] = useState(false);
+  const [prevTab, setPrevTab] = useState(selectedTab);
+  if (prevTab !== selectedTab) {
+    setPrevTab(selectedTab);
+    setAnalysisExpanded(false);
+  }
+  const isCollapsed =
+    sidebarCollapseOverride ?? (isAnalysis ? !analysisExpanded : storedCollapsed);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
@@ -50,6 +60,10 @@ export default function Sidebar() {
   }, [fetchMe]);
 
   const toggleCollapsed = (value: boolean) => {
+    if (isAnalysis) {
+      setAnalysisExpanded(!value);
+      return;
+    }
     setStoredCollapsed(value);
     localStorage.setItem("sidebar-collapsed", String(value));
   };

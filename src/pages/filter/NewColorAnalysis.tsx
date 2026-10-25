@@ -114,7 +114,7 @@ function NewColorAnalysis() {
   };
 
   return (
-    <div className="min-h-screen px-14">
+    <div className="px-14">
       {/* <div className="flex items-center justify-between w-full px-3 py-2 border rounded-lg cursor-pointer bg-surface-base border-surface-base">
         <div className="flex items-center gap-9">
           <span className="text-sm font-medium text-tx-alt">시즌선택</span>
