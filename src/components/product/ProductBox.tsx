@@ -19,7 +19,7 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
   // };
 
   return (
-    <section className="flex flex-col h-[394px] overflow-hidden rounded-none w-55 bg-white border border-surface-base">
+    <section className="flex flex-col h-[374px] overflow-hidden rounded-none w-55 bg-white border border-surface-base">
       {/* 1. 상품 이미지 */}
       <div className="relative flex h-[220px] w-full flex-shrink-0 items-end gap-2.5 self-stretch rounded-none p-3">
         <img
@@ -48,8 +48,11 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
           )}
         </div>
 
-        {/* 3. 상품명 (2줄 제한) */}
-        <span className="w-full self-stretch type-body-small text-tx-strong line-clamp-2 break-all min-h-[40px]">
+        {/* 3. 상품명 — 한 줄, 넘치면 말줄임(2줄 자리를 잡아두면 한 줄짜리 상품명 아래가 비었다) */}
+        <span
+          title={product.product_name}
+          className="w-full self-stretch truncate type-body-small text-tx-strong"
+        >
           {product.product_name}
         </span>
 
