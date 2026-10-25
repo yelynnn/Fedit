@@ -19,7 +19,7 @@ export default function ProductBox({ product }: { product: ApiDetail }) {
   // };
 
   return (
-    <section className="flex flex-col h-[374px] overflow-hidden rounded-none w-55 bg-white border border-surface-base">
+    <section className="flex flex-col h-[370px] overflow-hidden rounded-none w-55 bg-white border border-surface-base">
       {/* 1. 상품 이미지 */}
       <div className="relative flex h-[220px] w-full flex-shrink-0 items-end gap-2.5 self-stretch rounded-none p-3">
         <img
