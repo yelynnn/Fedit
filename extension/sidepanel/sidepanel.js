@@ -243,7 +243,8 @@ function renderProduct() {
         el("span", { class: "brand" }, p.brand || p.platform),
         el("span", { class: "name" }, p.productName || "상품명을 찾지 못했어요"),
         el("span", { class: "sub" }, [p.platform, p.currentPrice ? `${p.currentPrice.toLocaleString()}원` : null].filter(Boolean).join(" · ")),
-        !p.isProductPage ? el("span", { class: "sub" }, "상품 상세 페이지가 아닐 수도 있어요") : null,
+        p.pageKind === "notProduct" ? el("span", { class: "sub warn" }, "상품 상세 페이지가 아니에요. 상품 하나를 눌러 상세 페이지에서 분석해 주세요.")
+          : !p.isProductPage ? el("span", { class: "sub" }, "상품 상세 페이지가 아닐 수도 있어요") : null,
         !p.thumbnail ? el("span", { class: "sub" }, "상품 이미지를 찾지 못해 분석할 수 없어요") : null,
       )));
   }
@@ -284,7 +285,7 @@ function updateButtons() {
   const failed = hasResult && state.result.status === "failed";
   // 결과가 나와 있으면(실패 제외) 분석 버튼은 감춘다
   btn.hidden = Boolean(hasResult && !failed);
-  btn.disabled = state.analyzing || !p || !p.thumbnail || limitReached();
+  btn.disabled = state.analyzing || !p || !p.thumbnail || p.pageKind === "notProduct" || limitReached();
   btn.textContent = state.analyzing ? "분석 요청 중…" : limitReached() ? "분석 한도를 모두 사용했어요" : failed ? "다시 분석하기" : "AI로 분석하기";
   $("btn-save").disabled = state.saving || !hasResult;
   $("btn-save").textContent = state.saving ? "저장하는 중…" : "무드보드에 저장";
@@ -328,6 +329,9 @@ async function onAnalyze() {
       const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: state.tabId }, func: extractProduct, args: [{ full: true }] });
       if (result && result.url === p.url) full = result;
     } catch { /* 미리보기 값 사용 */ }
+    // 쇼핑몰이 서버의 이미지 다운로드를 막는 경우(명품 사이트 등) 대비 — 브라우저에서 받은 이미지를 같이 보낸다.
+    // 백엔드는 원본을 서버에서 받을 수 없을 때만 이 이미지를 쓴다. 못 받으면 빼고 보낸다.
+    const imageData = await captureImage(p.thumbnail);
     const res = await api.analyze({
       productUrl: full.productUrl || p.url,
       productName: p.productName,
@@ -349,6 +353,7 @@ async function onAnalyze() {
       likes: full.likes != null ? Number(full.likes) || null : null,
       reviews: full.reviews != null ? Number(full.reviews) || null : null,
       rating: full.rating,
+      imageData,
     });
     state.result = res;
     state.resultUrl = p.url;
@@ -440,6 +445,38 @@ const TAG_ROWS = [
 ];
 const clean = (v) => (v == null ? "" : String(v).trim()).replace(/^(null|none|nan)$/i, "");
 
+// 실패 사유별 안내(백엔드 failReason). 사이트 특성 때문인 경우 FEDIT 문제가 아님을 함께 알린다.
+const FAIL_REASONS = {
+  IMAGE_BLOCKED: { title: "분석할 수 없는 쇼핑몰이에요", body: "쇼핑몰 보안 정책으로 상품 이미지를 가져올 수 없어요." },
+  NO_PRODUCT_IMAGE: { title: "옷 사진을 찾지 못했어요", body: "상품 상세 페이지에서 다시 시도해 주세요." },
+  UNKNOWN: { title: "분석에 실패했어요", body: "‘다시 분석하기’를 눌러 한 번 더 시도해 주세요." },
+};
+
+/** 상품 이미지를 브라우저에서 받아 JPEG data URL 로(긴 변 1024 이하, 450KB 이하). 권한·CORS 로 못 받으면 null */
+async function captureImage(url) {
+  if (!url) return null;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(url, { signal: ctrl.signal, credentials: "include" }).finally(() => clearTimeout(timer));
+    if (!res.ok) return null;
+    const bmp = await createImageBitmap(await res.blob());
+    for (const [edge, quality] of [[1024, 0.85], [1024, 0.7], [768, 0.7], [640, 0.6]]) {
+      const k = Math.min(1, edge / Math.max(bmp.width, bmp.height));
+      const canvas = new OffscreenCanvas(Math.max(1, Math.round(bmp.width * k)), Math.max(1, Math.round(bmp.height * k)));
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";   // 투명 PNG 배경
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      const blob = await canvas.convertToBlob({ type: "image/jpeg", quality });
+      if (blob.size <= 450 * 1024) {
+        return await new Promise((resolve) => { const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = () => resolve(null); fr.readAsDataURL(blob); });
+      }
+    }
+  } catch { /* 못 받으면 원본 주소만 보낸다 */ }
+  return null;
+}
+
 function renderResult(r) {
   const box = $("result");
   box.hidden = false;
@@ -465,9 +502,10 @@ function renderResult(r) {
         el("button", { class: "ghost", onclick: () => openTab(productDetailUrl(r.itemcode)) }, "트렌드 지수·상세 분석 보기")),
     );
   } else if (r.status === "failed") {
+    const why = FAIL_REASONS[r.failReason] || FAIL_REASONS.UNKNOWN;
     fill(box, 
-      el("div", { class: "status fail" }, "분석에 실패했어요"),
-      el("p", { class: "notice" }, "위의 ‘다시 분석하기’를 누르면 한 번 더 요청해요. 실패한 분석은 한도에 세지 않아요."),
+      el("div", { class: "status fail" }, why.title),
+      el("p", { class: "notice" }, why.body),
     );
   } else if (r.status === "timeout") {
     fill(box, 

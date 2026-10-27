@@ -39,6 +39,8 @@ body { margin: 0; background: var(--surface); min-height: 100vh; }
 .product .name { color: var(--tx-strong); font: var(--typo-title-sb-small); letter-spacing: var(--typo-title-sb-small-ls);
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .product .sub { color: var(--tx-alt); font: var(--typo-body-md-xsmall); letter-spacing: var(--typo-body-md-xsmall-ls); }
+.product .sub.warn { color: var(--danger); }
+.status.fail ~ .sub { margin: 6px 0 0; color: var(--tx-alt); font: var(--typo-body-md-xsmall); letter-spacing: var(--typo-body-md-xsmall-ls); }
 .notice { color: var(--tx-alt); margin: 0; font: var(--typo-label-rg-small); letter-spacing: var(--typo-label-rg-small-ls); }
 .notice strong { color: var(--tx); font-weight: var(--font-weight-semibold); }
 

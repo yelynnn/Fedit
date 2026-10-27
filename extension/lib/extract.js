@@ -321,9 +321,55 @@ export async function extractProduct(opts) {
       else if (label === "색상") row.color = wconceptColor(value);
       else if (label === "제조년월") row.manufactureDate = value;
     }
+  } else if (host === "zara.com" && /-p\d{6,}\.html$/.test(location.pathname)) {
+    // 자라: 화면 이동이 페이지 안에서만 일어나 메타·og 태그가 처음 연 페이지(홈 로고 등) 그대로 남는다 →
+    // 상품 주소에 ?ajax=true 를 붙인 상품 데이터(크롤러가 쓰는 API 와 같은 필드)로 읽는다. brands/zara/crawler.py 규칙.
+    row.site = "zara";
+    row.productUrl = location.origin + location.pathname;   // 상품 데이터를 못 받아도 상품 페이지로 본다(아래에서 크롤러 주소로 바꿈)
+    try {
+      const res = await fetch(location.pathname + "?ajax=true", { headers: { Accept: "application/json" }, credentials: "include" });
+      const p = (await res.json()).product || {};
+      const colors = p.detail?.colors || [];
+      const v1 = new URLSearchParams(location.search).get("v1");   // 고른 색상(상품 id)
+      const c = colors.find((x) => String(x.productId) === v1) || colors[0] || {};
+      // parse_product_name: "[1.2만장 판매]", "[3차 재입고]" 떼기
+      let name = clean(p.name);
+      const sales = name.match(/\[([0-9]+(?:\.[0-9]+)?[만천]?)장?\s*판매\]/); if (sales) { row.sales = countValue(sales[1]); name = name.replace(sales[0], ""); }
+      const re = name.match(/\[([0-9]+)차\s*재입고\]/i); if (re) { row.reorder = re[1]; name = name.replace(re[0], ""); }
+      if (name) row.productName = clean(name);
+      row.brand = "ZARA";
+      // extract_colors: 메인 이미지(originalName 'p') 우선, {width} → 1280
+      const media = c.xmedia || p.xmedia || [];
+      const img = media.find((m) => m.extraInfo?.originalName === "p") || media[0];
+      const url = img && (img.extraInfo?.deliveryUrl || img.url);
+      if (url) row.thumbnail = url.replace("{width}", "1280");
+      if (c.name) row.color = c.name.replace(/\s*\/\s*/g, ",");
+      // normalize_price: 가끔 오는 센트 단위(×100) 보정
+      const won = (v) => { const n = toInt(v); return n != null && n > 1000000 && n % 100 === 0 ? n / 100 : n; };
+      row.regular = won(c.oldPrice) || won(c.price); row.current = c.oldPrice ? won(c.price) : null;
+      row.subCategory = text(p.familyName) || row.subCategory; row.mainCategory = null;
+      row.gender = { WOMAN: "여성", MAN: "남성", KID: "공용", KIDS: "공용" }[String(p.sectionName || "").toUpperCase()] || null;
+      // 소재: "겉감: 폴리에스터 30%, 아크릴 25%"
+      const parts = (p.detail?.detailedComposition?.parts || []).map((part) => {
+        const comps = (part.components || []).map((x) => [x.material, x.percentage].filter(Boolean).join(" ")).filter(Boolean).join(", ");
+        return comps ? (part.description ? `${part.description}: ${comps}` : comps) : null;
+      }).filter(Boolean);
+      if (parts.length) row.material = parts.join(" / ");
+      const desc = clean(c.description || c.rawDescription);
+      if (desc) row.description = desc;
+      const seo = p.seo || {}, locale = (location.pathname.match(/^\/[a-z]{2}\/[a-z]{2}\//) || ["/kr/ko/"])[0];
+      if (seo.keyword && seo.seoProductId) row.productUrl = `${location.origin}${locale}${seo.keyword}-p${seo.seoProductId}.html`;
+    } catch (e) {}
   } else if (window.iProductNo && typeof window.product_name !== "undefined") {
     // 카페24 (item_to_row 와 같은 필드: product_name · product_price · sale_price · option_text)
     row.site = "cafe24";
+    // 카페24 자사몰은 og:image 를 쇼핑몰 로고로 고정해 둔 곳이 많다(예: 999humanity.png) — 상품 이미지 폴더(/web/product/big·extra·medium)를 먼저
+    // 카페24 상세 이미지(BigImage = 대표, ThumbImage = 같은 상품 추가 사진) 중 화면에 실제로 뜬 첫 장(가로 300px 이상).
+    // 깨진 대표 이미지(404)는 건너뛰고, 아래 추천·관련 상품 썸네일(thumb-img 등)은 쓰지 않는다.
+    const cafeImgs = [...document.querySelectorAll("img.BigImage, img.ThumbImage, .keyImg img, .xans-product-image img")]
+      .filter((i) => !i.closest('[class*="relation" i], [class*="recommend" i], [class*="listnormal" i], [class*="listmain" i]'));
+    const cafeImg = cafeImgs.find((i) => i.naturalWidth >= 300) || null;
+    if (cafeImg) row.thumbnail = abs(cafeImg.currentSrc || cafeImg.src);
     row.productUrl = `${location.origin}/product/detail.html?product_no=${window.iProductNo}`;
     row.productName = clean(String(window.product_name).replace(/<[^>]+>/g, "")) || row.productName;
     row.regular = window.product_price || row.regular;
@@ -336,6 +382,16 @@ export async function extractProduct(opts) {
         .filter((t) => t && t !== clean(mapper[ci]) && !/^-|선택|필수|empty|^(색상|컬러|color)$/i.test(t)).map((t) => t.replace(/\s*\[.*$/, "").replace(/\s*\(.*품절.*\)$/, "").trim());
       if (opts.length) row.color = [...new Set(opts)].join(",");
     }
+  }
+
+  // og:image 가 사이트 공용 이미지(로고·대표 배너)인 경우 — 페이지 안 이동 사이트(자라 등)나 공유 이미지를 고정해 둔 사이트.
+  // 구조화 데이터의 상품 이미지 → 없으면 화면의 가장 큰 이미지로(아래 biggestImage)
+  const siteWideImage = (u) => /logo|[/_.-]og(?:[/_.-]|img|image)|\/bi\/|share[_-]?(?:image|img)|default[_-]?(?:og|share|image)/i.test(String(u || "").split("?")[0]);
+  // 주소만 있고 파일이 없는 값(예: https://img.ssfshop.com/)은 이미지가 아니다
+  if (row.thumbnail) { try { const tp = new URL(row.thumbnail).pathname; if (tp === "/" || !tp) row.thumbnail = null; } catch (e) { row.thumbnail = null; } }
+  if (row.thumbnail && siteWideImage(row.thumbnail)) {
+    const ldImg = firstImage(ld.image) || firstImage(variant?.image);
+    row.thumbnail = ldImg && !siteWideImage(ldImg) ? ldImg : null;
   }
 
   // ── 범용 규칙: 사이트 규칙이 없거나 비어 있는 칸만 채운다 ─────────────────────────
@@ -444,7 +500,44 @@ export async function extractProduct(opts) {
   if (full) {   // 탭을 누른 뒤 사이트가 늦게 스크롤을 옮기는 경우가 있어 잠깐 뒤 한 번 더 되돌린다
     try { window.scrollTo(scrollBack[0], scrollBack[1]); await sleep(300); window.scrollTo(scrollBack[0], scrollBack[1]); } catch (e) {}
   }
+  // 범용 사이트: 고른 사진이 정말 이 페이지의 상품 사진인지 같은 페이지 안에서 상대 비교로 확인한다(창 크기와 무관).
+  //  - 화면에 떠 있으면: 화면 속 가장 큰 사진의 절반보다 작으면(로고 등) 가장 큰 사진으로
+  //  - 화면에 없으면: 원본 해상도가 작거나(가로 300 미만) 가로로 긴 공유용 배너(가로/세로 1.6 초과)일 때만 가장 큰 사진으로
+  //  - 비교할 사진이 없으면 그대로
+  if (row.site === "generic" && row.thumbnail) {
+    const key = (u) => String(u || "").split("?")[0].replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    const file = (u) => key(u).split("/").pop();
+    const shown = [...document.querySelectorAll("img")].map((img) => {
+      const r = img.getBoundingClientRect();
+      return { src: abs(img.currentSrc || img.src), area: r.width * r.height, nw: img.naturalWidth || 0 };
+    }).filter((x) => x.src && x.area > 0 && x.nw >= 300);
+    const largest = shown.reduce((a, b) => (b.area > (a ? a.area : 0) ? b : a), null);
+    if (largest) {
+      const hit = shown.find((x) => key(x.src) === key(row.thumbnail) || file(x.src) === file(row.thumbnail));
+      if (hit) {
+        if (hit.area < largest.area * 0.5) row.thumbnail = largest.src;
+      } else {
+        const size = await new Promise((resolve) => {
+          const im = new Image(); const t = setTimeout(() => resolve(null), 2500);
+          im.onload = () => { clearTimeout(t); resolve([im.naturalWidth, im.naturalHeight]); };
+          im.onerror = () => { clearTimeout(t); resolve([0, 0]); };
+          im.src = row.thumbnail;
+        });
+        if (size && (size[0] < 300 || size[0] / Math.max(1, size[1]) > 1.6)) row.thumbnail = largest.src;
+      }
+    }
+  }
   const prices = normalizePrices(row.regular, row.current, row.discount);
+  // 상품 페이지 판별: 사이트 규칙이 있으면 상품 번호를 읽었는지로, 없으면 구조화 데이터·메타로.
+  // 홈(/·/kr/ko/)·목록(ItemList·CollectionPage 만 있고 Product 없음)은 상품 페이지가 아니다.
+  const isHome = /^\/(?:[a-z]{2}(?:[-_][a-z]{2})?\/){0,2}(?:index\.html?)?$/i.test(location.pathname);
+  const listingPath = /(?:^|[/_-])(?:list|category|categories|search|collections?)(?:\.php|\.html?|\/|$)/i.test(location.pathname)
+    && !/(?:product_no|index_no|goods_?no|item_?id|prd_?no)=|\/products\/[^/]+\/?$|\/\d{3,}(?:\/|$)|-p\d+\.html/i.test(location.pathname + location.search);   // 예: /shop/list.php?cate=…, 카페24 /product/list.html?cate_no=… (Shopify /collections/x/products/y 는 상품)
+  const isListing = !group && !product && (listingPath || nodes.some((n) => isType(n, "ItemList") || isType(n, "CollectionPage") || isType(n, "OfferCatalog")));
+  const pageKind = row.site !== "generic"
+    ? (row.productUrl ? "product" : "notProduct")
+    : isHome || isListing ? "notProduct"
+    : group || product || meta("og:type") === "product" || meta("product:price:amount") ? "product" : "unknown";
   const description = [row.description, ...row.details].filter(Boolean).join(" / ");
   const biggestImage = () => { let best = null, area = 0; document.querySelectorAll("img").forEach((img) => { const a = (img.naturalWidth || 0) * (img.naturalHeight || 0); if (a > area && img.naturalWidth >= 300) { area = a; best = img.currentSrc || img.src; } }); return abs(best); };
 
@@ -460,7 +553,9 @@ export async function extractProduct(opts) {
     category: [row.mainCategory, row.subCategory].filter(Boolean).join(" > ") || null,
     currentPrice: prices.currentPrice,
     regularPrice: prices.regularPrice,
-    isProductPage: Boolean(group || product || meta("og:type") === "product" || meta("product:price:amount") || row.site !== "generic"),
+    isProductPage: pageKind === "product",
+    // product: 상품 상세 / notProduct: 홈·목록·기획전이 확실함(분석 막음) / unknown: 판단 못 함(분석은 허용, 안내만)
+    pageKind,
     // 추가 필드 (크롤러 표준 행과 같은 의미)
     site: row.site,
     productUrl,
