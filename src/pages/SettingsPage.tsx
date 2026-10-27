@@ -21,6 +21,7 @@ import {
 import { getTossPayments } from "@/lib/toss";
 import ChangePasswordModal from "@/components/common/ChangePasswordModal";
 import { PostLogout, DeleteWithdraw } from "@/apis/AuthAPI";
+import { PostInquiry } from "@/apis/InquiryAPI";
 import { resetUser } from "@/lib/analytics";
 import { AI_GUIDE_TOPICS, getGuideTopicsByCategory } from "@/content/aiGuides";
 import GuideDetailView from "@/components/settings/guide/GuideDetailView";
@@ -525,41 +526,24 @@ export default function SettingsPage() {
     }
   };
 
-  // 1:1 문의는 백엔드 없이, Zapier 웹훅(VITE_INQUIRY_WEBHOOK_URL)으로 보내
-  // Confluence에 문서로 쌓는 방식으로 연결한다. Zapier의 Webhooks 트리거는
-  // 항상 200을 즉시 반환하고 뒤에서 비동기로 처리하므로, 여기서의 성공은
-  // "Zapier가 요청을 받았다"는 뜻이지 Confluence 문서화까지 끝났다는 보장은
-  // 아니다.
+  // 1:1 문의는 백엔드(POST /inquiry)에 저장되고 슬랙으로 알림이 간다.
   const handleSendInquiry = async () => {
     if (isSendingInquiry || !inquiryContent.trim()) return;
-    const webhookUrl = import.meta.env.VITE_INQUIRY_WEBHOOK_URL as
-      | string
-      | undefined;
-    if (!webhookUrl) {
-      alert("문의 접수 연결이 아직 설정되지 않았습니다.");
-      return;
-    }
     setIsSendingInquiry(true);
     try {
-      const now = new Date();
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date,
-          email: inquiryEmail.trim() || userEmail,
-          type: inquiryType,
-          content: inquiryContent,
-        }),
+      await PostInquiry({
+        type: inquiryType,
+        content: inquiryContent,
+        email: inquiryEmail.trim() || undefined,
       });
-      if (!res.ok) throw new Error();
       alert("문의가 접수되었습니다.");
       setInquiryContent("");
-    } catch {
-      alert("문의 접수에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } catch (e) {
+      alert(
+        e instanceof Error && e.message
+          ? e.message
+          : "문의 접수에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      );
     } finally {
       setIsSendingInquiry(false);
     }
