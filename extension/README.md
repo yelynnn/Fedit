@@ -18,7 +18,7 @@
 | `lib/extract.js` | 상품 정보 추출: 무신사·29CM·W컨셉·카페24는 Crawl_Agent 크롤러 규칙 그대로, 그 밖은 범용 규칙(구조화 데이터 → 정보 표 → 화면 경로 → 상세 설명 → 설명문 속 소재). 미리보기는 화면만 읽고, 분석할 때만 상품 고시·정보 탭을 펼쳐 읽는다 |
 | `lib/api.js` | 백엔드 호출, 401 이면 `/auth/refresh` 한 번 후 재시도 |
 | `lib/config.js` | 백엔드·웹 주소, 분석 상태 폴링 주기 |
-| `sidepanel/` | 패널 UI: 상품 카드, 보드 선택·새 보드, 저장, 분석 상태, "분석 n/50"(결제일·가입일 기준 한 달) |
+| `sidepanel/` | 패널 UI: 상품 카드, 보드 선택·새 보드, 저장, 분석 상태, "분석 n/한도"(무료 30 · Basic 100 · Pro 300, 결제일·가입일 기준 한 달) |
 
 ## 사용하는 API (Back-end `feature/extension-item`)
 - `POST /board/external-item/analyze` 분석 요청(수집된 상품이면 기존 itemcode, 아니면 VLM 분석 대기). 월 한도에 셈(같은 달 같은 상품은 1회)

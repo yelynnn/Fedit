@@ -35,7 +35,7 @@ FEDIT 크롬 확장을 쓰면 쇼핑몰에서 보고 있는 상품을 페이지�
 
 ■ 이용 안내
 · FEDIT 계정이 필요합니다(https://fedit.mify.im 에서 가입·로그인하면 확장에도 자동으로 로그인됩니다).
-· 무료 요금제는 매달 AI 분석 50회까지 쓸 수 있습니다. 더 많이 쓰려면 FEDIT 웹사이트에서 유료 요금제를 이용해 주세요.
+· 무료 요금제는 매달 AI 분석 30회까지 쓸 수 있습니다(Basic 100회 · Pro 300회). 더 많이 쓰려면 FEDIT 웹사이트에서 유료 요금제를 이용해 주세요.
 · 확장은 패널이 열려 있을 때 보고 있는 상품 페이지의 공개된 상품 정보만 읽으며, 방문 기록을 모으지 않습니다.
 
 문의: team.mify@gmail.com
@@ -153,7 +153,7 @@ How to test
 5. Choose a board under "내 무드보드" and click "무드보드에 저장" (Save to moodboard). The item then appears under 내 보드 (My boards) on https://fedit.mify.im.
 
 Notes
-- The free plan allows 50 analyses per month; the test account has enough remaining.
+- The free plan allows 30 analyses per month; the test account has enough remaining.
 - The extension reads only the public product information (structured data / meta tags) of the page the user is viewing while the side panel is open. It does not collect browsing history.
 - For shopping sites not in the default list, the panel shows a button that asks the user for permission for that site.
 ```

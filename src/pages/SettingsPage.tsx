@@ -58,12 +58,18 @@ type Section =
   | "관심브랜드"
   | "구독";
 
+// FEDIT 크롬 확장 — 크롬 웹스토어
+const CHROME_EXTENSION_URL =
+  "https://chromewebstore.google.com/detail/onphejofodignddjcpnfdbfknhcfioco";
+
 // basic_secret은 비밀 링크 전용 플랜이라 일반 요금제 비교표에는 노출하지 않는다.
 const PLAN_DEFS: {
   key: "free" | "basic" | "pro" | "enterprise";
   label: string;
   badge: string | null;
   originalPrice: string | null;
+  // 정가 옆에 같이 긋는 달러 표기(예: $34)
+  originalUsd?: string;
   discount: string | null;
   price: string;
   sub: string;
@@ -94,19 +100,18 @@ const PLAN_DEFS: {
     key: "basic",
     label: "Basic",
     badge: null,
-    originalPrice: "72,000원",
-    discount: "18% 할인 · 첫 달 29,000원",
-    price: "59,000원",
+    originalPrice: "49,000원",
+    originalUsd: "$34",
+    discount: "74% 할인",
+    price: "12,900원",
     sub: "/월",
     features: [
       { ok: true, text: "1인 이용" },
-      {
-        ok: true,
-        text: `경쟁사 모니터링 ${REQUIRED_COUNT}개 브랜드`,
-      },
+      { ok: true, text: `경쟁사 모니터링 ${REQUIRED_COUNT}개 브랜드` },
+      { ok: true, text: "크롬 확장 월 100개 상품 분석" },
       { ok: true, text: "엑셀 다운로드 월 3회" },
-      { ok: true, text: "신규 브랜드 분석 신청 월 1회" },
-      { ok: false, text: "유형·색상·소재·패션쇼 분석" },
+      { ok: true, text: "브랜드 맞춤 리포트 기본 분석" },
+      { ok: false, text: "유형·색상·패션쇼 분석" },
       { ok: false, text: "월간 트렌드 리포트 · AI Agent" },
     ],
   },
@@ -114,17 +119,20 @@ const PLAN_DEFS: {
     key: "pro",
     label: "Pro",
     badge: "추천",
-    originalPrice: "165,000원",
-    discount: "40% 할인",
-    price: "99,000원",
+    originalPrice: "99,000원",
+    originalUsd: "$68",
+    discount: "47% 할인",
+    price: "52,900원",
     sub: "/월",
     features: [
       { ok: true, text: "1인 이용" },
       { ok: true, text: `경쟁사 모니터링 ${PRO_REQUIRED_COUNT}개 브랜드` },
+      { ok: true, text: "크롬 확장 월 300개 상품 분석" },
       { ok: true, text: "엑셀 다운로드 월 30회" },
-      { ok: true, text: "신규 브랜드 분석 신청 월 3회" },
-      { ok: true, text: "유형·색상·소재·패션쇼 분석" },
-      { ok: false, text: "월간 트렌드 리포트 · AI Agent" },
+      { ok: true, text: "유형·색상·패션쇼 분석" },
+      { ok: true, text: "브랜드 맞춤 리포트 전체 분석" },
+      { ok: false, text: "월간 트렌드 리포트" },
+      { ok: false, text: "AI Agent" },
     ],
   },
   {
@@ -134,12 +142,16 @@ const PLAN_DEFS: {
     originalPrice: null,
     discount: null,
     price: "문의하기",
-    sub: "팀 규모와 브랜드 맞춤 세팅",
+    sub: "팀 규모와 브랜드 수에 맞춰 견적",
     features: [
       { ok: true, text: "공유 계정 5개" },
       { ok: true, text: "경쟁사 모니터링 전체 브랜드" },
-      { ok: true, text: "유형·색상·소재·패션쇼 분석" },
-      { ok: true, text: "엑셀 무제한 · 월간 트렌드 리포트 · AI Agent" },
+      { ok: true, text: "크롬 확장 무제한 상품 분석" },
+      { ok: true, text: "엑셀 다운로드 무제한" },
+      { ok: true, text: "유형·색상·패션쇼 분석" },
+      { ok: true, text: "브랜드 맞춤 리포트 전체 분석" },
+      { ok: true, text: "월간 트렌드 리포트" },
+      { ok: true, text: "AI Agent" },
     ],
   },
 ];
@@ -254,7 +266,7 @@ export default function SettingsPage() {
   );
   const [agreedCancelTerms, setAgreedCancelTerms] = useState(false);
   // 비밀 링크(?ref=vip)로 들어왔던 사용자인지 — 로그인 페이지에서 심어둔
-  // 플래그를 읽어서 Basic 카드를 "비밀 특가(19,000원 첫 달)"로 보여준다.
+  // 플래그를 읽어서 Basic·Pro 카드에 "비밀 링크 한정" 배지를 붙인다.
   const [isSecretEntry] = useState(checkSecretEntry);
   // basic_secret은 설정 화면의 일반 결제 플로우로는 선택할 수 없는 플랜(비밀
   // 링크 전용)이라 여기서 다루는 대상에서 제외한다.
@@ -307,22 +319,16 @@ export default function SettingsPage() {
   const trialing = isTrial(subscription);
   const trialEndsAt = getTrialEndsAt(subscription);
 
-  // 비밀 링크로 들어온 경우, Basic 카드는 "첫 달 19,000원" 특가로 바꿔서
-  // 보여준다(정가·월 요금 자체는 그대로 두고 discount/price만 첫 달 특가로
-  // 덮어써서, spread로 originalPrice·sub는 그대로 이어받는다). Pro는 가격은
-  // 그대로지만(정가 그대로 결제) 배지만 "비밀 링크 한정"으로 같이 표시한다.
+  // 비밀 링크로 들어온 경우 Basic·Pro 카드에 "비밀 링크 한정" 배지만 붙인다
+  // (예전 Basic 첫 달 19,000원 특가는 Basic 가격이 12,900원으로 내려가 의미가 없어졌다).
   // 실제 결제 요청에 보낼 plan_code는 이거랑 별개로 아래 checkoutPlan에서
   // pendingPlan === "basic"일 때만 "basic_secret"으로 바꿔서 보낸다 — Pro는
   // 비밀 링크로 들어와도 정가 그대로다.
   const basePlanDefs = isSecretEntry
     ? PLAN_DEFS.map((plan) =>
         plan.key === "basic"
-          ? {
-              ...plan,
-              badge: "비밀 링크 한정",
-              discount: "→ 19,000원 · 첫 1달",
-              price: "19,000원",
-            }
+          ? // Basic 가격(12,900원)이 시크릿 특가(19,000원)보다 낮아져 가격은 그대로, 배지만
+            { ...plan, badge: "비밀 링크 한정" }
           : plan.key === "pro"
             ? { ...plan, badge: "비밀 링크 한정" }
             : plan,
@@ -1519,6 +1525,7 @@ export default function SettingsPage() {
                             <div className="flex min-h-[34px] flex-col justify-center gap-0.5">
                               <span className="text-xs whitespace-nowrap line-through text-[#A1A3A5]">
                                 정가 {plan.originalPrice}
+                                {plan.originalUsd && ` · ${plan.originalUsd}`}
                               </span>
                               <span className="text-xs whitespace-nowrap text-[#3E7EFF] font-semibold">
                                 {plan.discount}
@@ -1632,6 +1639,30 @@ export default function SettingsPage() {
                       </div>
                     );
                   })}
+                </div>
+
+                {/* 크롬 확장 설치 안내 — 웹스토어 상세 페이지를 새 탭으로 연다 */}
+                <div className="flex items-center justify-between gap-6 p-6 mt-6 rounded-2xl bg-surface-base">
+                  <div className="flex flex-col min-w-0 gap-1">
+                    <span className="text-[12px] font-semibold leading-[133%] text-[#FF4242]">
+                      출시 기념 무료 혜택
+                    </span>
+                    <p className="text-[18px] font-semibold leading-[144%] tracking-[-0.09px] text-[#0B0E0F] break-keep">
+                      쇼핑몰에서 본 상품, 바로 분석해보세요
+                    </p>
+                    <p className="text-[14px] font-medium leading-[143%] tracking-[-0.07px] text-[#3D3F41] break-keep">
+                      FEDIT 크롬 확장을 설치하면 보고 있는 상품 페이지에서 바로
+                      AI 분석 결과를 확인하고 내 보드에 저장할 수 있어요.
+                    </p>
+                  </div>
+                  <a
+                    href={CHROME_EXTENSION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-[44px] shrink-0 items-center justify-center rounded-full bg-[#0B0E0F] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-black"
+                  >
+                    무료로 설치하기
+                  </a>
                 </div>
               </div>
             )}
@@ -1993,15 +2024,8 @@ export default function SettingsPage() {
                 <p className="mt-2 text-xs leading-relaxed text-tx-assistive">
                   혜택 코드 할인으로 첫 {promoRemainingMonths}개월은 월{" "}
                   {promoAmount?.toLocaleString("ko-KR")}원이 청구되고, 이후에는
-                  정가({PLAN_DEFS.find((p) => p.key === pendingPlan)?.price})가
+                  월 {PLAN_DEFS.find((p) => p.key === pendingPlan)?.price}이
                   청구돼요.
-                </p>
-              )}
-              {pendingPlan === "basic" && !isSecretEntry && !(isPromoDiscountActive && promoPlan === "basic") && (
-                <p className="mt-2 text-xs leading-relaxed text-tx-assistive">
-                  결제 이력이 없는 계정의 첫 결제 시 29,000원(최초 1회)이
-                  청구되고, 다음 결제부터 정가(59,000원)가 청구돼요. 이미 결제한
-                  적이 있다면 첫 결제부터 정가가 청구돼요.
                 </p>
               )}
             </div>
