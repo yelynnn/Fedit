@@ -130,6 +130,8 @@ function ExcelDownloadButton() {
     total: number;
   } | null>(null);
   const [isDownloadHovered, setIsDownloadHovered] = useState(false);
+  // Basic에서 브랜드를 여러 개 고른 채 눌렀을 때 "1개만 골라 달라" 안내를 잠깐 띄운다
+  const [showMultiTargetNotice, setShowMultiTargetNotice] = useState(false);
   const [usage, setUsage] = useState<ExcelDownloadUsage | null>(null);
   const downloadAbortControllerRef = useRef<AbortController | null>(null);
   const isCancelledRef = useRef(false);
@@ -374,16 +376,31 @@ function ExcelDownloadButton() {
   const isProLimitReached = isPro && usage !== null && !usage.canDownload;
   // 다운로드 중에는 이 버튼이 "중단" 버튼으로 바뀌므로 여기엔 안 넣는다 —
   // 눌러서 취소할 수 있어야 하니 계속 활성 상태여야 한다.
+  // 브랜드 여러 개 선택(Basic)도 비활성으로 두지 않는다 — 관심 브랜드가 자동으로
+  // 전부 선택돼 있어서 꺼진 버튼만 보면 뭘 해야 할지 몰랐다. 누르면 안내를 띄운다.
   const isDownloadDisabled =
     isFree ||
     isBasicUsageLoading ||
     isBasicLimitReached ||
-    isBasicMultiTargetBlocked ||
     isProUsageLoading ||
     isProLimitReached;
 
+  useEffect(() => {
+    if (!isBasicMultiTargetBlocked) setShowMultiTargetNotice(false);
+  }, [isBasicMultiTargetBlocked]);
+
+  useEffect(() => {
+    if (!showMultiTargetNotice) return;
+    const t = setTimeout(() => setShowMultiTargetNotice(false), 3000);
+    return () => clearTimeout(t);
+  }, [showMultiTargetNotice]);
+
   const handleDownloadClick = async () => {
     if (isDownloadDisabled) return;
+    if (isBasicMultiTargetBlocked) {
+      setShowMultiTargetNotice(true);
+      return;
+    }
 
     const controller = new AbortController();
     downloadAbortControllerRef.current = controller;
@@ -489,7 +506,9 @@ function ExcelDownloadButton() {
     : isBasicLike
       ? isBasicLimitReached
         ? `월 다운로드 횟수 ${usage?.limit ?? 3}회를 모두 사용했어요`
-        : `Basic 요금제는 한 번에 브랜드 1개만, 월 ${usage?.limit ?? 3}회까지 다운로드할 수 있어요${usageText}`
+        : isBasicMultiTargetBlocked
+          ? `Basic 요금제는 브랜드 1개씩 받을 수 있어요. 브랜드 필터에서 1개만 선택해 주세요${usageText}`
+          : `Basic 요금제는 한 번에 브랜드 1개만, 월 ${usage?.limit ?? 3}회까지 다운로드할 수 있어요${usageText}`
       : isPro
         ? isProLimitReached
           ? `월 다운로드 횟수 ${usage?.limit ?? 30}회를 모두 사용했어요`
@@ -527,7 +546,7 @@ function ExcelDownloadButton() {
           : "Excel"}
       </button>
 
-      {isDownloadHovered && (
+      {(isDownloadHovered || showMultiTargetNotice) && (
         <DateNavNotice>
           {isDownloading
             ? "누르면 다운로드를 중단해요. 이미 받은 파일의 횟수는 그대로 유지돼요."
