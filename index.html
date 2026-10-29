@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- 한국어 페이지다. lang="en"이면 크롬이 "한국어로 번역"을 띄우고, 번역이 글자를 <font>로
+     바꿔 끼우면 React가 화면을 고치다 NotFoundError(insertBefore)로 앱 전체가 깨진다.
+     그래서 언어를 ko로 두고 번역도 끈다. -->
+<html lang="ko" translate="no">
   <head>
     <!-- Google Tag Manager (GTM-P6C7B44R) -->
     <script>
@@ -24,6 +27,7 @@
     </script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8" />
+    <meta name="google" content="notranslate" />
     <link rel="icon" type="image/png" href="/feditIcon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fedit</title>
