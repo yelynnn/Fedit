@@ -18,6 +18,7 @@ import BillingSuccessPage from "@/pages/BillingSuccessPage";
 import BillingFailPage from "@/pages/BillingFailPage";
 import KakaoUpgradeAdminPage from "@/pages/admin/KakaoUpgradeAdminPage";
 import ProtectedRoute from "./ProtectedRoute";
+import RouteErrorPage from "@/pages/RouteErrorPage";
 
 // 예전 상세 주소(/beta/product/:id) — 이미 설치된 크롬 확장이 아직 이 주소로 연다.
 // 이 화면은 주소의 상품 코드를 읽지 않아 빈 페이지가 떴으므로, 첫 화면의
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
   {
     path: "/beta",
     element: <RootLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         index: true,
@@ -44,6 +46,8 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
+    // 화면 오류 시 영어 기본 화면 대신 한국어 안내(하위 화면 전체에 적용)
+    errorElement: <RouteErrorPage />,
     children: [
       {
         element: <ProtectedRoute />,
