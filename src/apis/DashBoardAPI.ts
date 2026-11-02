@@ -97,13 +97,14 @@ const GetTrendRanking = async ({
   platform,
   category,
   date,
+  month,
   page = 0,
   size = 20,
   gender,
 }: GetTrendRankingParams): Promise<TrendRankingPageResponse> => {
   try {
     const res = await axiosInstance.get(`/trend`, {
-      params: { platform, category, date, page, size, gender },
+      params: { platform, category, date, month, page, size, gender },
     });
     return res.data;
   } catch (error: any) {

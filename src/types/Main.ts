@@ -125,6 +125,8 @@ export type GetTrendRankingParams = {
   category: string;
   // 없으면 백엔드가 가장 최신 점수값을 준다.
   date?: string;
+  // "YYYY-MM" — date 없이 주면 그 달의 가장 최근 랭킹 회차(없으면 빈 목록)
+  month?: string;
   page?: number;
   size?: number;
   // 현재는 "남성"만 값이 있고 그 외(여성 등)는 전부 null이라, 남성 데이터가

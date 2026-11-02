@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { Icon } from "@iconify/react";
 import TrendIndexBoxMock from "../product/TrendIndexBoxMock";
 import AIAnalysisBox from "../product/AIAnalysisBox";
@@ -66,6 +66,9 @@ const PLATFORM_SLUG: Record<string, string> = {
   "플랫폼 통합": "all",
 };
 
+// 플랫폼 랭킹 데이터가 쌓이기 시작한 달. 이보다 앞 달로는 이동하지 않는다.
+const FIRST_RANKING_MONTH = "2026-09-01";
+
 // 잠금 상태(무료체험 미시작/만료)에서는 트렌드 항목 상위 3개까지만 보여준다.
 const LOCK_VISIBLE_COUNT = 3;
 
@@ -73,7 +76,7 @@ const DATA_UNAVAILABLE_NOTICE = (
   <>
     아직 누적된 분석 데이터가 없어
     <br />
-    8월부터 해당 분석 결과를 제공할 수 있어요
+    9월부터 해당 분석 결과를 제공할 수 있어요
   </>
 );
 
@@ -112,7 +115,15 @@ export default function RankBox() {
   const isLocked =
     subscriptionLoaded && isLockedPlan(getEffectivePlan(subscription));
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
-  const MOCK_DATE_LIST = ["2026-01", "2026-02"];
+  // 고를 수 있는 달 — 랭킹 데이터가 쌓이기 시작한 달부터 이번 달까지(최근 달이 앞)
+  const monthList = useMemo(() => {
+    const out: string[] = [];
+    for (let m = dayjs(); !m.isBefore(FIRST_RANKING_MONTH, "month"); m = m.subtract(1, "month")) {
+      out.push(m.format("YYYY-MM"));
+    }
+    return out;
+  }, []);
+  const isFirstMonth = !currentDate.isAfter(FIRST_RANKING_MONTH, "month");
 
   const updateTrendThumb = () => {
     const el = trendListRef.current;
@@ -153,12 +164,14 @@ export default function RankBox() {
   useEffect(() => {
     if (!isTypeStoreHydrated) return;
     const platform = PLATFORM_SLUG[selectedPlatform] ?? selectedPlatform;
-    // 일단 date 없이 보내서 백엔드가 최신 점수값을 주도록 확인해본다.
+    // 이번 달은 날짜 없이(최신 회차), 지난 달은 month 로 그 달의 가장 최근 회차를 받는다.
     const gender = audienceType === "male" ? "남성" : undefined;
+    const month = isCurrentMonth ? undefined : currentDate.format("YYYY-MM");
 
     GetTrendRanking({
       platform,
       category: selectedCategory,
+      month,
       page: 0,
       size: 20,
       gender,
@@ -182,6 +195,7 @@ export default function RankBox() {
     selectedPlatform,
     selectedCategory,
     currentDate,
+    isCurrentMonth,
     audienceType,
     isTypeStoreHydrated,
   ]);
@@ -210,8 +224,8 @@ export default function RankBox() {
     setCurrentDate(dayjs());
   };
 
-  // 아직 누적된 월간 분석 데이터가 없어서(8월부터 제공 예정) 이전달 이동은
-  // 잠시 막아두고, 누른 버튼 바로 아래에 안내 토스트만 3초간 보여준다.
+  // 랭킹 데이터가 쌓이기 시작한 달(9월)보다 앞으로 가려고 하면 이동하지 않고,
+  // 누른 버튼 바로 아래에 안내 토스트만 3초간 보여준다.
   const [dateNoticeTarget, setDateNoticeTarget] = useState<
     "prev" | "next" | null
   >(null);
@@ -241,7 +255,11 @@ export default function RankBox() {
           <div className="relative">
             <button
               type="button"
-              onClick={() => handleDateNavBlocked("prev")}
+              onClick={() =>
+                isFirstMonth
+                  ? handleDateNavBlocked("prev")
+                  : setCurrentDate((d) => d.subtract(1, "month"))
+              }
               className="flex h-[34px] w-[34px] shrink-0 items-center justify-center gap-2.5 rounded-full border border-line-alt bg-white p-1 transition-colors hover:bg-fill-bg-strong"
             >
               <NavArrowIcon direction="left" />
@@ -265,7 +283,9 @@ export default function RankBox() {
           <div className="relative">
             <button
               type="button"
-              onClick={() => handleDateNavBlocked("next")}
+              onClick={() =>
+                !isCurrentMonth && setCurrentDate((d) => d.add(1, "month"))
+              }
               disabled={isCurrentMonth}
               className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center gap-2.5 rounded-full border border-line-alt bg-white p-1 transition-colors ${
                 isCurrentMonth ? "cursor-not-allowed" : "hover:bg-fill-bg-strong"
@@ -329,6 +349,11 @@ export default function RankBox() {
               onScroll={updateTrendThumb}
               className={`h-full hide-scrollbar ${isLocked ? "overflow-hidden" : "overflow-y-auto"}`}
             >
+              {testRankingList.length === 0 && !isCurrentMonth && (
+                <li className="flex h-full items-center justify-center px-6 text-center text-sm leading-[1.6] text-tx-alt">
+                  {currentDate.format("YYYY년 M월")}에는 랭킹 데이터가 없어요.
+                </li>
+              )}
               {testRankingList.map((item, index) => {
                 const isActive = activeTempItemId === item.temp_item_id;
                 const isHidden = isLocked && index >= LOCK_VISIBLE_COUNT;
@@ -421,7 +446,7 @@ export default function RankBox() {
         isOpen={isMonthModalOpen}
         onClose={() => setIsMonthModalOpen(false)}
         onSelect={handleMonthSelect}
-        dateList={MOCK_DATE_LIST}
+        dateList={monthList}
       />
     </div>
   );
