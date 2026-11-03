@@ -4,10 +4,14 @@ import { useUIStore } from "@/stores/UIStore";
 
 // 크롬 확장 등 바깥에서 특정 화면으로 바로 보내는 링크.
 //   /?tab=board    → '내 보드' 탭
+//   /?tab=customer-analysis → '고객 분석' 탭
 //   /?open=pricing → 설정 > 구독(요금제) 창
 // 로그인 전이면 로그인 후 RootNewLayout 이 뜰 때 그대로 적용된다(상태는 스토어에 남음).
 // 새로고침 때 다시 열리지 않게 주소에서 파라미터를 지운다.
-const TAB_ALIASES: Record<string, string> = { board: "내 보드" };
+const TAB_ALIASES: Record<string, string> = {
+  board: "내 보드",
+  "customer-analysis": "고객 분석",
+};
 
 export function useDeepLink() {
   useEffect(() => {

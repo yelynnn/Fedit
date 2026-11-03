@@ -2,6 +2,7 @@ import { Icon } from "@iconify/react";
 import Modal from "react-modal";
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
+import { useUIStore } from "@/stores/UIStore";
 import {
   useSubscriptionStore,
   getEffectivePlan,
@@ -15,7 +16,32 @@ import cancelIcon from "@/assets/etc/cancel.svg";
 
 type ApiCategory = { label: string; brands: string[] };
 type TabKey = "selected" | string;
-type Props = { isOpen: boolean; onClose: () => void; onSubmit?: () => void };
+// selection을 주면 전역 브랜드 필터(useFilterStore) 대신 그 값만 고치는 창으로 쓴다
+// (예: 고객 분석의 "+ 브랜드"). 플랫폼 단위 "전체 선택"은 쓰지 않고 브랜드를 하나씩 담는다.
+type Selection = {
+  value: string[];
+  onConfirm: (brands: string[]) => void;
+  title?: string;
+  /** 주면 이 브랜드만 고를 수 있게 카테고리 목록을 좁힌다(이미 담긴 브랜드는 "선택된 브랜드"에서 뺄 수 있다) */
+  allowed?: string[];
+  /** 검색창 아래 안내 한 줄 */
+  notice?: string;
+  /** 안내 줄 오른쪽 버튼(예: 고객 분석의 "리뷰 분석 신청") */
+  noticeAction?: { label: string; onClick: () => void };
+  /**
+   * 검색 결과가 없을 때 "신규 브랜드 신청하기"(입점 신청) 대신 쓸 신청 버튼(예: 고객 분석의 리뷰 분석 신청).
+   * onRequest 에는 허용 목록 밖에서 찾은 브랜드명(없으면 검색어)을 준다. requested 에 있으면 "신청함"으로 막는다.
+   */
+  missing?: { label: string; onRequest: (brand: string) => void; requested?: string[] };
+};
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit?: () => void;
+  selection?: Selection;
+};
+
+const NO_PLATFORMS: string[] = [];
 
 // 무신사/29cm는 입점 브랜드가 100개 넘어서, 이 탭에서 "전체 선택"하면
 // 브랜드명을 하나하나 담는 대신 플랫폼 코드 하나(selectedPlatforms)로
@@ -29,22 +55,53 @@ const PLATFORM_CODE_TO_LABEL: Record<string, string> = {
   "29cm": "29cm",
 };
 
-export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
-  const brandList = useFilterStore((s) => s.brandList);
-  const platformList = useFilterStore((s) => s.platformList);
-  const setPlatformList = useFilterStore((s) => s.setPlatformList);
-  const resetPlatform = useFilterStore((s) => s.resetPlatform);
+export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection }: Props) {
+  const controlled = !!selection;
+  const storeBrandList = useFilterStore((s) => s.brandList);
+  const storePlatformList = useFilterStore((s) => s.platformList);
+  const storeSetPlatformList = useFilterStore((s) => s.setPlatformList);
+  const storeResetPlatform = useFilterStore((s) => s.resetPlatform);
   const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
-  const addBrand = useFilterStore((s) => s.addBrand);
-  const resetBrand = useFilterStore((s) => s.resetBrand);
-  const removeBrand = useFilterStore((s) => s.removeBrand);
+  const storeAddBrand = useFilterStore((s) => s.addBrand);
+  const storeResetBrand = useFilterStore((s) => s.resetBrand);
+  const storeRemoveBrand = useFilterStore((s) => s.removeBrand);
+
+  // selection 모드 — 창을 열 때 받은 값으로 시작해서 확인을 누를 때만 돌려준다
+  const [draft, setDraft] = useState<string[]>([]);
+  useEffect(() => {
+    if (isOpen && selection) setDraft(selection.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+  const brandList = controlled ? draft : storeBrandList;
+  const platformList = controlled ? NO_PLATFORMS : storePlatformList;
+  const setPlatformList = controlled ? () => {} : storeSetPlatformList;
+  const resetPlatform = controlled ? () => {} : storeResetPlatform;
+  const addBrand = controlled
+    ? (b: string) => setDraft((d) => (d.includes(b) ? d : [...d, b]))
+    : storeAddBrand;
+  const removeBrand = controlled
+    ? (b: string) => setDraft((d) => d.filter((x) => x !== b))
+    : storeRemoveBrand;
+  const resetBrand = controlled ? () => setDraft([]) : storeResetBrand;
   const { subscription } = useSubscriptionStore((s) => s);
   const currentPlan = toBillingPlan(getEffectivePlan(subscription));
   const isBasic = currentPlan === "basic";
   const isFree = currentPlan === "free";
+  // 무료체험을 아직 시작하지 않은 고객 — 멤버십 안내 대신 무료체험 시작으로 이어 준다
+  const trialNotStarted = getEffectivePlan(subscription) === "none";
+  const openTrialModal = useUIStore((s) => s.openTrialModal);
   const isPro = currentPlan === "pro";
   const brandCap = getBrandCap(currentPlan);
-  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [rawCategories, setCategories] = useState<ApiCategory[]>([]);
+  const allowed = selection?.allowed;
+  // selection.allowed 가 있으면 허용 브랜드만 남기고, 비는 카테고리 탭은 뺀다
+  const categories = useMemo<ApiCategory[]>(() => {
+    if (!allowed) return rawCategories;
+    const ok = new Set(allowed);
+    return rawCategories
+      .map((c) => ({ ...c, brands: c.brands.filter((b) => ok.has(b)) }))
+      .filter((c) => c.brands.length > 0);
+  }, [rawCategories, allowed]);
   const [activeTab, setActiveTab] = useState<TabKey>("selected");
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -130,6 +187,12 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   }, [activeTab, brandList, categories]);
 
   useScrollActiveTabIntoView(scrollRef, activeTab);
+
+  // 좁힌 목록에 지금 탭이 없으면(첫 탭이 비어 빠졌을 때 등) 남은 첫 탭으로
+  useEffect(() => {
+    if (activeTab === "selected" || categories.some((c) => c.label === activeTab)) return;
+    setActiveTab(categories[0]?.label ?? "selected");
+  }, [categories, activeTab]);
 
   const activePlatformCode = PLATFORM_LABEL_TO_CODE[activeTab];
   const isPlatformFullySelected =
@@ -247,7 +310,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
     // 너무 커진다. 다만 제한된 탭에서는 플랫폼 전체를 통째로 담아버리면
     // 관심 브랜드가 아닌 것까지 다 선택돼버리니, 이 지름길은 쓰지 않고
     // 아래 개별 선택 로직(잠긴 브랜드는 자동으로 건너뜀)으로 처리한다.
-    if (!isRestrictedTab && activePlatformCode && keyword.trim() === "") {
+    if (!controlled && !isRestrictedTab && activePlatformCode && keyword.trim() === "") {
       if (isPlatformFullySelected) {
         setPlatformList(platformList.filter((p) => p !== activePlatformCode));
       } else {
@@ -294,6 +357,11 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
   const handleApplyBrandClick = () => {
     if (!keyword.trim() || isApplyingBrand) return;
     if (isFree) {
+      if (trialNotStarted) {
+        onClose();
+        openTrialModal();
+        return;
+      }
       alert(
         "멤버십을 시작하면 이용할 수 있는 기능이에요.",
       );
@@ -344,7 +412,9 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       title={
         disabled
           ? isFree
-            ? "멤버십을 시작하면 관심 브랜드를 골라 볼 수 있어요"
+            ? trialNotStarted
+              ? "무료체험을 시작하면 관심 브랜드를 골라 볼 수 있어요"
+              : "멤버십을 시작하면 관심 브랜드를 골라 볼 수 있어요"
             : `관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요`
           : undefined
       }
@@ -371,7 +441,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       shouldCloseOnOverlayClick
     >
       <div className="flex items-center justify-between">
-        <h2 className="type-title-xlarge text-tx-strong">브랜드 필터</h2>
+        <h2 className="type-title-xlarge text-tx-strong">{selection?.title ?? "브랜드 필터"}</h2>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
           <img src={cancelIcon} alt="" />
         </button>
@@ -395,7 +465,14 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
         />
       </div>
 
-      {keyword.trim() !== "" && visibleBrands.length === 0 && (
+      {keyword.trim() !== "" && visibleBrands.length === 0 && selection?.missing && (
+        <MissingBrandRow
+          brand={missingBrandName(rawCategories, keyword)}
+          missing={selection.missing}
+        />
+      )}
+
+      {keyword.trim() !== "" && visibleBrands.length === 0 && !selection?.missing && (
         <div className="flex items-center justify-between w-full gap-4 p-3 rounded-lg bg-fill-bg-strong">
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-icon-neutral">
@@ -491,13 +568,48 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
         </div>
       </div>
 
-      {isRestrictedTab && (
-        <p className="flex items-center gap-1 text-xs text-icon-alt">
-          <Icon icon="ph:info" className="w-3.5 h-3.5 flex-shrink-0" />
-          {isFree
-            ? "멤버십을 시작하고 관심 브랜드를 고르면 해당 브랜드를 볼 수 있어요."
-            : `${isPro ? "Pro" : "Basic"} 플랜은 관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요.`}
-        </p>
+      {(selection?.notice || selection?.noticeAction) && (
+        <div className="-mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px] leading-[1.6] text-tx-alt">
+          {selection?.notice && <p>{selection.notice}</p>}
+          {selection?.noticeAction && (
+            <button
+              type="button"
+              onClick={selection.noticeAction.onClick}
+              className="shrink-0 font-semibold text-tx-neutral underline underline-offset-2"
+            >
+              {selection.noticeAction.label}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 고객 분석(selection)은 위 안내 줄이 범위를 설명해서 요금제 안내는 뺀다 */}
+      {isRestrictedTab && !selection && (
+        trialNotStarted ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-[#EAF2FE] px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-[13px] text-tx-neutral">
+              <Icon icon="ph:info" className="w-4 h-4 flex-shrink-0" />
+              5일 무료체험을 시작하고 관심 브랜드를 고르면 해당 브랜드를 볼 수 있어요.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                openTrialModal();
+              }}
+              className="shrink-0 rounded-md bg-fill-primary px-3 py-1.5 text-[13px] font-semibold text-tx-inverse hover:opacity-90"
+            >
+              무료체험 시작하기
+            </button>
+          </div>
+        ) : (
+          <p className="flex items-center gap-1 text-xs text-icon-alt">
+            <Icon icon="ph:info" className="w-3.5 h-3.5 flex-shrink-0" />
+            {isFree
+              ? "멤버십을 시작하고 관심 브랜드를 고르면 해당 브랜드를 볼 수 있어요."
+              : `${isPro ? "Pro" : "Basic"} 플랜은 관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요.`}
+          </p>
+        )
       )}
 
       <div className="flex items-center justify-between text-sm">
@@ -605,7 +717,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
       </div>
 
       <button
-        onClick={onSubmit}
+        onClick={selection ? () => selection.onConfirm(draft) : onSubmit}
         disabled={totalSelectedCount === 0}
         className={
           totalSelectedCount === 0
@@ -696,5 +808,47 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit }: Props) {
         </div>
       )}
     </Modal>
+  );
+}
+
+/** 허용 목록 밖 브랜드 중 검색어와 같은(없으면 하나뿐인) 브랜드명, 그것도 없으면 검색어 그대로 */
+function missingBrandName(categories: ApiCategory[], keyword: string) {
+  const k = keyword.trim().toLowerCase();
+  const all = [...new Set(categories.flatMap((c) => c.brands))];
+  const exact = all.find((b) => b.toLowerCase() === k);
+  if (exact) return exact;
+  const partial = all.filter((b) => b.toLowerCase().includes(k));
+  return partial.length === 1 ? partial[0] : keyword.trim();
+}
+
+function MissingBrandRow({
+  brand,
+  missing,
+}: {
+  brand: string;
+  missing: NonNullable<Selection["missing"]>;
+}) {
+  const requested = missing.requested?.some((b) => b.toLowerCase() === brand.toLowerCase()) ?? false;
+  return (
+    <div className="flex items-center justify-between w-full gap-4 p-3 rounded-lg bg-fill-bg-strong">
+      <div className="flex flex-col min-w-0 gap-1">
+        <span className="text-xs font-semibold text-icon-neutral">검색 결과</span>
+        <span className="text-sm font-medium text-tx-neutral break-keep">
+          찾는 브랜드가 없나요? <b className="font-semibold">{brand}</b>
+        </span>
+      </div>
+      {requested ? (
+        <span className="self-end flex-shrink-0 px-2 py-1 text-xs font-semibold text-tx-assistive">신청함</span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => missing.onRequest(brand)}
+          className="self-end flex-shrink-0 flex items-center gap-1.5 px-2 py-1 bg-white border border-line-divider rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+        >
+          <Icon icon="ph:chat-circle-text" className="w-4 h-4 text-tx-neutral" />
+          <span className="text-xs font-semibold text-tx-neutral">{missing.label}</span>
+        </button>
+      )}
+    </div>
   );
 }

@@ -10,6 +10,7 @@ export const FEATURE_API_PREFIXES: Record<string, string[]> = {
   "색상 분석": ["/color"],
   "유형 분석": ["/category"],
   "패션쇼 분석": ["/fashionshow"],
+  "고객 분석": ["/customer-analysis"],
   "FEDI Agent": ["/chat"],
   "내 보드": ["/board"],
 };
@@ -21,8 +22,13 @@ const matchesPrefix = (apiPrefix: string, betaPath: string) => {
   return apiPrefix === beta || apiPrefix.startsWith(`${beta}/`) || beta.startsWith(`${apiPrefix}/`);
 };
 
+// 출시 전이라 배포 화면에서는 관리자에게만 보이는 메뉴(로컬 개발 화면은 모두) — 공개할 때 여기서 뺀다
+export const ADMIN_ONLY_FEATURES = new Set(["고객 분석", "리포트"]);
+
 export const isFeatureReleased = (feature: string, betaPaths: string[], admin: boolean) => {
-  if (admin || betaPaths.length === 0) return true;
+  if (admin) return true;
+  if (ADMIN_ONLY_FEATURES.has(feature) && !import.meta.env.DEV) return false;
+  if (betaPaths.length === 0) return true;
   const prefixes = FEATURE_API_PREFIXES[feature] ?? [];
   return !prefixes.some((p) => betaPaths.some((b) => matchesPrefix(p, b)));
 };

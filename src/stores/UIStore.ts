@@ -29,6 +29,18 @@ type UIStore = {
   sidebarCollapseOverride: boolean | null;
   setSidebarCollapseOverride: (value: boolean | null) => void;
 
+  // 잠긴 분석 탭(색상·유형)에서 "예시 화면 보기"를 누른 탭 — 이번 접속 동안 예시 데이터로 연다
+  analysisDemoTabs: string[];
+  openAnalysisDemo: (tab: string) => void;
+
+  // 무료체험 시작 창 — 체험 전 고객이 예시 화면 보기 등을 누르면 띄운다. onStarted 는 체험 시작 뒤 이어서 할 일
+  trialModal: { onStarted?: () => void } | null;
+  openTrialModal: (onStarted?: () => void) => void;
+  closeTrialModal: () => void;
+  // 체험 시작 직후 관심 브랜드 창을 닫으면 돌아갈 탭(없으면 기본 온보딩: 상품 분석 + 투어)
+  afterOnboardingTab: string | null;
+  setAfterOnboardingTab: (tab: string | null) => void;
+
   // 화면 아래에 잠깐 뜨는 안내 문구(예: 미공개 기능 호출 시 "준비 중인 기능입니다")
   notice: string | null;
   showNotice: (message: string) => void;
@@ -56,6 +68,16 @@ export const useUIStore = create<UIStore>((set) => ({
   openOnboardingTour: (source) =>
     set({ isOnboardingTourOpen: true, onboardingTourSource: source ?? "brand-modal" }),
   closeOnboardingTour: () => set({ isOnboardingTourOpen: false }),
+
+  trialModal: null,
+  openTrialModal: (onStarted) => set({ trialModal: { onStarted } }),
+  closeTrialModal: () => set({ trialModal: null }),
+  afterOnboardingTab: null,
+  setAfterOnboardingTab: (tab) => set({ afterOnboardingTab: tab }),
+
+  analysisDemoTabs: [],
+  openAnalysisDemo: (tab) =>
+    set((s) => (s.analysisDemoTabs.includes(tab) ? s : { analysisDemoTabs: [...s.analysisDemoTabs, tab] })),
 
   sidebarCollapseOverride: null,
   setSidebarCollapseOverride: (value) => set({ sidebarCollapseOverride: value }),

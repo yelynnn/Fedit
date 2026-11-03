@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { GetCategoryGraph } from "@/apis/AnalysisAPI";
 import QuestionTooltip from "@/components/common/QuestionTooltip";
 import { useFilterStore, useFilterStoreHydrated } from "@/stores/FilterStore";
+import AnalysisDemoBanner from "@/components/common/AnalysisDemoBanner";
+import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
 
 type TypeBlock = (typeof MockNewTypeData)[number];
 
-function NewTypeAnalysis() {
+// demo: 멤버십 전 고객의 예시 화면 — 필터 대신 예시 브랜드(ANALYSIS_DEMO_BRANDS)로 조회한다
+function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
   const [blocks, setBlocks] = useState<TypeBlock[]>([]);
   const [loading, setLoading] = useState(false);
   // GetCategoryGraph는 브랜드 필터를 인자로 안 받고 useFilterStore.getState()로
@@ -20,11 +23,11 @@ function NewTypeAnalysis() {
   const isFilterHydrated = useFilterStoreHydrated();
 
   useEffect(() => {
-    if (!isFilterHydrated) return;
+    if (!isFilterHydrated && !demo) return;
     const load = async () => {
       try {
         setLoading(true);
-        const res = await GetCategoryGraph();
+        const res = await GetCategoryGraph(demo ? ANALYSIS_DEMO_BRANDS : undefined);
 
         const list = (
           Array.isArray(res)
@@ -40,10 +43,15 @@ function NewTypeAnalysis() {
       }
     };
     load();
-  }, [brandList, isFilterHydrated]);
+  }, [brandList, isFilterHydrated, demo]);
 
   return (
     <div className="px-14">
+      {demo && (
+        <div className="mb-6">
+          <AnalysisDemoBanner brandNames={ANALYSIS_DEMO_BRANDS} />
+        </div>
+      )}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <header className="text-2xl font-semibold leading-9 text-tx-neutral">
@@ -60,9 +68,11 @@ function NewTypeAnalysis() {
       </div>
 
       <div
+        // 표 폭은 340~400px 사이에서만 움직이고 개수는 화면에 맞춘다 — 노트북에서 한 줄 3개, 큰 화면은 4개 이상.
+        // 화면이 커져도 표가 끝없이 늘어나지 않게 최대 폭을 둔다.
         className="grid justify-start gap-6 mt-8"
         style={{
-          gridTemplateColumns: "repeat(auto-fill, minmax(430px, max-content))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(340px, 400px))",
         }}
       >
         {loading && (

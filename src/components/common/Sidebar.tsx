@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import { useFilterStore } from "@/stores/FilterStore";
 import { useUIStore } from "@/stores/UIStore";
 import { AGENT_TAB, useChatStore } from "@/stores/ChatStore";
+import { useReportMenuVisible } from "@/lib/reports";
 import { useFeatureReleased } from "@/lib/features";
 import { useUserStore } from "@/stores/UserStore";
 import { resetUser } from "@/lib/analytics";
@@ -16,12 +17,25 @@ import colorIcon from "@/assets/etc/colorIcon.svg";
 import categoryIcon from "@/assets/etc/categoryIcon.svg";
 import runwayIcon from "@/assets/etc/runwayIcon.svg";
 
-const TABS_CONFIG: { label: string; icon?: string; iconify?: string }[] = [
+const TABS_CONFIG: {
+  label: string;
+  icon?: string;
+  iconify?: string;
+  iconClassName?: string;
+}[] = [
   { label: "실시간 랭킹", icon: dashboardIcon },
   { label: "상품 분석", icon: analysisIcon },
   { label: "색상 분석", icon: colorIcon },
   { label: "유형 분석", icon: categoryIcon },
   { label: "패션쇼 분석", icon: runwayIcon },
+  // 리뷰 기반 고객 분석 — 출시 전엔 betaPaths("/customer-analysis")로 관리자만 본다
+  {
+    label: "고객 분석",
+    iconify: "ph:users-three-fill",
+    iconClassName: "text-[#3D3F41]",
+  },
+  // 계정별 맞춤 리포트(월 1회) — 받은 리포트가 없으면 예시 리포트를 보여 준다(lib/reports.ts)
+  { label: "리포트", iconify: "ph:file-text-fill", iconClassName: "text-[#3D3F41]" },
   // 전체화면 FEDI 챗봇(AgentPage)
   { label: AGENT_TAB, iconify: "ph:sparkle-fill" },
 ];
@@ -52,6 +66,7 @@ export default function Sidebar() {
   const { name, email, admin, fetchMe } = useUserStore((s) => s);
   // 미공개 기능(betaPaths)의 메뉴는 관리자가 아니면 숨긴다
   const isReleased = useFeatureReleased();
+  const hasReports = useReportMenuVisible();
   const userName = name || "사용자명";
   const userEmail = email;
 
@@ -145,7 +160,7 @@ export default function Sidebar() {
       <nav
         className={`px-2 flex-shrink-0 ${isCollapsed ? "space-y-4" : ""}`}
       >
-        {TABS_CONFIG.filter((tab) => isReleased(tab.label)).map((tab) => {
+        {TABS_CONFIG.filter((tab) => isReleased(tab.label) && (tab.label !== "리포트" || hasReports)).map((tab) => {
           const active = selectedTab === tab.label;
           const stateClasses = active
             ? "bg-brand-subtle hover:bg-brand-subtle-hover"
@@ -176,7 +191,10 @@ export default function Sidebar() {
   `}
               >
                 {tab.iconify ? (
-                  <Icon icon={tab.iconify} className="w-[18px] h-[18px] text-[#111]" />
+                  <Icon
+                    icon={tab.iconify}
+                    className={`w-[18px] h-[18px] ${tab.iconClassName ?? "text-[#111]"}`}
+                  />
                 ) : (
                   <img
                     src={tab.icon}

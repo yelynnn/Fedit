@@ -24,15 +24,16 @@ function NewTypeBox({ block }: Props) {
 
   const rows = block.rows ?? [];
 
+  // 폭은 부모 그리드 칸에 맞춘다(유형 분석 그리드가 화면 폭에 맞춰 칸 수를 정한다)
   return (
-    <div className=" w-109 h-fit">
+    <div className="w-full min-w-0 h-fit">
       <span className="mb-3 text-lg font-semibold text-tx-alt flex items-center gap-2">
         <p>{block.brand}</p> | <p className="text-tx-neutral">{block.total}</p>
         <p className="text-xs"> 전체 합계</p>
       </span>
       <TypeBarChart data={block.rows} />
       <section className="w-full mt-5 overflow-hidden border border-gray-200 rounded-xl">
-        <div className="flex text-xs font-semibold items-center justify-center gap-5 p-4 bg-fill-primary text-white h-9 rounded-t-xl">
+        <div className="flex text-xs font-semibold items-center justify-center gap-3 p-4 bg-fill-primary text-white h-9 rounded-t-xl">
           <span className="flex-1 text-center">카테고리</span>
           <span className="flex-1 text-center">합계(SKU)</span>
           <span className="flex-1 text-center">비중</span>
@@ -44,13 +45,13 @@ function NewTypeBox({ block }: Props) {
 
             return (
               <div key={row.category} className="bg-white">
-                <div className="flex items-center gap-5 px-4 py-3">
-                  <div className="flex items-center justify-start flex-1">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex items-center justify-start flex-1 min-w-0">
                     <span
                       className="inline-block w-3 h-3 mr-2 rounded-full"
                       style={{ backgroundColor: color }}
                     />
-                    <span className="text-tx-alt">{row.category}</span>
+                    <span className="truncate text-tx-alt" title={row.category}>{row.category}</span>
                   </div>
                   <div className="flex-1 text-center text-tx-alt">
                     {row.count?.toLocaleString?.() ?? row.count}
@@ -63,7 +64,7 @@ function NewTypeBox({ block }: Props) {
                       <button
                         type="button"
                         onClick={() => toggleRow(row.category)}
-                        className="ml-4 text-[#6B7A99] duration-200"
+                        className="ml-1 shrink-0 text-[#6B7A99] duration-200"
                         aria-label="toggle"
                         aria-expanded={opened}
                       >

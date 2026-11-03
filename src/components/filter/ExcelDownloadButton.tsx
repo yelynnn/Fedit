@@ -1,3 +1,4 @@
+import { useUIStore } from "@/stores/UIStore";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEffect, useRef, useState } from "react";
 import { useFilterStore } from "@/stores/FilterStore";
@@ -114,6 +115,10 @@ function ExcelDownloadButton() {
   const currentPlan = useSubscriptionStore((s) =>
     toBillingPlan(getEffectivePlan(s.subscription)),
   );
+  // 무료체험을 아직 시작하지 않은 고객 — 체험에서도 엑셀 다운로드(1회)가 되니, 누르면 무료체험 시작 창을 띄운다
+  const trialNotStarted = useSubscriptionStore((s) => getEffectivePlan(s.subscription) === "none");
+  const trialing = useSubscriptionStore((s) => s.subscription?.status === "trial");
+  const openTrialModal = useUIStore((s) => s.openTrialModal);
   const {
     selectedColors,
     selectedGenders,
@@ -379,7 +384,7 @@ function ExcelDownloadButton() {
   // 브랜드 여러 개 선택(Basic)도 비활성으로 두지 않는다 — 관심 브랜드가 자동으로
   // 전부 선택돼 있어서 꺼진 버튼만 보면 뭘 해야 할지 몰랐다. 누르면 안내를 띄운다.
   const isDownloadDisabled =
-    isFree ||
+    (isFree && !trialNotStarted) ||
     isBasicUsageLoading ||
     isBasicLimitReached ||
     isProUsageLoading ||
@@ -396,6 +401,10 @@ function ExcelDownloadButton() {
   }, [showMultiTargetNotice]);
 
   const handleDownloadClick = async () => {
+    if (trialNotStarted) {
+      openTrialModal();
+      return;
+    }
     if (isDownloadDisabled) return;
     if (isBasicMultiTargetBlocked) {
       setShowMultiTargetNotice(true);
@@ -501,14 +510,18 @@ function ExcelDownloadButton() {
 
   // 호버 안내 말풍선 문구 — 요금제별 한도와, 지금 못 받는 이유
   const usageText = usage ? ` (이번 달 ${usage.used}/${usage.limit}회)` : "";
-  const hoverNotice = isFree
+  const hoverNotice = trialNotStarted
+    ? "무료체험을 시작하면 엑셀로 브랜드 상품 데이터를 받을 수 있어요"
+    : isFree
     ? "엑셀 다운로드는 Basic 요금제부터 이용할 수 있어요"
     : isBasicLike
       ? isBasicLimitReached
         ? `월 다운로드 횟수 ${usage?.limit ?? 3}회를 모두 사용했어요`
         : isBasicMultiTargetBlocked
-          ? `Basic 요금제는 브랜드 1개씩 받을 수 있어요. 브랜드 필터에서 1개만 선택해 주세요${usageText}`
-          : `Basic 요금제는 한 번에 브랜드 1개만, 월 ${usage?.limit ?? 3}회까지 다운로드할 수 있어요${usageText}`
+          ? `${trialing ? "무료체험" : "Basic 요금제"}는 브랜드 1개씩 받을 수 있어요. 브랜드 필터에서 1개만 선택해 주세요${usageText}`
+          : trialing
+            ? `무료체험은 한 번에 브랜드 1개씩 받을 수 있어요${usageText}`
+            : `Basic 요금제는 한 번에 브랜드 1개만, 월 ${usage?.limit ?? 3}회까지 다운로드할 수 있어요${usageText}`
       : isPro
         ? isProLimitReached
           ? `월 다운로드 횟수 ${usage?.limit ?? 30}회를 모두 사용했어요`

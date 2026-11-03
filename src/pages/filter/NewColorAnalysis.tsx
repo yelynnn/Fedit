@@ -11,6 +11,8 @@ import TrendColorBox, {
 } from "@/components/color/TrendColorBox";
 import { useFilterStore, useFilterStoreHydrated } from "@/stores/FilterStore";
 import { GetColorGraph, GetTrendColor } from "@/apis/ColorAPI";
+import AnalysisDemoBanner from "@/components/common/AnalysisDemoBanner";
+import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
 import type { BrandColorData, TrendColorItem } from "@/apis/ColorAPI";
 
 const toTrendColorData = (item: TrendColorItem): TrendColorData => ({
@@ -35,6 +37,33 @@ type TreeMapEntry = {
   data: { name: string; size: number; fill: string }[];
 };
 
+// 예시 화면의 "신규 주목 색상" — 예시 브랜드는 최근 증가율 조건을 못 넘어 API 가 비어 올 수 있어서 예시(목) 데이터로 채운다.
+// 이 카드는 비중은 작아도 여러 브랜드가 동시에 새로 내기 시작한 급상승 색이라, 그런 모양(소량·높은 증가율)으로 만든다.
+const demoBrands = (rows: [string, number, number][]) =>
+  rows.map(([brandName, percent, itemCount]) => ({ brandName, percent, itemCount }));
+const DEMO_TREND_COLORS: TrendColorData[] = [
+  {
+    rank: 1, colorName: "버터 옐로우", colorHex: "#F1DE9C", score: 94, growthRate: 186, competitorCount: 4,
+    averagePercent: 4, totalItemCount: 61,
+    brands: demoBrands([["COS", 6, 21], ["ZARA", 5, 18], ["H&M", 3, 14], ["마시모두띠", 2, 8]]),
+  },
+  {
+    rank: 2, colorName: "체리 레드", colorHex: "#8B1E2D", score: 89, growthRate: 142, competitorCount: 4,
+    averagePercent: 3, totalItemCount: 47,
+    brands: demoBrands([["ZARA", 5, 17], ["마시모두띠", 3, 12], ["H&M", 2, 11], ["COS", 2, 7]]),
+  },
+  {
+    rank: 3, colorName: "세이지 그린", colorHex: "#9FAF8C", score: 83, growthRate: 117, competitorCount: 3,
+    averagePercent: 3, totalItemCount: 33,
+    brands: demoBrands([["COS", 4, 14], ["마시모두띠", 3, 11], ["H&M", 2, 8]]),
+  },
+  {
+    rank: 4, colorName: "아이시 블루", colorHex: "#BCD6E8", score: 78, growthRate: 96, competitorCount: 3,
+    averagePercent: 2, totalItemCount: 26,
+    brands: demoBrands([["H&M", 3, 12], ["ZARA", 2, 9], ["COS", 1, 5]]),
+  },
+];
+
 const toTreeMapEntry = (brandData: BrandColorData): TreeMapEntry => ({
   brand: brandData.brand === "ALL" ? "전체" : brandData.brand,
   data: brandData.colors.map((c) => ({
@@ -44,8 +73,10 @@ const toTreeMapEntry = (brandData: BrandColorData): TreeMapEntry => ({
   })),
 });
 
-function NewColorAnalysis() {
-  const { brandList } = useFilterStore();
+// demo: 멤버십 전 고객의 예시 화면 — 필터 대신 예시 브랜드(ANALYSIS_DEMO_BRANDS)로 조회하고 브랜드 추가는 숨긴다
+function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
+  const { brandList: filterBrands } = useFilterStore();
+  const brandList = demo ? ANALYSIS_DEMO_BRANDS : filterBrands;
   // localStorage 복원 전엔 brandList가 빈 배열이라, 실제 저장된 브랜드
   // 필터로 바뀌기 전에 "전체 브랜드" 조회가 한 번 먼저 나가는 걸 막는다.
   const isFilterHydrated = useFilterStoreHydrated();
@@ -59,29 +90,35 @@ function NewColorAnalysis() {
   const [trendColors, setTrendColors] = useState<TrendColorData[]>([]);
 
   useEffect(() => {
-    if (!isFilterHydrated) return;
+    if (!isFilterHydrated && !demo) return;
     const load = async () => {
       try {
-        const res = await GetColorGraph();
+        const res = await GetColorGraph(demo ? ANALYSIS_DEMO_BRANDS : undefined);
         const mapped = Array.isArray(res?.brands)
           ? res.brands.map(toTreeMapEntry)
           : [];
         setAllBrandData(mapped);
 
         const initial = mapped.find((b) => b.brand === "전체") ?? mapped[0];
-        if (initial) setDisplayTreeMapBrands([initial]);
+        // 예시 화면은 브랜드 2개를 골라 비교하는 실제 사용 모습으로 — 전체 옆에 예시 브랜드 앞의 2개를 붙인다
+        const demoPair = demo
+          ? ANALYSIS_DEMO_BRANDS.map((name) => mapped.find((b) => b.brand === name))
+              .filter((b): b is TreeMapEntry => !!b && b.data.length > 0)
+              .slice(0, 2)
+          : [];
+        if (initial) setDisplayTreeMapBrands([initial, ...demoPair]);
       } catch {
         // 색상 그래프 로드 실패 시 빈 배열 유지
       }
     };
     load();
-  }, [brandList, isFilterHydrated]);
+  }, [brandList, isFilterHydrated, demo]);
 
   useEffect(() => {
-    if (!isFilterHydrated) return;
+    if (!isFilterHydrated && !demo) return;
     const load = async () => {
       try {
-        const res = await GetTrendColor();
+        const res = await GetTrendColor(demo ? ANALYSIS_DEMO_BRANDS : undefined);
         setTrendColors(
           Array.isArray(res?.trend_color)
             ? res.trend_color.map(toTrendColorData)
@@ -92,7 +129,7 @@ function NewColorAnalysis() {
       }
     };
     load();
-  }, [brandList, isFilterHydrated]);
+  }, [brandList, isFilterHydrated, demo]);
 
   const handleCompareSubmit = (brands: string[]) => {
     brands.forEach((brandName) => {
@@ -115,6 +152,11 @@ function NewColorAnalysis() {
 
   return (
     <div className="px-14">
+      {demo && (
+        <div className="mt-2">
+          <AnalysisDemoBanner brandNames={ANALYSIS_DEMO_BRANDS} />
+        </div>
+      )}
       {/* <div className="flex items-center justify-between w-full px-3 py-2 border rounded-lg cursor-pointer bg-surface-base border-surface-base">
         <div className="flex items-center gap-9">
           <span className="text-sm font-medium text-tx-alt">시즌선택</span>
@@ -201,7 +243,7 @@ function NewColorAnalysis() {
           ))}
 
           {/* 브랜드 추가하기 버튼 */}
-          {displayTreeMapBrands.length < 3 && (
+          {!demo && displayTreeMapBrands.length < 3 && (
             <button
               onClick={() => setCompareModalOpen(true)}
               className={`
@@ -238,7 +280,7 @@ function NewColorAnalysis() {
         모든 경쟁사가 소량으로 동시 출시 중인 유행 색상입니다.
       </p>
       <div className="grid items-start grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {trendColors.map((item) => (
+        {(demo && trendColors.length === 0 ? DEMO_TREND_COLORS : trendColors).map((item) => (
           <TrendColorBox key={item.rank} data={item} />
         ))}
       </div>

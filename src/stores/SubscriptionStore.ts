@@ -25,6 +25,21 @@ export const getEffectivePlan = (
 export const isTrial = (subscription: Subscription | null): boolean =>
   subscription?.status === "trial";
 
+// 요금제 개편(Trial 을 따로 두고 색상·유형 분석을 Basic 결제부터 여는 정책) 적용 시점.
+// 이 전에 Basic 5일 체험을 시작한 고객은 남은 체험 기간 동안 Basic 결제 고객과 같은 기능을 쓴다.
+export const TRIAL_POLICY_FROM = new Date("2026-11-04T00:00:00+09:00");
+const TRIAL_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+
+/** 개편 전에 시작한 Basic 체험인지(체험 종료일 - 5일 < 적용 시점). 종료일을 모르면 개편 전으로 본다 */
+export const isLegacyBasicTrial = (subscription: Subscription | null): boolean => {
+  if (subscription?.status !== "trial" || !isBasicPlanValue(subscription.plan)) return false;
+  const ends = subscription.trialEndsAt ?? subscription.nextBillingDate;
+  if (!ends) return true;
+  const t = new Date(ends).getTime();
+  return Number.isNaN(t) || t - TRIAL_DAYS_MS < TRIAL_POLICY_FROM.getTime();
+};
+const isBasicPlanValue = (plan: Subscription["plan"] | undefined) => plan === "basic" || plan === "basic_secret";
+
 // 무료 체험이 끝나는 날(ISO). 백엔드가 trialEndsAt를 아직 안 내려주면
 // nextBillingDate로 폴백한다.
 export const getTrialEndsAt = (
@@ -59,14 +74,15 @@ export const isLockedPlan = (effective: EffectivePlan): boolean =>
 // 보고 있어서, 관리자면 subscription 자체를 "모든 기능이 열린 Enterprise
 // 이용 중"으로 바꿔서 내보낸다 — 잠금·업그레이드 유도가 한 번에 꺼진다.
 // 실제 서버 구독 정보는 rawSubscription에 그대로 둔다.
-// 로컬 개발 전용 — 요금제 상태별 화면을 지금 로그인한 계정으로 확인한다.
+// 요금제 미리보기 — 요금제 상태별 화면을 지금 로그인한 계정으로 확인한다.
+// 로컬 개발 화면은 누구나, 배포 사이트는 관리자 계정에서만 켜진다(일반 회원이 붙이면 무시).
 //   /?simulatePlan=none     체험 미시작(not_started)
 //   /?simulatePlan=expired  체험·구독 만료
 //   /?simulatePlan=trial | basic | pro | enterprise
+//   /?simulatePlan=legacy_trial  개편 전에 시작한 Basic 체험(색상·유형 분석 열림)
 // 화면 판정만 바뀌고 서버가 주는 데이터(상품 범위 등)는 실제 계정 그대로다.
-// 배포(프로덕션) 빌드에서는 동작하지 않는다.
-export const SIMULATED_SUBSCRIPTION: Subscription | null = (() => {
-  if (!import.meta.env.DEV || typeof window === "undefined") return null;
+const REQUESTED_SIMULATION: Subscription | null = (() => {
+  if (typeof window === "undefined") return null;
   const plan = new URLSearchParams(window.location.search).get("simulatePlan");
   const base = { amount: 0, hasBillingKey: false, nextBillingDate: null, cancelAtPeriodEnd: false, downgradePending: false };
   switch (plan) {
@@ -74,8 +90,14 @@ export const SIMULATED_SUBSCRIPTION: Subscription | null = (() => {
       return { ...base, plan: "basic", status: "not_started" };
     case "expired":
       return { ...base, plan: "basic", status: "expired" };
-    case "trial":
-      return { ...base, plan: "basic", status: "trial" };
+    case "trial": {
+      // 개편 뒤에 시작한 체험(Trial) — 종료일도 채운다(시작일은 오늘과 개편 시점 중 늦은 날)
+      const start = Math.max(Date.now(), TRIAL_POLICY_FROM.getTime());
+      return { ...base, plan: "basic", status: "trial", trialEndsAt: new Date(start + 5 * 864e5).toISOString() };
+    }
+    case "legacy_trial":
+      // 개편 전에 시작한 Basic 체험(남은 기간 Basic 기능 그대로) — 이틀 전에 시작한 것으로
+      return { ...base, plan: "basic", status: "trial", trialEndsAt: new Date(TRIAL_POLICY_FROM.getTime() + 2 * 864e5).toISOString() };
     case "basic":
     case "pro":
     case "enterprise":
@@ -84,13 +106,23 @@ export const SIMULATED_SUBSCRIPTION: Subscription | null = (() => {
       return null;
   }
 })();
-if (SIMULATED_SUBSCRIPTION) {
-  console.info(`[dev] simulatePlan 적용 중: ${SIMULATED_SUBSCRIPTION.plan}/${SIMULATED_SUBSCRIPTION.status}`);
-}
+/** 주소에 붙인 요금제 미리보기 이름(관리자 여부와 무관) */
+export const SIMULATE_PLAN_PARAM =
+  typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("simulatePlan");
 
-// 화면에 쓸 구독: 개발용 시뮬레이션 > 관리자 > 실제 구독
+const simulationFor = (isAdmin: boolean) => (import.meta.env.DEV || isAdmin ? REQUESTED_SIMULATION : null);
+
+/** 지금 적용 중인 요금제 미리보기(없으면 null) — 배포 사이트는 관리자로 확인된 뒤에만 */
+export const getSimulatedSubscription = (): Subscription | null =>
+  simulationFor(useSubscriptionStore.getState().isAdmin);
+
+/** 컴포넌트용 — 관리자 확인이 끝나면 다시 그린다 */
+export const useSimulatedSubscription = (): Subscription | null =>
+  useSubscriptionStore((s) => simulationFor(s.isAdmin));
+
+// 화면에 쓸 구독: 요금제 미리보기 > 관리자 > 실제 구독
 const effectiveSubscription = (raw: Subscription | null, isAdmin: boolean) =>
-  SIMULATED_SUBSCRIPTION ?? (isAdmin ? ADMIN_SUBSCRIPTION : raw);
+  simulationFor(isAdmin) ?? (isAdmin ? ADMIN_SUBSCRIPTION : raw);
 
 const ADMIN_SUBSCRIPTION: Subscription = {
   plan: "enterprise",

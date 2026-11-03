@@ -100,6 +100,7 @@ const FEATURE_NAME_BY_TAB: Record<string, string> = {
   "색상 분석": "color_analysis",
   "유형 분석": "type_analysis",
   "패션쇼 분석": "fashion_show",
+  "고객 분석": "customer_analysis",
   "내 보드": "my_board",
 };
 

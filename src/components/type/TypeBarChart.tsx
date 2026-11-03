@@ -20,7 +20,7 @@ type RawRow = {
 };
 
 const COLORS = ["#60A5FA", "#F87171", "#34D399", "#22D3EE", "#FBBF24"];
-const WIDTH = 434;
+// 폭은 부모(유형 분석 카드)에 맞춰 늘고 준다 — 높이만 고정
 const HEIGHT = 40;
 const RADIUS = 8;
 
@@ -143,7 +143,7 @@ export default function TypeBarChart({ data }: { data: RawRow[] }) {
 
   const options: ChartOptions<"bar"> = useMemo(
     () => ({
-      responsive: false,
+      responsive: true,
       maintainAspectRatio: false,
       indexAxis: "y",
       plugins: {
@@ -163,8 +163,8 @@ export default function TypeBarChart({ data }: { data: RawRow[] }) {
   );
 
   return (
-    <div className="relative" style={{ width: WIDTH, height: HEIGHT }}>
-      <Bar data={chartData} options={options} width={WIDTH} height={HEIGHT} />
+    <div className="relative w-full" style={{ height: HEIGHT }}>
+      <Bar data={chartData} options={options} />
       {tooltip && (
         <CustomTooltip
           category={tooltip.category}

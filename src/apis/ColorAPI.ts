@@ -69,8 +69,9 @@ const GetColorRelatedProducts = async (params: {
   return Array.isArray(response.data) ? response.data : [];
 };
 
-const GetColorGraph = async (): Promise<ColorGraphResponse> => {
-  const { brandList } = useFilterStore.getState();
+// brands 를 주면 필터 대신 그 브랜드로(예시 화면)
+const GetColorGraph = async (brands?: string[]): Promise<ColorGraphResponse> => {
+  const brandList = brands ?? useFilterStore.getState().brandList;
   const query = brandList.join(",");
   const response = await axiosInstance.get("/color/graph", {
     params: { brand: query },
@@ -78,8 +79,8 @@ const GetColorGraph = async (): Promise<ColorGraphResponse> => {
   return response.data;
 };
 
-const GetTrendColor = async (): Promise<TrendColorResponse> => {
-  const { brandList } = useFilterStore.getState();
+const GetTrendColor = async (brands?: string[]): Promise<TrendColorResponse> => {
+  const brandList = brands ?? useFilterStore.getState().brandList;
   const query = brandList.join(",");
   const response = await axiosInstance.get("/color/trendColor", {
     params: { brand: query },

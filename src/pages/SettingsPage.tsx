@@ -33,6 +33,8 @@ import {
   toBillingPlan,
   isTrial,
   getTrialEndsAt,
+  useSimulatedSubscription,
+  isLegacyBasicTrial,
 } from "@/stores/SubscriptionStore";
 import cancelIcon from "@/assets/planCard/cancel.svg";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
@@ -78,24 +80,6 @@ const PLAN_DEFS: {
   inherits?: string;
   features: { ok: boolean; text: string }[];
 }[] = [
-  // 무료 체험은 이제 별도 요금제가 아니라 "Basic 5일 무료 체험"이라 비교표
-  // 열에서는 뺀다. Basic 열 버튼이 체험 시작을 겸한다.
-  // {
-  //   key: "free",
-  //   label: "무료 체험",
-  //   badge: null,
-  //   originalPrice: null,
-  //   discount: null,
-  //   price: "0원",
-  //   sub: "14일 · Basic 기능 일부 (브랜드 제한)",
-  //   features: [
-  //     { ok: true, text: "관심 브랜드 최대 3개 모니터링" },
-  //     { ok: true, text: "플랫폼별 키워드 분석 제공" },
-  //     { ok: true, text: "데일리 트렌드 뉴스레터 제공" },
-  //     { ok: false, text: "유형/색상/패션쇼 분석 미지원" },
-  //     { ok: false, text: "신규 브랜드 분석 신청 미지원" },
-  //   ],
-  // },
   {
     key: "basic",
     label: "Basic",
@@ -110,8 +94,10 @@ const PLAN_DEFS: {
       { ok: true, text: `경쟁사 모니터링 ${REQUIRED_COUNT}개 브랜드` },
       { ok: true, text: "크롬 확장 월 100개 상품 분석" },
       { ok: true, text: "엑셀 다운로드 월 3회" },
-      { ok: true, text: "브랜드 맞춤 리포트 기본 분석" },
-      { ok: false, text: "유형·색상·패션쇼 분석" },
+      { ok: true, text: "브랜드 맞춤 리포트 월 1회 · 일부 공개" },
+      { ok: true, text: "유형·색상 분석" },
+      { ok: false, text: "패션쇼 분석" },
+      { ok: false, text: "고객·리뷰 분석" },
       { ok: false, text: "월간 트렌드 리포트 · AI Agent" },
     ],
   },
@@ -130,7 +116,8 @@ const PLAN_DEFS: {
       { ok: true, text: "크롬 확장 월 300개 상품 분석" },
       { ok: true, text: "엑셀 다운로드 월 30회" },
       { ok: true, text: "유형·색상·패션쇼 분석" },
-      { ok: true, text: "브랜드 맞춤 리포트 전체 분석" },
+      { ok: true, text: "고객·리뷰 분석" },
+      { ok: true, text: "브랜드 맞춤 리포트 월 1회 · 전체" },
       { ok: false, text: "월간 트렌드 리포트" },
       { ok: false, text: "AI Agent" },
     ],
@@ -149,12 +136,76 @@ const PLAN_DEFS: {
       { ok: true, text: "크롬 확장 무제한 상품 분석" },
       { ok: true, text: "엑셀 다운로드 무제한" },
       { ok: true, text: "유형·색상·패션쇼 분석" },
-      { ok: true, text: "브랜드 맞춤 리포트 전체 분석" },
+      { ok: true, text: "고객·리뷰 분석" },
+      { ok: true, text: "브랜드 맞춤 리포트 월 1회 · 전체" },
       { ok: true, text: "월간 트렌드 리포트" },
       { ok: true, text: "AI Agent" },
     ],
   },
 ];
+
+// Trial(무료 체험) — 결제 플랜이 아니라 Basic 5일 무료 체험(혜택 코드 가입자는 Pro 체험). 버튼이 체험 시작을 겸한다.
+// 분석 화면은 예시 화면만 열려서 표에는 미제공(✕)으로 적는다.
+const TRIAL_PLAN_DEF: (typeof PLAN_DEFS)[number] = {
+  key: "free",
+  label: "Trial",
+  badge: null,
+  originalPrice: null,
+  discount: null,
+  price: "0원",
+  sub: "",
+  features: [
+    { ok: true, text: "1인 이용" },
+    { ok: true, text: "경쟁사 모니터링 3개 브랜드" },
+    { ok: true, text: "크롬 확장 30개 상품 분석" },
+    { ok: true, text: "엑셀 다운로드 1회" },
+    { ok: true, text: "브랜드 맞춤 리포트 1회 · 일부 공개" },
+    { ok: false, text: "유형·색상·패션쇼 분석" },
+    { ok: false, text: "고객·리뷰 분석" },
+  ],
+};
+
+// 요금제 비교 열 — 4개(Trial 포함)면 모달 폭에 다 안 들어가서 가로로 넘겨 본다(열 최소 232px, 양옆 화살표).
+// 3개일 때는 넘칠 일이 없어 화살표도 안 보인다.
+function PlanScroller({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+  const update = () => {
+    const el = ref.current;
+    if (!el) return;
+    setEdge({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+  };
+  useEffect(() => {
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  const scrollBy = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * 248, behavior: "smooth" });
+  const Arrow = ({ dir }: { dir: 1 | -1 }) => (
+    <button
+      type="button"
+      onClick={() => scrollBy(dir)}
+      aria-label={dir === 1 ? "다음 요금제" : "이전 요금제"}
+      className={`absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-line-divider bg-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:bg-surface-base ${dir === 1 ? "right-2" : "left-2"}`}
+    >
+      <Icon icon={dir === 1 ? "ph:arrow-right" : "ph:arrow-left"} className="h-5 w-5 text-[#3D3F41]" />
+    </button>
+  );
+  return (
+    <div className="relative">
+      <div
+        id="plan-comparison"
+        ref={ref}
+        onScroll={update}
+        className="flex snap-x snap-mandatory overflow-x-auto border-t border-line-divider [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {children}
+      </div>
+      {edge.left && <Arrow dir={-1} />}
+      {edge.right && <Arrow dir={1} />}
+    </div>
+  );
+}
 
 // basic_secret은 Basic과 랭크가 같다(가격만 다른 동일 기능 플랜).
 // enterprise는 결제 대상이 아니지만 비교표 정렬(다운/업그레이드 판정)에 쓰여
@@ -301,7 +352,9 @@ export default function SettingsPage() {
 
   const userEmail = useUserStore((s) => s.email);
   // 관리자는 요금제와 관계없이 모든 기능을 쓴다 — 결제·해지 버튼을 숨긴다
-  const isAdmin = useUserStore((s) => s.admin);
+  // 개발 화면 ?simulatePlan= 중에는 관리자도 그 요금제 고객처럼 본다(Trial 열·결제 버튼 확인용)
+  const simulated = useSimulatedSubscription();
+  const isAdmin = useUserStore((s) => s.admin) && !simulated;
 
   useEffect(() => {
     fetchSubscription();
@@ -355,6 +408,11 @@ export default function SettingsPage() {
           : plan,
       )
     : basePlanDefs;
+
+  // Trial 열 — 아직 체험을 시작하지 않은 사람(처음 가입)에게만 비교표 맨 앞에 붙인다.
+  // 체험 중·결제·만료 고객은 지금처럼 3열. 열이 4개면 모달 폭을 넘어 가로로 넘겨 본다(PlanScroller).
+  const showTrialColumn = effectivePlan === "none" && !isAdmin;
+  const comparePlanDefs = showTrialColumn ? [TRIAL_PLAN_DEF, ...planDefs] : planDefs;
 
   // 무료 체험 때 열리는 플랜 — 기본은 Basic, 혜택 코드 가입자는 코드 설정(예: Pro).
   const trialPlanKey: "basic" | "pro" =
@@ -1322,8 +1380,12 @@ export default function SettingsPage() {
                           {effectivePlan === "none" ||
                           effectivePlan === "expired"
                             ? "요금제 미선택"
-                            : PLAN_DEFS.find((p) => p.key === currentPlan)
-                                ?.label}
+                            : // Basic 무료체험은 요금제 표의 Trial 로 부른다(혜택 코드 Pro 체험은 Pro 로,
+                              // 개편 전에 시작한 Basic 체험은 Basic 기능 그대로라 Basic 으로)
+                              trialing && currentPlan === "basic" && !isLegacyBasicTrial(subscription)
+                              ? "Trial"
+                              : PLAN_DEFS.find((p) => p.key === currentPlan)
+                                  ?.label}
                         </p>
                         {effectivePlan === "none" ||
                         effectivePlan === "expired" ? (
@@ -1422,11 +1484,8 @@ export default function SettingsPage() {
                   모든 요금제 비교하기
                 </h3>
 
-                <div
-                  id="plan-comparison"
-                  className="flex overflow-hidden border-t border-line-divider"
-                >
-                  {planDefs.map((plan, index, arr) => {
+                <PlanScroller>
+                  {comparePlanDefs.map((plan, index, arr) => {
                     // Free는 currentPlan(무료체험 미시작도 "free"로 뭉개진 값)이
                     // 아니라 effectivePlan으로 실제 무료체험 이용 중인지를 봐야
                     // "요금제 미선택" 상태에서 현재 플랜으로 잘못 표시되지 않는다.
@@ -1451,8 +1510,8 @@ export default function SettingsPage() {
                     const isContactOnly = plan.key === "enterprise";
                     // Basic 열은 체험 미시작이면 "5일 무료 체험", 그 외엔 결제.
                     // (혜택 코드 가입자는 체험 플랜 열 — 예: Pro 열이 체험 시작을 겸한다.)
-                    const isBasicTrialStart =
-                      plan.key === trialPlanKey && isTrialAvailable;
+                    // 체험 시작은 Trial 열이 맡는다 — 나머지 열 버튼은 결제(업그레이드)만.
+                    const isBasicTrialStart = false;
                     const btnLabel = isCurrent
                       ? "현재 플랜"
                       : isContactOnly
@@ -1463,7 +1522,7 @@ export default function SettingsPage() {
                             ? "결제하기"
                             : plan.key === "free"
                               ? isTrialAvailable
-                                ? "무료체험 시작하기"
+                                ? trialStartLabel
                                 : "무료 체험"
                               : plan.key === "basic" || plan.key === "pro"
                                 ? plan.key === "basic" && isSecretEntry
@@ -1478,7 +1537,7 @@ export default function SettingsPage() {
                     return (
                       <div
                         key={plan.label}
-                        className={`flex flex-col flex-1 ${plan.key === "pro" ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
+                        className={`flex min-w-[232px] flex-1 snap-start flex-col ${plan.key === "pro" ? "bg-white" : "bg-[#F9FAFB]"} ${index < arr.length - 1 ? "border-r border-line-divider" : ""}`}
                         style={{ padding: "20px 16px", gap: 20 }}
                       >
                         {/* 플랜명 + 배지 */}
@@ -1521,6 +1580,10 @@ export default function SettingsPage() {
                             가격+안내문 2줄)만 아래에 여백이 생겨 버튼
                             위치가 맞춰지게 한다. */}
                         <div className="flex min-h-[68px] flex-col gap-0.5">
+                          {/* Trial 은 정가·할인 줄이 없어도 같은 높이를 비워 0원이 Basic·Pro 가격 줄과 나란히 오게 */}
+                          {!plan.originalPrice && plan.key === "free" && (
+                            <div className="min-h-[34px]" aria-hidden />
+                          )}
                           {plan.originalPrice && (
                             <div className="flex min-h-[34px] flex-col justify-center gap-0.5">
                               <span className="text-xs whitespace-nowrap line-through text-[#A1A3A5]">
@@ -1541,7 +1604,7 @@ export default function SettingsPage() {
                             )}
                           </p>
                           {(plan.key === "free" ||
-                            plan.key === "enterprise") && (
+                            plan.key === "enterprise") && plan.sub && (
                             <p className="mt-1.5 text-[12px] font-medium leading-[133%] text-[#6F7173]">
                               {plan.sub}
                             </p>
@@ -1639,7 +1702,7 @@ export default function SettingsPage() {
                       </div>
                     );
                   })}
-                </div>
+                </PlanScroller>
 
                 {/* 크롬 확장 설치 안내 — 웹스토어 상세 페이지를 새 탭으로 연다 */}
                 <div className="flex items-center justify-between gap-6 p-6 mt-6 rounded-2xl bg-surface-base">

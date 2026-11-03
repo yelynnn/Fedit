@@ -5,6 +5,7 @@ import { Spin } from "@/components/agent/AgentV2Answer";
 import { useAgentConversation } from "@/components/agent/useAgentConversation";
 import { useChatStore } from "@/stores/ChatStore";
 import AgentHistoryPanel from "@/components/agent/AgentHistoryPanel";
+import AgentIntroModal from "@/components/agent/AgentIntroModal";
 
 // 사이드바 "FEDI Agent" 전체화면. 플로팅 패널과 같은 현재 대화를 쓰고,
 // 설정 > FEDI 채팅 목록에서 대화를 고르면 이 화면으로 열린다.
@@ -167,6 +168,12 @@ function ConversationView({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isEmpty = !isLoadingHistory && messages.length === 0 && !isLoading;
+  const isLockedPlan = planLoaded && !isEnterprise;
+  const [introOpen, setIntroOpen] = useState(false);
+  // Enterprise 가 아닌 고객은 Agent 화면에 들어올 때마다 소개 창을 띄운다(닫은 뒤엔 "FEDI Agent 알아보기"로 다시)
+  useEffect(() => {
+    if (isLockedPlan) setIntroOpen(true);
+  }, [isLockedPlan]);
   const title = conv?.title ?? "새 대화";
 
   useEffect(() => {
@@ -340,6 +347,16 @@ function ConversationView({
           <h1 className="mb-8 text-[26px] font-bold text-[#111] tracking-[-0.01em]">
             어떤 패션 기획을 진행할까요?
           </h1>
+          {isLockedPlan && (
+            <button
+              type="button"
+              onClick={() => setIntroOpen(true)}
+              className="mb-4 -mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#EEF0FF] px-3 py-1.5 text-[13px] font-semibold text-[#4F46E5] hover:bg-[#E3E5FF]"
+            >
+              <SparkIcon size={14} color="currentColor" />
+              FEDI Agent 알아보기 · 예시 답변 보기
+            </button>
+          )}
           <div className="w-full max-w-[900px]">
             <Composer
               value={input}
@@ -423,6 +440,7 @@ function ConversationView({
           </div>
         </>
       )}
+      {introOpen && <AgentIntroModal onClose={() => setIntroOpen(false)} />}
     </div>
   );
 }

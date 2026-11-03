@@ -1,11 +1,35 @@
+import { useState } from "react";
 import { useUIStore } from "@/stores/UIStore";
+import { getEffectivePlan, useSubscriptionStore } from "@/stores/SubscriptionStore";
+import { PostStartTrial } from "@/apis/BillingAPI";
 
 // 무료체험 미시작(not_started)·만료(expired) 상태에서 블러 처리된 콘텐츠
 // 위에 띄우는 잠금 카드. 배경 자체는 opacity+blur로 콘텐츠 쪽에서 처리하므로
 // 여기서는 딤 처리 없이 카드만 중앙에 띄운다. 부모 요소에 relative를 지정하고
 // 그 안에 형제로 렌더링해서 써야 한다.
+// 아직 무료체험을 시작하지 않은 사람(처음 가입)에게는 "무료체험 시작하기"로 바로 체험을 시작하고
+// (설정의 체험 시작과 같은 흐름 — 시작 뒤 관심 브랜드 선택 창), 체험이 끝난 사람에게는 업그레이드를 안내한다.
 export default function SubscriptionLockOverlay() {
   const openSettingsModal = useUIStore((s) => s.openSettingsModal);
+  const openInterestBrandModal = useUIStore((s) => s.openInterestBrandModal);
+  const subscription = useSubscriptionStore((s) => s.subscription);
+  const fetchSubscription = useSubscriptionStore((s) => s.fetchSubscription);
+  const notStarted = getEffectivePlan(subscription) === "none";
+  const [starting, setStarting] = useState(false);
+
+  const startTrial = async () => {
+    if (starting) return;
+    setStarting(true);
+    try {
+      await PostStartTrial();
+      await fetchSubscription();
+      openInterestBrandModal();
+    } catch (error: any) {
+      alert(error?.message || "무료체험 시작에 실패했습니다.");
+    } finally {
+      setStarting(false);
+    }
+  };
 
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center">
@@ -32,8 +56,8 @@ export default function SubscriptionLockOverlay() {
 
           <div className="flex flex-col justify-center w-full h-10">
             <p className="text-center type-body-small text-tx-neutral">
-              멤버십을 시작하면 브랜드 지수 · AI 상품 분석 · 전체 랭킹을 <br />
-              다시 볼 수 있어요.
+              {notStarted ? "5일 무료체험을 시작하면" : "멤버십을 시작하면"} 브랜드 지수 · AI 상품 분석 · 전체 랭킹을 <br />
+              {notStarted ? "바로 볼 수 있어요." : "다시 볼 수 있어요."}
             </p>
           </div>
         </div>
@@ -41,10 +65,11 @@ export default function SubscriptionLockOverlay() {
         <div className="flex flex-col items-end w-full gap-1">
           <button
             type="button"
-            onClick={() => openSettingsModal("구독")}
-            className="type-title-medium flex h-[46px] w-full items-center justify-center gap-1 rounded-md bg-fill-primary text-tx-inverse"
+            onClick={() => (notStarted ? startTrial() : openSettingsModal("구독"))}
+            disabled={starting}
+            className="type-title-medium flex h-[46px] w-full items-center justify-center gap-1 rounded-md bg-fill-primary text-tx-inverse disabled:opacity-60"
           >
-            플랜 업그레이드하기
+            {notStarted ? (starting ? "시작하는 중…" : "무료체험 시작하기") : "플랜 업그레이드하기"}
           </button>
 
           <button

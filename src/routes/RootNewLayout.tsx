@@ -13,6 +13,8 @@ import CompareBar from "@/components/compare/CompareBar";
 import ComparePage from "@/components/compare/ComparePage";
 import { useCompareStore } from "@/stores/CompareStore";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
+import TrialStartModal from "@/components/billing/TrialStartModal";
+import { SIMULATE_PLAN_PARAM, useSimulatedSubscription } from "@/stores/SubscriptionStore";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import { useFilterStore } from "@/stores/FilterStore";
 import { CaptureGuard } from "@/capture-guard";
@@ -54,6 +56,13 @@ function RootNewLayout() {
   const isAgentPage = selectedTab === AGENT_TAB;
   const isReleased = useFeatureReleased();
   const notice = useUIStore((s) => s.notice);
+  // 요금제 미리보기(?simulatePlan=) 중이면 화면 왼쪽 아래에 표시 — 실제 요금제로 착각하지 않게
+  const simulated = useSimulatedSubscription();
+  const exitSimulation = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("simulatePlan");
+    window.location.href = url.toString();
+  };
   const hideNotice = useUIStore((s) => s.hideNotice);
 
   // 미공개 기능 화면에 머물러 있으면(예: 새로고침 전에 보던 탭이 숨겨짐)
@@ -148,6 +157,13 @@ function RootNewLayout() {
 
   const handleCloseInterestBrandModal = () => {
     closeInterestBrandModal();
+    // 예시 화면 등에서 무료체험을 시작한 경우엔 보던 탭으로 돌아간다(투어 없이)
+    const { afterOnboardingTab, setAfterOnboardingTab } = useUIStore.getState();
+    if (afterOnboardingTab) {
+      setAfterOnboardingTab(null);
+      setSelectedTab(afterOnboardingTab);
+      return;
+    }
     setSelectedTab("상품 분석");
     openOnboardingTour();
   };
@@ -340,6 +356,7 @@ function RootNewLayout() {
       />
 
       <OnboardingTour />
+      <TrialStartModal />
 
       {/* FEDI Agent 플로팅 버튼 & 채팅창 — 전체화면(FEDI Agent 탭)이거나
           챗봇이 미공개 기능이면 숨김 */}
@@ -377,10 +394,21 @@ function RootNewLayout() {
       {notice && (
         <div
           role="status"
-          className="fixed z-[200] bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111214] text-white text-[14px] font-medium shadow-[0_6px_18px_0_rgba(0,0,0,0.22)]"
+          // 관심 브랜드 창 등 모달 위에도 보이게(모달 z-[9999]보다 위)
+          className="fixed z-[10001] bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111214] text-white text-[14px] font-medium shadow-[0_6px_18px_0_rgba(0,0,0,0.22)]"
         >
           <Icon icon="ph:hourglass-medium" className="w-4 h-4" />
           {notice}
+        </div>
+      )}
+
+      {simulated && (
+        <div className="fixed bottom-4 left-4 z-[10002] flex items-center gap-2 rounded-full bg-[#FFB020] px-3 py-1.5 text-[12.5px] font-semibold text-[#2A1A00] shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
+          <Icon icon="ph:eye" className="h-4 w-4" />
+          요금제 미리보기 · {SIMULATE_PLAN_PARAM}
+          <button type="button" onClick={exitSimulation} className="rounded-full bg-black/10 px-2 py-0.5 hover:bg-black/20">
+            끄기
+          </button>
         </div>
       )}
 

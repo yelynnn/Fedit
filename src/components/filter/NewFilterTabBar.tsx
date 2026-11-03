@@ -8,17 +8,27 @@ import { useProductStore } from "@/stores/ProductStore";
 import { useEffect } from "react";
 import RunwayPage from "@/pages/RunwayPage";
 import BoardsPage from "@/pages/BoardsPage";
+import CustomerAnalysisPage from "@/pages/CustomerAnalysisPage";
 import {
   useSubscriptionStore,
   isBasicPlan,
   getEffectivePlan,
+  isLegacyBasicTrial,
 } from "@/stores/SubscriptionStore";
 import ProUpgradeOverlay from "@/components/common/ProUpgradeOverlay";
+import ReportPage from "@/pages/ReportPage";
+import { useFeatureReleased } from "@/lib/features";
 import { GetBrandPicks } from "@/apis/AnalysisAPI";
 import { useUIStore } from "@/stores/UIStore";
 
 // PRO 요금제에서만 이용 가능한 탭
-const PRO_ONLY_TABS = new Set(["색상 분석", "유형 분석", "패션쇼 분석"]);
+const PRO_ONLY_TABS = new Set(["패션쇼 분석"]);
+// 멤버십(결제한 Basic 이상)부터 이용 가능한 탭 — 무료체험(trial)·미시작·만료는 잠근다
+const MEMBERSHIP_TABS = new Set(["색상 분석", "유형 분석"]);
+// 멤버십(체험 포함)부터 들어가는 탭 — 체험 전·만료면 안내 창을 띄우고, "예시 화면 보기"로 예시를 연다
+const MEMBER_ENTRY_TABS = new Set(["리포트"]);
+// 안내 창에서 예시 화면을 열 수 있는 탭
+const DEMO_TABS = new Set([...MEMBERSHIP_TABS, ...MEMBER_ENTRY_TABS]);
 
 type TabOption = { label: string; icon: string };
 
@@ -182,11 +192,28 @@ export function NewFilterTabPanels() {
     setInterestBrandPicks,
   ]);
 
+  const isProOrAbove = subscription?.plan === "pro" || subscription?.plan === "enterprise";
+  // 개편 전에 시작한 Basic 체험은 남은 기간 동안 Basic 결제 고객과 같게(색상·유형 분석 열림)
+  const isPaidBasic =
+    isLegacyBasicTrial(subscription) ||
+    (isBasicPlan(subscription?.plan) &&
+      !["trial", "not_started", "expired"].includes(subscription?.status ?? "not_started"));
   const isLocked =
     loaded &&
-    subscription?.plan !== "pro" &&
-    subscription?.plan !== "enterprise" &&
-    PRO_ONLY_TABS.has(selectedTab);
+    !isProOrAbove &&
+    (PRO_ONLY_TABS.has(selectedTab) ||
+      (MEMBERSHIP_TABS.has(selectedTab) && !isPaidBasic) ||
+      (MEMBER_ENTRY_TABS.has(selectedTab) && (effectivePlan === "none" || effectivePlan === "expired")));
+  // 잠긴 색상·유형 분석은 안내 창의 "예시 화면 보기"로 예시 브랜드 데이터를 열어 볼 수 있다
+  const analysisDemoTabs = useUIStore((s) => s.analysisDemoTabs);
+  // 관리자 전용(출시 전) 메뉴는 저장된 탭으로 들어와도 일반 회원에게 그리지 않는다
+  const isReleased = useFeatureReleased();
+  const openAnalysisDemo = useUIStore((s) => s.openAnalysisDemo);
+  const openTrialModal = useUIStore((s) => s.openTrialModal);
+  // 체험 전 고객은 예시 화면 전에 무료체험부터 — 시작하면 이어서 예시 화면을 연다
+  const showDemo = (tab: string) =>
+    effectivePlan === "none" ? openTrialModal(() => openAnalysisDemo(tab)) : openAnalysisDemo(tab);
+  const isDemo = isLocked && DEMO_TABS.has(selectedTab) && analysisDemoTabs.includes(selectedTab);
 
   return (
     <div className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -198,13 +225,21 @@ export function NewFilterTabPanels() {
         <div className="py-6">
           {selectedTab === "실시간 랭킹" && <DashBoardPage />}
           {selectedTab === "패션쇼 분석" && <RunwayPage />}
-          {selectedTab === "색상 분석" && <NewColorAnalysis />}
-          {selectedTab === "유형 분석" && <NewTypeAnalysis />}
+          {selectedTab === "색상 분석" && <NewColorAnalysis demo={isDemo} />}
+          {selectedTab === "유형 분석" && <NewTypeAnalysis demo={isDemo} />}
+          {selectedTab === "리포트" && isReleased("리포트") && <ReportPage />}
           {selectedTab === "내 보드" && <BoardsPage />}
+          {selectedTab === "고객 분석" && isReleased("고객 분석") && <CustomerAnalysisPage />}
         </div>
       )}
 
-      {isLocked && <ProUpgradeOverlay key={selectedTab} featureName={selectedTab} />}
+      {isLocked && !isDemo && (
+        <ProUpgradeOverlay
+          key={selectedTab}
+          featureName={selectedTab}
+          onShowDemo={DEMO_TABS.has(selectedTab) ? () => showDemo(selectedTab) : undefined}
+        />
+      )}
     </div>
   );
 }
