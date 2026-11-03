@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Icon } from "@iconify/react";
 import {
   Select,
@@ -15,7 +14,6 @@ const PERIOD_OPTIONS: { value: CustomerPeriod; label: string }[] = [
   { value: 12, label: "최근 12개월" },
 ];
 
-const OWN_HINT_DISMISSED_KEY = "customer-analysis-own-hint-dismissed";
 
 const TRIGGER =
   "h-[34px] w-auto min-w-[120px] gap-2 rounded-lg border-line-alt bg-white text-[14px] font-medium text-tx-neutral shadow-none focus:ring-0";
@@ -103,23 +101,6 @@ export function BrandChips({
   onAdd: () => void;
   demo?: boolean;
 }) {
-  const hasOwn = brands.some((b) => b.isOwn);
-  const [hintDismissed, setHintDismissed] = useState(() => {
-    try {
-      return localStorage.getItem(OWN_HINT_DISMISSED_KEY) === "true";
-    } catch {
-      return false;
-    }
-  });
-  const dismissHint = () => {
-    setHintDismissed(true);
-    try {
-      localStorage.setItem(OWN_HINT_DISMISSED_KEY, "true");
-    } catch {
-      // 저장 못 해도 이번 화면에서는 닫힌다
-    }
-  };
-
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
@@ -168,21 +149,6 @@ export function BrandChips({
           {demo && <ProBadge />}
         </button>
       </div>
-      {!demo && !hasOwn && !hintDismissed && (
-        <div className="flex w-fit max-w-full items-center gap-2 rounded-lg bg-surface-base px-3 py-1.5 text-[13px] text-tx-alt">
-          <Icon icon="ph:info" className="w-4 h-4 shrink-0" />
-          <span>우리 브랜드가 있다면 체크해 주세요</span>
-          {/* TODO: 자사 브랜드 지정 UI가 생기면 여기서 연결 */}
-          <button
-            type="button"
-            onClick={dismissHint}
-            aria-label="안내 닫기"
-            className="p-0.5 rounded hover:bg-fill-hover"
-          >
-            <Icon icon="ph:x" className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
     </div>
   );
 }
