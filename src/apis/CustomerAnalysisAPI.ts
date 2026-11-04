@@ -1,4 +1,5 @@
 import { axiosInstance } from "./AxiosInstance";
+import { getSimulatedSubscription } from "@/stores/SubscriptionStore";
 import type {
   AnalysisRequest,
   AnalysisRequestsResponse,
@@ -88,19 +89,30 @@ import type {
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-// 백엔드가 준비되기 전까지 로컬 목업(PoC 데이터)으로 응답한다.
-// false로 바꾸면 실제 서버를 부르고, 목업 파일은 번들에 들어가지 않는다(동적 import).
-// 개발 서버(pnpm dev)에서만 목업을 쓴다. 배포 빌드는 항상 실제 API를 부른다.
-const USE_MOCK = import.meta.env.DEV;
+// 개발 서버(pnpm dev)는 기본으로 실제 서버를 부른다(로그인한 계정 기준). 목업(PoC 데이터)은
+//  - ?mock · ?mockDemo · ?mockEmpty 를 붙였을 때
+//  - ?simulatePlan= 이 Pro 미만일 때(서버는 실제 계정으로 판단해 예시 화면을 못 만들어서)
+// 에만 쓴다. 배포 빌드는 항상 실제 API 를 부르고, 목업 파일은 번들에 들어가지 않는다(동적 import).
+const isMock = () => {
+  if (!import.meta.env.DEV) return false;
+  const q = new URLSearchParams(window.location.search);
+  if (q.has("mock") || q.has("mockDemo") || q.has("mockEmpty")) return true;
+  const sim = getSimulatedSubscription();
+  return !!sim && (sim.status !== "active" || !["pro", "enterprise"].includes(sim.plan));
+};
 
-const loadMock = () => import("@/data/mock/customerAnalysis/MockCustomerAnalysis");
+// import.meta.env.DEV 가 빌드 때 false 로 바뀌어 배포 번들에서는 이 import 가 통째로 빠진다
+const loadMock = () =>
+  import.meta.env.DEV
+    ? import("@/data/mock/customerAnalysis/MockCustomerAnalysis")
+    : Promise.reject(new Error("목업은 개발 서버에서만 씁니다."));
 
 const toError = (error: any, fallback: string) =>
   new Error(error?.response?.data?.message || (error?.response ? fallback : "서버에 연결할 수 없습니다."));
 
 // names를 주면 그 브랜드들만(1-1), 안 주면 기본 묶음(1)
 const GetCustomerBrands = async (names?: string[]): Promise<CustomerBrandsResponse> => {
-  if (USE_MOCK) return (await loadMock()).mockBrands(names);
+  if (isMock()) return (await loadMock()).mockBrands(names);
   try {
     const res = await axiosInstance.get<CustomerBrandsResponse>("/customer-analysis/brands", {
       params: names ? { names: names.join(",") } : undefined,
@@ -113,7 +125,7 @@ const GetCustomerBrands = async (names?: string[]): Promise<CustomerBrandsRespon
 
 // "+ 브랜드" 창에서 고를 수 있는(리뷰 분석이 가능한) 브랜드 이름
 const GetCustomerAvailableBrands = async (): Promise<CustomerAvailableBrandsResponse> => {
-  if (USE_MOCK) return (await loadMock()).mockAvailableBrands();
+  if (isMock()) return (await loadMock()).mockAvailableBrands();
   try {
     const res = await axiosInstance.get<CustomerAvailableBrandsResponse>("/customer-analysis/brands/available");
     return res.data;
@@ -124,7 +136,7 @@ const GetCustomerAvailableBrands = async (): Promise<CustomerAvailableBrandsResp
 
 // 리뷰 분석 신청 — 같은 브랜드를 다시 보내도 한 건만 남는다
 const PostAnalysisRequest = async (brand: string): Promise<AnalysisRequest> => {
-  if (USE_MOCK) return (await loadMock()).mockPostAnalysisRequest(brand);
+  if (isMock()) return (await loadMock()).mockPostAnalysisRequest(brand);
   try {
     const res = await axiosInstance.post<AnalysisRequest>("/customer-analysis/requests", { brand });
     return res.data;
@@ -134,7 +146,7 @@ const PostAnalysisRequest = async (brand: string): Promise<AnalysisRequest> => {
 };
 
 const GetAnalysisRequests = async (): Promise<AnalysisRequestsResponse> => {
-  if (USE_MOCK) return (await loadMock()).mockAnalysisRequests();
+  if (isMock()) return (await loadMock()).mockAnalysisRequests();
   try {
     const res = await axiosInstance.get<AnalysisRequestsResponse>("/customer-analysis/requests");
     return res.data;
@@ -147,7 +159,7 @@ const GetCustomerSummary = async (
   brandId: string,
   params: { period: CustomerPeriod; platform: CustomerPlatformFilter },
 ): Promise<CustomerSummary> => {
-  if (USE_MOCK) return (await loadMock()).mockSummary(brandId, params);
+  if (isMock()) return (await loadMock()).mockSummary(brandId, params);
   try {
     const res = await axiosInstance.get<CustomerSummary>(
       `/customer-analysis/${encodeURIComponent(brandId)}/summary`,
@@ -163,7 +175,7 @@ const GetCustomerReviews = async (
   brandId: string,
   params: CustomerReviewsParams,
 ): Promise<CustomerReviewsResponse> => {
-  if (USE_MOCK) return (await loadMock()).mockReviews(brandId, params);
+  if (isMock()) return (await loadMock()).mockReviews(brandId, params);
   try {
     const res = await axiosInstance.get<CustomerReviewsResponse>(
       `/customer-analysis/${encodeURIComponent(brandId)}/reviews`,
@@ -186,7 +198,7 @@ const GetCustomerCross = async (
     include: string[];
   },
 ): Promise<CustomerCross> => {
-  if (USE_MOCK) return (await loadMock()).mockCross(brandId, params);
+  if (isMock()) return (await loadMock()).mockCross(brandId, params);
   try {
     const res = await axiosInstance.get<CustomerCross>(
       `/customer-analysis/${encodeURIComponent(brandId)}/cross`,

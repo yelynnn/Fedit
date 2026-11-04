@@ -1,4 +1,4 @@
-// 고객 분석 목업 — 백엔드가 생기기 전까지만 쓴다(CustomerAnalysisAPI.ts의 USE_MOCK).
+// 고객 분석 목업 — 개발 서버에서 ?mock·Pro 미만 ?simulatePlan= 일 때만 쓴다(CustomerAnalysisAPI.ts의 isMock).
 // customerAnalysisPoc.json은 PoC(무신사 리뷰 수집, 2026-11-01 기준)에서 뽑은 데이터를
 // 줄인 사본이다(닉네임 없음, 많이 산 상품 TOP 이미지는 무신사 125px 썸네일). 여기서 API 응답 모양으로 바꿔 돌려준다.
 import poc from "./customerAnalysisPoc.json";
