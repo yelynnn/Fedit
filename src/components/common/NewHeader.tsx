@@ -23,7 +23,6 @@ const TAB_ICONS: Record<string, { src?: string; iconify?: string }> = {
   "유형 분석": { src: categoryIcon },
   "패션쇼 분석": { src: runwayIcon },
   "고객 분석": { iconify: "ph:users-three-fill" },
-  리포트: { iconify: "ph:file-text-fill" },
   "내 보드": { iconify: "lucide:layout-panel-left" },
 };
 

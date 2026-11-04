@@ -1761,7 +1761,7 @@ export default function SettingsPage() {
 
               <div className="flex flex-col w-full gap-2">
                 <h2 className="type-title-large break-keep text-tx-strong">
-                  FEDIT과 함께한
+                  FEDIT와 함께한
                   <br />
                   당신의 패션 기획 아카이브
                 </h2>

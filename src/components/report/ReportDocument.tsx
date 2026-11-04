@@ -1,15 +1,10 @@
-import { useState } from "react";
 import { Icon } from "@iconify/react";
 import type { CustomerReport, ReportBarRow, ReportSection, ReportSegment, ReportStackRow } from "@/types/Report";
-import { EXAMPLE_REPORT, useMyReports } from "@/lib/reports";
-import { getEffectivePlan, isLegacyBasicTrial, useSubscriptionStore } from "@/stores/SubscriptionStore";
-import { useUIStore } from "@/stores/UIStore";
-import { downloadReportPdf } from "@/lib/reportPdf";
 
-// 리포트 탭 — 계정별 맞춤 리포트를 화면이 아니라 "문서"처럼 보여 준다(A4 폭 종이 한 장, 작은 글씨·촘촘한 표).
-// "PDF로 저장"은 문서를 A4 PDF 파일로 바로 내려받는다(lib/reportPdf). 브라우저 인쇄(Cmd+P)로 찍어도 문서만 A4로 나온다.
-// 요금제: Pro·Enterprise 는 전체, Trial·Basic(과 체험 전·만료)은 아래 절반을 흐리게 하고 "전체 보기"(Pro 안내)를 단다.
-// 받은 리포트가 없으면 예시 리포트(lib/reports EXAMPLE_REPORT)를 같은 규칙으로 보여 준다.
+// 계정별 맞춤 리포트 문서 — 화면이 아니라 "문서"처럼 보여 준다(A4 폭 종이 한 장, 작은 글씨·촘촘한 표).
+// 고객 분석 탭의 리포트 창(CustomerReportModal)에서 띄우고, PDF 는 이 문서(#report-doc)를 그대로 찍는다(lib/reportPdf).
+// 요금제: Pro·Enterprise 는 전체, Trial·Basic(과 체험 전·만료)은 아래쪽을 흐리게 하고 "전체 보기"(Pro 안내)를 단다.
+// 예시 리포트는 흐림 없이 전부 보여 준다(locked 를 넘기지 않는다).
 
 const HIGHLIGHT_HEX = { a: "#3566C4", b: "#1F7A4A" } as const;
 const OTHER_HEX = "#E9EAEA";
@@ -20,16 +15,6 @@ const isLight = (hex: string) => {
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
   return 0.299 * r + 0.587 * g + 0.114 * b > 165;
 };
-
-const PRINT_CSS = `
-@media print {
-  @page { size: A4; margin: 12mm; }
-  body * { visibility: hidden !important; }
-  #report-doc, #report-doc * { visibility: visible !important; }
-  #report-doc { position: absolute; left: 0; top: 0; width: 100%; margin: 0; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
-  #report-doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .report-block { break-inside: avoid; }
-}`;
 
 function SectionHead({ no, s }: { no: number; s: { eyebrow: string; title: string; desc?: string } }) {
   return (
@@ -91,14 +76,18 @@ function BarRows({ rows, swatches, muted }: { rows: ReportBarRow[]; swatches?: b
   const max = Math.max(...rows.map((r) => r.value));
   // 상품 줄(브랜드·사진이 있는 줄)은 이름이 길어서 칸을 넓히고 줄바꿈을 허용한다
   const productRows = rows.some((r) => r.brand);
+  // 사진이 하나도 없으면(예: 예시 리포트의 가린 비교 브랜드) 빈 사진 칸을 두지 않는다
+  const withImages = rows.some((r) => r.img);
   return (
     <div className={`flex flex-col ${productRows ? "gap-1" : "gap-1.5"}`}>
       {rows.map((r, i) => {
         const label = productRows ? (
           <span className="flex min-w-0 items-center gap-2.5">
-            <span className="h-[38px] w-8 shrink-0 overflow-hidden rounded-[3px] bg-[#F3F3F3]">
-              {r.img && <img src={r.img} alt="" className="h-full w-full object-cover" loading="lazy" referrerPolicy="no-referrer" />}
-            </span>
+            {withImages && (
+              <span className="h-[38px] w-8 shrink-0 overflow-hidden rounded-[3px] bg-[#F3F3F3]">
+                {r.img && <img src={r.img} alt="" className="h-full w-full object-cover" loading="lazy" referrerPolicy="no-referrer" />}
+              </span>
+            )}
             <span className="min-w-0 leading-tight">
               <span className={`block text-[10.5px] ${r.own ? "font-semibold text-[#3566C4]" : "text-[#8A8C8E]"}`}>{r.brand}</span>
               <span className={`block text-[12px] break-keep ${r.own ? "font-bold text-[#111]" : "text-[#2A2C2E]"}`}>{r.label}</span>
@@ -306,7 +295,7 @@ function LockedCard({ onUpgrade }: { onUpgrade: () => void }) {
   );
 }
 
-function ReportDocument({
+export function ReportDocument({
   report,
   locked,
   example,
@@ -391,169 +380,5 @@ function ReportDocument({
         <span>{report.publishedAt} 발행</span>
       </footer>
     </article>
-  );
-}
-
-type Tier = "none" | "expired" | "trial" | "basic" | "pro" | "enterprise";
-
-// 리포트 위 안내 — 요금제마다 언제 어떤 리포트를 받는지(문서 밖이라 PDF 에는 안 들어간다)
-function ReportNotice({
-  tier,
-  example,
-  exampleOpen,
-  onToggleExample,
-  onTrial,
-  onUpgrade,
-}: {
-  tier: Tier;
-  example: boolean;
-  /** 예시 리포트를 펼쳐 보는 중 */
-  exampleOpen: boolean;
-  onToggleExample: () => void;
-  onTrial: () => void;
-  onUpgrade: () => void;
-}) {
-  const lines: Record<Tier, string> = {
-    none: "무료체험을 시작하면 체험 마지막 날, 고르신 관심 브랜드로 맞춤 리포트를 만들어 드려요.",
-    expired: "멤버십을 시작하면 고르신 관심 브랜드로 맞춤 리포트를 월 1회 만들어 드려요.",
-    trial: "무료체험 마지막 날, 고르신 관심 브랜드로 맞춤 리포트를 만들어 드려요. 맞춤 제작이라 시간이 조금 걸려요.",
-    basic: "고르신 관심 브랜드로 맞춤 리포트를 월 1회 만들어 드려요. 관심 브랜드 선택을 마치시면 그에 맞춰 제작해 업데이트해 드려요.",
-    pro: "고르신 관심 브랜드로 맞춤 리포트를 월 1회 만들어 드려요. 준비되면 이 화면에 올라와요.",
-    enterprise: "고르신 브랜드로 맞춤 리포트를 월 1회 만들어 드려요. 준비되면 이 화면에 올라와요.",
-  };
-  const cta =
-    tier === "none" ? { label: "무료체험 시작하기", onClick: onTrial }
-    : tier === "pro" || tier === "enterprise" ? null
-    : { label: "요금제 보기", onClick: onUpgrade };
-  return (
-    <div className="flex flex-col gap-3 rounded-xl border border-line-alt bg-surface-base px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-col gap-1">
-        <p className="text-[15px] font-semibold text-tx-strong">
-          {!example ? "맞춤 리포트" : exampleOpen ? "예시 리포트를 보고 계세요" : "아직 받은 맞춤 리포트가 없어요"}
-        </p>
-        <p className="text-[14px] leading-6 break-keep text-tx-alt">{lines[tier]}</p>
-        <p className="text-[12.5px] text-tx-assistive">
-          Basic·Pro·Enterprise는 맞춤 리포트를 월 1회 제공해요. 전체 내용은 Pro부터 볼 수 있어요.
-        </p>
-      </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-2 self-start sm:self-center">
-        {example && (
-          <button
-            type="button"
-            onClick={onToggleExample}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-line-alt bg-white px-4 py-2.5 text-[14px] font-semibold text-tx-neutral hover:bg-surface-base"
-          >
-            <Icon icon={exampleOpen ? "ph:eye-slash" : "ph:eye"} className="h-4 w-4" aria-hidden />
-            {exampleOpen ? "예시 닫기" : "예시 리포트 보기"}
-          </button>
-        )}
-        {cta && (
-          <button
-            type="button"
-            onClick={cta.onClick}
-            className="inline-flex items-center justify-center rounded-lg bg-fill-primary px-4 py-2.5 text-[14px] font-semibold text-tx-inverse"
-          >
-            {cta.label}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export default function ReportPage() {
-  const own = useMyReports();
-  const reports = own.length > 0 ? own : [EXAMPLE_REPORT];
-  const example = own.length === 0;
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const report = reports.find((r) => r.id === selectedId) ?? reports[0];
-  // 받은 리포트가 없으면 예시는 접어 두고 "예시 리포트 보기"로 연다(체험 전·만료 안내 창의 "예시 화면 보기"로 들어오면 바로 펼침)
-  const openedFromOverlay = useUIStore((s) => s.analysisDemoTabs.includes("리포트"));
-  const [exampleOpen, setExampleOpen] = useState(openedFromOverlay);
-  const showDoc = !example || exampleOpen;
-
-  const subscription = useSubscriptionStore((s) => s.subscription);
-  const eff = getEffectivePlan(subscription);
-  // Pro·Enterprise 는 체험 중(혜택 코드 Pro 체험)이어도 그 요금제 그대로, 개편 전에 시작한 Basic 체험은 Basic 으로
-  const tier: Tier =
-    eff === "none" || eff === "expired"
-      ? eff
-      : eff === "pro" || eff === "enterprise"
-        ? eff
-        : subscription?.status === "trial" && !isLegacyBasicTrial(subscription)
-          ? "trial"
-          : "basic";
-  const locked = tier !== "pro" && tier !== "enterprise";
-  const openSettingsModal = useUIStore((s) => s.openSettingsModal);
-  const openTrialModal = useUIStore((s) => s.openTrialModal);
-  const onUpgrade = () => openSettingsModal("구독");
-  const [saving, setSaving] = useState(false);
-  const savePdf = async () => {
-    const el = document.getElementById("report-doc");
-    if (!el || !report || saving) return;
-    setSaving(true);
-    try {
-      await downloadReportPdf(el, example ? `${report.title} (예시)` : report.title);
-    } catch {
-      alert("PDF를 만들지 못했어요. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-5 px-4 sm:px-8 lg:px-14">
-      <style>{PRINT_CSS}</style>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-2xl font-semibold leading-9 text-tx-neutral">리포트</h2>
-          {reports.length > 1 && (
-            <div className="flex flex-wrap gap-1.5">
-              {reports.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setSelectedId(r.id)}
-                  className={`rounded-full border px-3 py-1 text-[13px] ${
-                    r.id === report?.id ? "border-fill-primary bg-fill-primary text-tx-inverse" : "border-line-alt bg-white text-tx-neutral"
-                  }`}
-                >
-                  {r.title}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        {report && showDoc && (
-          <button
-            type="button"
-            // Trial·Basic 은 흐린 절반까지 그대로 PDF 에 담긴다
-            onClick={savePdf}
-            disabled={saving}
-            className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-line-alt bg-white px-3 text-[14px] font-medium text-tx-neutral hover:bg-surface-base disabled:opacity-60"
-          >
-            <Icon icon={saving ? "ph:spinner" : "ph:file-pdf"} className={`h-4 w-4 ${saving ? "animate-spin" : ""}`} aria-hidden />
-            {saving ? "PDF 만드는 중…" : "PDF로 저장"}
-          </button>
-        )}
-      </div>
-
-      {(example || locked) && (
-        <ReportNotice
-          tier={tier}
-          example={example}
-          exampleOpen={exampleOpen}
-          onToggleExample={() => setExampleOpen((v) => !v)}
-          onTrial={() => openTrialModal()}
-          onUpgrade={onUpgrade}
-        />
-      )}
-
-      {showDoc && (
-        <div className="bg-[#F3F3F1] px-4 py-8 sm:px-8">
-          <ReportDocument report={report} locked={locked} example={example} onUpgrade={onUpgrade} />
-        </div>
-      )}
-    </div>
   );
 }

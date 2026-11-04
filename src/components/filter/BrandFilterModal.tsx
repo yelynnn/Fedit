@@ -33,6 +33,8 @@ type Selection = {
    * onRequest 에는 허용 목록 밖에서 찾은 브랜드명(없으면 검색어)을 준다. requested 에 있으면 "신청함"으로 막는다.
    */
   missing?: { label: string; onRequest: (brand: string) => void; requested?: string[] };
+  /** 한 번에 고를 수 있는 최대 개수(예: 고객 분석 5개) — 다 차면 나머지 칩을 잠그고 "전체 선택"은 숨긴다 */
+  max?: number;
 };
 type Props = {
   isOpen: boolean;
@@ -76,8 +78,11 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
   const platformList = controlled ? NO_PLATFORMS : storePlatformList;
   const setPlatformList = controlled ? () => {} : storeSetPlatformList;
   const resetPlatform = controlled ? () => {} : storeResetPlatform;
+  const maxPick = selection?.max;
+  const capReached = controlled && !!maxPick && draft.length >= maxPick;
   const addBrand = controlled
-    ? (b: string) => setDraft((d) => (d.includes(b) ? d : [...d, b]))
+    ? (b: string) =>
+        setDraft((d) => (d.includes(b) || (maxPick && d.length >= maxPick) ? d : [...d, b]))
     : storeAddBrand;
   const removeBrand = controlled
     ? (b: string) => setDraft((d) => d.filter((x) => x !== b))
@@ -397,12 +402,15 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
     disabled,
     anchorLetter,
     onClick,
+    hint,
   }: {
     brand: string;
     checked?: boolean;
     disabled?: boolean;
     anchorLetter?: string;
     onClick?: () => void;
+    /** 잠긴 이유(기본 문구 대신) */
+    hint?: string;
   }) => (
     <button
       type="button"
@@ -411,11 +419,11 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
       disabled={disabled}
       title={
         disabled
-          ? isFree
+          ? hint ?? (isFree
             ? trialNotStarted
               ? "무료체험을 시작하면 관심 브랜드를 골라 볼 수 있어요"
               : "멤버십을 시작하면 관심 브랜드를 골라 볼 수 있어요"
-            : `관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요`
+            : `관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요`)
           : undefined
       }
       className={
@@ -614,8 +622,12 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
 
       <div className="flex items-center justify-between text-sm">
         <div className="font-semibold text-icon-neutral">
-          {totalSelectedCount}개
+          {maxPick ? `${totalSelectedCount} / ${maxPick}개` : `${totalSelectedCount}개`}
+          {maxPick && (
+            <span className="ml-2 font-normal text-tx-alt">한 번에 최대 {maxPick}개까지 고를 수 있어요</span>
+          )}
         </div>
+        {!maxPick && (
         <label className="inline-flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -626,6 +638,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
           />
           <span className="text-icon-neutral">브랜드 전체 선택하기</span>
         </label>
+        )}
       </div>
 
       <div className="relative flex-1 min-h-0 overflow-hidden">
@@ -657,7 +670,8 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
                     </button>
                   ))}
                 {visibleBrands.map((brand) => {
-                  const disabled = isBrandDisabled(brand);
+                  const capped = capReached && !brandList.includes(brand);
+                  const disabled = isBrandDisabled(brand) || capped;
                   // 잠긴 칩은 플랫폼 기본값(무신사 전체 등)에 포함돼 있어도
                   // "선택됨"으로 보여주지 않는다 — 실제로는 브랜드 하나하나를
                   // 고른 게 아니라 플랫폼 단위로 백엔드에 보내는 것이라,
@@ -672,6 +686,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
                       brand={brand}
                       checked={checked}
                       disabled={disabled}
+                      hint={capped ? `한 번에 최대 ${maxPick}개까지 고를 수 있어요` : undefined}
                       anchorLetter={anchorKeys.get(brand)}
                       onClick={() => toggleOne(brand)}
                     />

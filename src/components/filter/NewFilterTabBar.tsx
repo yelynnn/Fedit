@@ -16,7 +16,6 @@ import {
   isLegacyBasicTrial,
 } from "@/stores/SubscriptionStore";
 import ProUpgradeOverlay from "@/components/common/ProUpgradeOverlay";
-import ReportPage from "@/pages/ReportPage";
 import { useFeatureReleased } from "@/lib/features";
 import { GetBrandPicks } from "@/apis/AnalysisAPI";
 import { useUIStore } from "@/stores/UIStore";
@@ -25,10 +24,8 @@ import { useUIStore } from "@/stores/UIStore";
 const PRO_ONLY_TABS = new Set(["패션쇼 분석"]);
 // 멤버십(결제한 Basic 이상)부터 이용 가능한 탭 — 무료체험(trial)·미시작·만료는 잠근다
 const MEMBERSHIP_TABS = new Set(["색상 분석", "유형 분석"]);
-// 멤버십(체험 포함)부터 들어가는 탭 — 체험 전·만료면 안내 창을 띄우고, "예시 화면 보기"로 예시를 연다
-const MEMBER_ENTRY_TABS = new Set(["리포트"]);
 // 안내 창에서 예시 화면을 열 수 있는 탭
-const DEMO_TABS = new Set([...MEMBERSHIP_TABS, ...MEMBER_ENTRY_TABS]);
+const DEMO_TABS = MEMBERSHIP_TABS;
 
 type TabOption = { label: string; icon: string };
 
@@ -84,7 +81,7 @@ export function NewFilterTabBar() {
 }
 
 export function NewFilterTabPanels() {
-  const { selectedTab } = useFilterStore((s) => s);
+  const { selectedTab, setSelectedTab } = useFilterStore((s) => s);
   const { subscription, loaded, fetchSubscription } = useSubscriptionStore(
     (s) => s,
   );
@@ -202,12 +199,15 @@ export function NewFilterTabPanels() {
     loaded &&
     !isProOrAbove &&
     (PRO_ONLY_TABS.has(selectedTab) ||
-      (MEMBERSHIP_TABS.has(selectedTab) && !isPaidBasic) ||
-      (MEMBER_ENTRY_TABS.has(selectedTab) && (effectivePlan === "none" || effectivePlan === "expired")));
+      (MEMBERSHIP_TABS.has(selectedTab) && !isPaidBasic));
   // 잠긴 색상·유형 분석은 안내 창의 "예시 화면 보기"로 예시 브랜드 데이터를 열어 볼 수 있다
   const analysisDemoTabs = useUIStore((s) => s.analysisDemoTabs);
   // 관리자 전용(출시 전) 메뉴는 저장된 탭으로 들어와도 일반 회원에게 그리지 않는다
   const isReleased = useFeatureReleased();
+  // 리포트 탭은 없앴다(리포트는 고객 분석 탭에서 본다) — 예전에 저장된 탭으로 들어오면 고객 분석으로
+  useEffect(() => {
+    if (selectedTab === "리포트") setSelectedTab(isReleased("고객 분석") ? "고객 분석" : "실시간 랭킹");
+  }, [selectedTab, setSelectedTab, isReleased]);
   const openAnalysisDemo = useUIStore((s) => s.openAnalysisDemo);
   const openTrialModal = useUIStore((s) => s.openTrialModal);
   // 체험 전 고객은 예시 화면 전에 무료체험부터 — 시작하면 이어서 예시 화면을 연다
@@ -227,7 +227,6 @@ export function NewFilterTabPanels() {
           {selectedTab === "패션쇼 분석" && <RunwayPage />}
           {selectedTab === "색상 분석" && <NewColorAnalysis demo={isDemo} />}
           {selectedTab === "유형 분석" && <NewTypeAnalysis demo={isDemo} />}
-          {selectedTab === "리포트" && isReleased("리포트") && <ReportPage />}
           {selectedTab === "내 보드" && <BoardsPage />}
           {selectedTab === "고객 분석" && isReleased("고객 분석") && <CustomerAnalysisPage />}
         </div>

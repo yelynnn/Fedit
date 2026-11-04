@@ -17,8 +17,10 @@ const top = (i: number) => ({
   url: `https://www.musinsa.com/products/${TOP_GOODS[i][0]}`,
 });
 
-// 벨리에 26/27 시즌 기획 리포트 — 담당자가 만든 PDF(벨리에_시즌기획_리포트.pdf, 2026-11)의 숫자를 그대로 옮긴 1차 데이터.
-// 이름이 없는 칸은 PDF 에서도 비중만 표기된 칸이다. 세터 베스트셀러 상품명은 PDF 처럼 줄임표로 둔다.
+// 예시 리포트(26/27 시즌 기획) — 실제 고객사 리포트 PDF(2026-11)의 숫자를 그대로 옮긴 1차 데이터.
+// 고객사는 "A 브랜드"로 가리고, 자사 상품 사진·링크도 뺐다.
+// 이름이 없는 칸은 PDF 에서도 비중만 표기된 칸이다.
+// 비교 브랜드도 B·C·D·E 브랜드로 가리고, 브랜드별 SKU 수·비교 브랜드 상품 사진·링크·고유 상품명은 뺐다(브랜드를 짐작할 수 있어서).
 
 const C = {
   black: "#1F1F1F",
@@ -43,17 +45,17 @@ const C = {
   taupe: "#9C8B79",
 };
 
-export const bellierSeason2627: CustomerReport = {
-  id: "bellier-2627-season",
-  title: "벨리에 시즌 기획 리포트",
+export const exampleSeason2627: CustomerReport = {
+  id: "example-2627-season",
+  title: "A 브랜드 시즌 기획 리포트",
   eyebrow: "FEDIT DATA REPORT · 26/27 SEASON PLANNING",
   publishedAt: "2026년 11월",
-  ownBrand: "벨리에",
-  compareBrands: ["999휴머니티", "세터", "셔터", "브라운야드"],
+  ownBrand: "A 브랜드",
+  compareBrands: ["B 브랜드", "C 브랜드", "D 브랜드", "E 브랜드"],
   basis: "무신사·29CM·W컨셉·자사몰 상품, 무신사 리뷰·구매 데이터, 플랫폼 검색어 기준",
   summary: [
     "색상: 블랙이 50%로 시장(32%)보다 과다하고, 시장 3위 블루(21%)와 2위 오프화이트·그레이지 계열이 상위 5색에 없어요.",
-    "트렌드 컬러: 옐로·네이비는 4개사가 동시에 출시 중이고, 벨리에가 전개하지 않은 블루 계열이 상위권이에요.",
+    "트렌드 컬러: 옐로·네이비는 4개사가 동시에 출시 중이고, A 브랜드가 전개하지 않은 블루 계열이 상위권이에요.",
     "유형: 시장 공동 1위 니트(28%)가 구성에 없고 데님팬츠가 45%로 편중돼 있어요.",
     "고객: 데님 구매자는 상의를 무신사 스탠다드(71.8%)·유니온블루·엘무드에서 사요. 셔츠·니트 확장 여지가 있어요.",
     "수요: 검색어 상위권은 경량패딩·후리스 같은 계절 아우터와 가디건·니트에 몰려 있어요.",
@@ -63,25 +65,25 @@ export const bellierSeason2627: CustomerReport = {
       kind: "stack",
       id: "color",
       eyebrow: "COLOR",
-      title: "색상 — 벨리에 블랙 50%, 시장(32%) 대비 과다·블루 계열 부재",
-      desc: "막대 색은 실제 상품 색 계열 기준이에요(상위 5색 = 100%). 시장 3위 색(블루 21%)과 2위 색상군(오프화이트·그레이지 27%)이 벨리에 상위 5색에 없어요.",
+      title: "색상 — A 브랜드 블랙 50%, 시장(32%) 대비 과다·블루 계열 부재",
+      desc: "막대 색은 실제 상품 색 계열 기준이에요(상위 5색 = 100%). 시장 3위 색(블루 21%)과 2위 색상군(오프화이트·그레이지 27%)이 A 브랜드 상위 5색에 없어요.",
       rows: [
         { label: "시장 전체", segments: [
           { name: "블랙", pct: 32, hex: C.black }, { name: "오프화이트", pct: 27, hex: C.offwhite },
           { name: "블루", pct: 21, hex: C.blue }, { name: "오커", pct: 17, hex: C.ochre }, { pct: 3, hex: C.red } ] },
-        { label: "벨리에", own: true, segments: [
+        { label: "A 브랜드", own: true, segments: [
           { name: "블랙", pct: 50, hex: C.black }, { name: "뉴트럴", pct: 20, hex: C.neutral },
           { name: "오커", pct: 16, hex: C.ochre }, { pct: 12, hex: C.navy }, { pct: 2, hex: C.white } ] },
-        { label: "999휴머니티", segments: [
+        { label: "B 브랜드", segments: [
           { name: "라이트 그레이", pct: 32, hex: C.lightgray }, { name: "잉크 차콜", pct: 28, hex: C.charcoal },
           { name: "블루", pct: 24, hex: C.blue }, { pct: 12, hex: C.mustard }, { pct: 4, hex: C.red } ] },
-        { label: "세터", segments: [
+        { label: "C 브랜드", segments: [
           { name: "블랙", pct: 36, hex: C.black }, { name: "오프화이트", pct: 29, hex: C.offwhite },
           { name: "블루", pct: 18, hex: C.blue }, { pct: 11, hex: C.yellow }, { pct: 6, hex: C.red } ] },
-        { label: "셔터", segments: [
+        { label: "D 브랜드", segments: [
           { name: "블랙", pct: 37, hex: C.black }, { name: "웜 그레이지", pct: 31, hex: C.greige },
           { name: "블루", pct: 21, hex: C.blue }, { pct: 9, hex: C.white }, { pct: 2, hex: C.navy } ] },
-        { label: "브라운야드", segments: [
+        { label: "E 브랜드", segments: [
           { name: "블랙", pct: 37, hex: C.black }, { name: "테라코타", pct: 28, hex: C.terracotta },
           { name: "화이트", pct: 19, hex: C.white }, { pct: 12, hex: C.slate }, { pct: 4, hex: C.green } ] },
       ],
@@ -91,7 +93,7 @@ export const bellierSeason2627: CustomerReport = {
       id: "trend-colors",
       eyebrow: "TREND COLORS",
       title: "경쟁사 동시 출시 색상 — 옐로·데님 블루·네이비",
-      desc: "여러 경쟁사가 소량으로 동시 출시 중인 색상이에요(출시 아이템 수 기준). 벨리에가 전개하지 않은 블루 계열이 상위권이에요.",
+      desc: "여러 경쟁사가 소량으로 동시 출시 중인 색상이에요(출시 아이템 수 기준). A 브랜드가 전개하지 않은 블루 계열이 상위권이에요.",
       swatches: true,
       rows: [
         { label: "옐로", value: 137, display: "137개 · 4개사 동시", hex: C.yellow },
@@ -107,30 +109,30 @@ export const bellierSeason2627: CustomerReport = {
       kind: "stack",
       id: "category",
       eyebrow: "CATEGORY",
-      title: "유형 — 시장 공동 1위 니트(28%)가 벨리에 구성에 부재",
-      desc: "벨리에는 데님팬츠 45%에 편중돼 있어요. 니트는 세터·브라운야드의 주력이자 F/W 수요(가디건·니트 검색어 상위)를 받는 핵심 카테고리예요.",
+      title: "유형 — 시장 공동 1위 니트(28%)가 A 브랜드 구성에 부재",
+      desc: "A 브랜드는 데님팬츠 45%에 편중돼 있어요. 니트는 C·E 브랜드의 주력이자 F/W 수요(가디건·니트 검색어 상위)를 받는 핵심 카테고리예요.",
       legend: [
         { label: "니트", hex: "#3566C4" },
         { label: "데님팬츠", hex: "#1F7A4A" },
         { label: "그 외 유형", hex: "#E9EAEA" },
       ],
       rows: [
-        { label: "시장 전체", sub: "22,692 SKU", segments: [
+        { label: "시장 전체", sub: "약 2.3만 SKU", segments: [
           { name: "반소매 티", pct: 28 }, { name: "니트", pct: 28, highlight: "a" }, { name: "셔츠", pct: 21 },
           { name: "데님", pct: 13, highlight: "b" }, { pct: 10 } ] },
-        { label: "벨리에", own: true, sub: "121 SKU", segments: [
+        { label: "A 브랜드", own: true, segments: [
           { name: "데님팬츠", pct: 45, highlight: "b" }, { name: "셔츠", pct: 23 }, { name: "반소매", pct: 14 },
           { pct: 11 }, { pct: 7 } ] },
-        { label: "999휴머니티", sub: "401 SKU", segments: [
+        { label: "B 브랜드", segments: [
           { name: "티셔츠", pct: 31 }, { name: "반소매 티", pct: 26 }, { name: "후드", pct: 18 },
           { pct: 13 }, { pct: 12, highlight: "b" } ] },
-        { label: "세터", sub: "333 SKU", segments: [
+        { label: "C 브랜드", segments: [
           { name: "반소매 티", pct: 30 }, { name: "니트", pct: 26, highlight: "a" }, { name: "스웨트", pct: 16 },
           { name: "후드", pct: 16 }, { pct: 12 } ] },
-        { label: "셔터", sub: "139 SKU", segments: [
+        { label: "D 브랜드", segments: [
           { name: "셔츠", pct: 35 }, { name: "반소매 티", pct: 24 }, { name: "데님", pct: 15, highlight: "b" },
           { pct: 13 }, { pct: 13 } ] },
-        { label: "브라운야드", sub: "307 SKU", segments: [
+        { label: "E 브랜드", segments: [
           { name: "니트", pct: 28, highlight: "a" }, { name: "셔츠", pct: 28 }, { name: "반소매", pct: 18 },
           { pct: 14 }, { pct: 12 } ] },
       ],
@@ -140,7 +142,7 @@ export const bellierSeason2627: CustomerReport = {
       id: "pants-buyers",
       eyebrow: "PANTS BUYERS · CROSS-PURCHASE",
       title: "바지 고객 — 상의는 어디서 사고, 무엇을 원하나",
-      desc: "FEDIT 자체 분석 데이터로 본 벨리에 데님 구매자의 교차 구매 브랜드·아이템이에요.",
+      desc: "FEDIT 자체 분석 데이터로 본 A 브랜드 데님 구매자의 교차 구매 브랜드·아이템이에요.",
       brandsTitle: "상의 구매 브랜드 — 베이직은 무신사 스탠다드, 셔츠·니트는 유니온블루·엘무드·쿠어",
       brands: [
         { label: "무신사 스탠다드", value: 71.8, display: "366명 · 71.8%" },
@@ -153,7 +155,7 @@ export const bellierSeason2627: CustomerReport = {
         { label: "미나브", value: 22.7, display: "116명 · 22.7%" },
       ],
       paragraph:
-        "같은 구매자들이 바지를 살 때는 무신사 스탠다드(75.3%)를 기본으로 두고 브랜디드(49.8%), 제로(34.3%), 토피(26.3%)를 함께 구매해요. 이 네 브랜드가 벨리에 데님과 같은 장바구니 안에서 비교되는 경쟁군이에요. 아우터는 무신사 스탠다드(53.7%)에 이어 엘무드(31.6%), 쿠어(30.6%) 순으로, 상의에서 고른 브랜드에서 아우터까지 이어 사는 흐름을 보여요.",
+        "같은 구매자들이 바지를 살 때는 무신사 스탠다드(75.3%)를 기본으로 두고 브랜디드(49.8%), 제로(34.3%), 토피(26.3%)를 함께 구매해요. 이 네 브랜드가 A 브랜드 데님과 같은 장바구니 안에서 비교되는 경쟁군이에요. 아우터는 무신사 스탠다드(53.7%)에 이어 엘무드(31.6%), 쿠어(30.6%) 순으로, 상의에서 고른 브랜드에서 아우터까지 이어 사는 흐름을 보여요.",
       kinds: [
         { kind: "티셔츠", pct: "92.9%", keywords: "오버·릴렉스 핏 69.6% · 2팩/세트 62.5% · 무지 베이직 62.0%" },
         { kind: "셔츠", pct: "85.3%", keywords: "오버·릴렉스 핏 56.1% · 체크 51.8% · 스트라이프 44.3% · 옥스포드 30.8%" },
@@ -188,22 +190,22 @@ export const bellierSeason2627: CustomerReport = {
       id: "bestsellers",
       eyebrow: "25FW BESTSELLERS",
       title: "전년 동기 경쟁사 핫 아이템",
-      desc: "지난해 같은 시즌(25FW) 판매량 기준이에요. 세터 부클 가디건(클래식 블랙)이 압도적 1위이고, 벨리에 대표 상품은 600개예요. 컬러가 확인되지 않은 상품은 대표 사진으로 넣었어요.",
+      desc: "지난해 같은 시즌(25FW) 판매량 기준이에요. C 브랜드 부클 가디건(블랙)이 압도적 1위이고, A 브랜드 대표 상품은 600개예요.",
       muted: true,
       rows: [
-        { brand: "세터", label: "파로 오버 사이즈 부클 가디건 클래식 블랙", value: 16000, display: "16,000", img: "https://image.msscdn.net/images/prd_img/20220726/2683549/detail_2683549_17582476224564_500.jpg", url: "https://www.musinsa.com/products/2683549" },
-        { brand: "세터", label: "파로 오버 사이즈 부클 가디건 네이비 피오니", value: 3200, display: "3,200", img: "https://image.msscdn.net/images/prd_img/20230223/3105460/detail_3105460_17241631398457_500.jpg", url: "https://www.musinsa.com/products/3105460" },
-        { brand: "세터", label: "파로 오버 사이즈 부클 가디건 루센트 아이보리", value: 3100, display: "3,100", img: "https://image.msscdn.net/images/prd_img/20220214/2357948/detail_2357948_17241628425297_500.jpg", url: "https://www.musinsa.com/products/2357948" },
-        { brand: "세터", label: "루고 아플리케 리벳 후드", value: 2800, display: "2,800", img: "https://image.msscdn.net/images/goods_img/20240215/3874747/3874747_17893693514849_500.jpg", url: "https://www.musinsa.com/products/3874747" },
-        { brand: "세터", label: "테오 코튼 올 데이 후드 집업", value: 2400, display: "2,400", img: "https://image.msscdn.net/images/goods_img/20220816/2718413/2718413_17241608813972_500.jpg", url: "https://www.musinsa.com/products/2718413" },
-        { brand: "세터", label: "로턴 올 데이 트랙 팬츠 캐비어 블랙", value: 2200, display: "2,200", img: "https://image.msscdn.net/images/goods_img/20230109/3010437/3010437_17563631042527_500.jpg", url: "https://www.musinsa.com/products/3010437" },
-        { brand: "세터", label: "더블린 언발란스 캐시미어 블렌드 니트", value: 1700, display: "1,700", img: "https://image.msscdn.net/images/goods_img/20220816/2718818/2718818_17931618031343_500.jpg", url: "https://www.musinsa.com/products/2718818" },
-        { brand: "세터", label: "로턴 칼라 트랙 집업 자켓 (컬러 1)", value: 1500, display: "1,500", img: "https://image.msscdn.net/images/goods_img/20240215/3874735/3874735_17241621321423_500.jpg", url: "https://www.musinsa.com/products/3874735" },
-        { brand: "세터", label: "로턴 칼라 트랙 집업 자켓 (컬러 2)", value: 1300, display: "1,300", img: "https://image.msscdn.net/images/goods_img/20240215/3874735/3874735_17241621321423_500.jpg", url: "https://www.musinsa.com/products/3874735" },
-        { brand: "세터", label: "파로 오버 사이즈 부클 가디건 (헤… 컬러)", value: 1200, display: "1,200", img: "https://image.msscdn.net/images/prd_img/20220726/2683549/detail_2683549_17582476224564_500.jpg", url: "https://www.musinsa.com/products/2683549" },
-        { brand: "세터", label: "아플리케 캐시미어 후드", value: 900, display: "900" },
-        { brand: "세터", label: "클래식 로고 스웨트셔츠", value: 900, display: "900", img: "https://image.msscdn.net/images/goods_img/20230914/3562530/3562530_17709663338039_500.jpg", url: "https://www.musinsa.com/products/3562530" },
-        { brand: "벨리에", label: "트루 와이드 데님 팬츠", value: 600, display: "600", own: true, img: "https://image.msscdn.net/images/goods_img/20250331/4966329/4966329_17441795539166_500.png", url: "https://www.musinsa.com/products/4966329" },
+        { brand: "C 브랜드", label: "오버사이즈 부클 가디건 (블랙)", value: 16000, display: "16,000" },
+        { brand: "C 브랜드", label: "오버사이즈 부클 가디건 (네이비)", value: 3200, display: "3,200" },
+        { brand: "C 브랜드", label: "오버사이즈 부클 가디건 (아이보리)", value: 3100, display: "3,100" },
+        { brand: "C 브랜드", label: "아플리케 후드", value: 2800, display: "2,800" },
+        { brand: "C 브랜드", label: "코튼 후드 집업", value: 2400, display: "2,400" },
+        { brand: "C 브랜드", label: "트랙 팬츠 (블랙)", value: 2200, display: "2,200" },
+        { brand: "C 브랜드", label: "캐시미어 블렌드 니트", value: 1700, display: "1,700" },
+        { brand: "C 브랜드", label: "칼라 트랙 집업 자켓 (컬러 1)", value: 1500, display: "1,500" },
+        { brand: "C 브랜드", label: "칼라 트랙 집업 자켓 (컬러 2)", value: 1300, display: "1,300" },
+        { brand: "C 브랜드", label: "오버사이즈 부클 가디건 (기타 컬러)", value: 1200, display: "1,200" },
+        { brand: "C 브랜드", label: "아플리케 캐시미어 후드", value: 900, display: "900" },
+        { brand: "C 브랜드", label: "로고 스웨트셔츠", value: 900, display: "900" },
+        { brand: "A 브랜드", label: "와이드 데님 팬츠 (대표 상품)", value: 600, display: "600", own: true },
       ],
     },
     {

@@ -62,35 +62,6 @@ const FEATURE_CONFIG: Record<string, FeatureConfig> = {
       "'지난달 대비 어떤 색이 뜨고 있나요?'와 같은 질문을 하세요.",
     ],
   },
-  리포트: {
-    minPlan: "basic",
-    iconify: "ph:file-text-fill",
-    title: "브랜드 맞춤 리포트",
-    kind: "월 1회 제공",
-    heading: "우리 브랜드 맞춤 시즌 기획 리포트",
-    description:
-      "관심 브랜드와 경쟁사를 FEDIT 데이터로 비교해, 다음 시즌 기획에 바로 쓸 인사이트를 한 문서로 정리해 드려요.",
-    contentsTitle: "리포트가 답해 주는 질문",
-    contents: [
-      { icon: "ph:scales", title: "우리 브랜드는 시장과 무엇이 다른가", desc: "색상·유형 구성을 시장·경쟁사와 나란히 놓고 과한 곳과 빈 곳을 짚어요." },
-      { icon: "ph:target", title: "다음 시즌 무엇을 늘릴까", desc: "경쟁사가 동시에 늘리는 색, 시장 상위인데 우리에게 없는 카테고리를 골라요." },
-      { icon: "ph:users-three", title: "우리 고객은 어디서 또 사나", desc: "우리 고객이 경쟁사에서 실제로 산 상품 TOP 10과 리뷰로 빈자리를 확인해요." },
-      { icon: "ph:calendar-check", title: "작년 이맘때 무엇이 팔렸나", desc: "전년 같은 시즌 경쟁사 판매 상위 상품을 우리 대표 상품과 비교해요." },
-      { icon: "ph:magnifying-glass", title: "지금 수요는 어디에 있나", desc: "플랫폼별 검색 상위 키워드로 이번 시즌 수요를 확인해요." },
-      { icon: "ph:lightbulb", title: "그래서 무엇을 하면 되나", desc: "데이터에서 찾은 인사이트와 다음 시즌 제안을 핵심 요약으로 정리해요." },
-    ],
-    checklistTitle: "화면 분석과 다른 점",
-    checklist: [
-      "여러 탭에 흩어진 데이터를 우리 브랜드 기준 한 흐름으로 엮어 드려요.",
-      "화면에서 따로 보기 어려운 전년 동기 판매와 고객 교차 구매를 함께 담아요.",
-      "숫자만이 아니라 FEDIT가 찾은 인사이트와 제안이 들어간 기획 문서예요.",
-    ],
-    howTo: [
-      "관심 브랜드를 기준으로 월 1회 만들어 리포트 탭에 올려 드려요.",
-      "Basic은 리포트 일부, Pro부터 전체를 볼 수 있어요.",
-      "무료체험 중에도 맞춤 리포트를 1회 받아 볼 수 있어요.",
-    ],
-  },
   "유형 분석": {
     minPlan: "basic",
     icon: categoryIcon,

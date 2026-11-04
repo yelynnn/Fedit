@@ -23,7 +23,7 @@ const matchesPrefix = (apiPrefix: string, betaPath: string) => {
 };
 
 // 출시 전이라 배포 화면에서는 관리자에게만 보이는 메뉴(로컬 개발 화면은 모두) — 공개할 때 여기서 뺀다
-export const ADMIN_ONLY_FEATURES = new Set(["고객 분석", "리포트"]);
+export const ADMIN_ONLY_FEATURES = new Set(["고객 분석"]);
 
 export const isFeatureReleased = (feature: string, betaPaths: string[], admin: boolean) => {
   if (admin) return true;

@@ -24,6 +24,7 @@ export function CustomerAnalysisHeader({
   onRequestAnalysis,
   demo = false,
   onOpenGuide,
+  onOpenReport,
 }: {
   period: CustomerPeriod;
   onPeriodChange: (p: CustomerPeriod) => void;
@@ -33,6 +34,8 @@ export function CustomerAnalysisHeader({
   demo?: boolean;
   /** "사용법" — 처음 화면(사용 안내)을 다시 연다 */
   onOpenGuide?: () => void;
+  /** "맞춤 리포트" — 리포트를 창으로 열고 PDF 로 내려받는다 */
+  onOpenReport?: () => void;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -40,6 +43,16 @@ export function CustomerAnalysisHeader({
         <h2 className="text-2xl font-semibold leading-9 text-tx-neutral">고객 분석</h2>
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        {onOpenReport && (
+          <button
+            type="button"
+            onClick={onOpenReport}
+            className="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-fill-primary px-3 text-[14px] font-semibold text-tx-inverse hover:opacity-90"
+          >
+            <Icon icon="ph:file-text" className="h-4 w-4" aria-hidden />
+            맞춤 리포트
+          </button>
+        )}
         {onOpenGuide && (
           <button
             type="button"

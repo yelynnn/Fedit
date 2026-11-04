@@ -11,6 +11,7 @@ const LiveDot = () => (
   </span>
 );
 
+/** 예시 화면 안내 — 브랜드 칩 바로 위 한 줄(위의 리포트 박스와 겹쳐 무거워 보이지 않게 박스 없이) */
 export function CustomerDemoBanner({
   brandNames,
   onUpgrade,
@@ -19,27 +20,22 @@ export function CustomerDemoBanner({
   onUpgrade: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-line-alt bg-surface-base px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-col gap-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-[12px] font-semibold text-tx-neutral">
-            <LiveDot />
-            실시간 업데이트
-          </span>
-          <span className="text-[15px] font-semibold text-tx-strong">예시 분석을 보고 계세요</span>
-        </div>
-        <p className="text-[14px] leading-6 break-keep text-tx-alt">
-          {brandNames.join(" · ")}의 실제 리뷰 고객 데이터예요. 리뷰는 수집되는 대로 매일 반영돼요.
-          <br className="hidden sm:block" />
-          <span className="text-tx-neutral"> Pro에서는 우리 브랜드와 경쟁 브랜드를 직접 골라 같은 분석을 볼 수 있어요.</span>
-        </p>
-      </div>
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-alt pb-3">
+      <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-tx-alt">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-base px-2 py-0.5 text-[12px] font-semibold text-tx-neutral">
+          <LiveDot />
+          실시간 업데이트
+        </span>
+        <b className="font-semibold text-tx-strong">예시 분석</b>
+        <span className="break-keep">{brandNames.join(" · ")}의 실제 리뷰 데이터예요.</span>
+      </p>
       <button
         type="button"
         onClick={onUpgrade}
-        className="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-lg bg-fill-primary px-4 py-2.5 text-[14px] font-semibold text-tx-inverse sm:self-center"
+        className="inline-flex shrink-0 items-center gap-1 text-[14px] font-semibold text-tx-neutral underline-offset-2 hover:underline"
       >
         우리 브랜드로 분석하기
+        <ProBadge />
         <Icon icon="ph:arrow-right" className="h-4 w-4" aria-hidden />
       </button>
     </div>

@@ -30,6 +30,9 @@ type Props = {
 const AVAILABLE_NOTICE = "리뷰 분석이 가능한 브랜드만 보여요. 플랫폼 입점 브랜드를 추천해요.";
 const PICKS_NOTICE = "리뷰 분석이 가능한 관심 브랜드만 보여요. 플랫폼 입점 브랜드를 추천해요.";
 const REQUEST_ANY_LABEL = "찾는 브랜드가 없나요? 리뷰 분석 신청";
+/** 분석 묶음은 요금제와 상관없이 한 번에 최대 5개 */
+export const CUSTOMER_BRAND_MAX = 5;
+const CAP_HINT = `한 번에 최대 ${CUSTOMER_BRAND_MAX}개까지 고를 수 있어요`;
 
 /**
  * 분석 가능 브랜드 이름. 화면에 들어오면 미리 받아 두고 창을 열 때마다 다시 받는다.
@@ -106,6 +109,7 @@ export default function CustomerBrandSetModal({ isOpen, onClose, value, onConfir
             notice: AVAILABLE_NOTICE,
             missing: { label: "리뷰 분석 신청", onRequest: setRequestBrand, requested },
             noticeAction: { label: REQUEST_ANY_LABEL, onClick: () => setRequestBrand("") },
+            max: CUSTOMER_BRAND_MAX,
           }}
         />
         {dialog}
@@ -136,7 +140,8 @@ const chipClass = (on: boolean) =>
     ? "inline-flex items-center justify-center gap-2 rounded-md bg-fill-primary-hover px-4 py-2 type-body-medium text-tx-inverse"
     : "inline-flex items-center justify-center gap-2 rounded-md border border-line-alt bg-fill-bg-strong px-4 py-2 type-body-medium text-tx-neutral hover:bg-fill-hover active:bg-fill-hover";
 
-// Basic·Pro 용 작은 창 — 브랜드 필터 창과 같은 머리말·안내 줄·"N개 / 전체 선택"·칩·확인 버튼, 검색·탭·인덱스만 뺐다
+// Basic·Pro 용 작은 창 — 브랜드 필터 창과 같은 머리말·안내 줄·"N / 5개"·칩·확인 버튼, 검색·탭·인덱스만 뺐다.
+// 고를 수 있는 브랜드가 5개 이하일 때만 "전체 선택"을 둔다
 function PicksModal({
   isOpen,
   onClose,
@@ -155,8 +160,12 @@ function PicksModal({
 
   const selected = draft.filter((b) => allowed.includes(b));
   const allSelected = allowed.length > 0 && selected.length === allowed.length;
+  const capReached = selected.length >= CUSTOMER_BRAND_MAX;
+  const canSelectAll = allowed.length <= CUSTOMER_BRAND_MAX;
   const toggle = (name: string) =>
-    setDraft((d) => (d.includes(name) ? d.filter((x) => x !== name) : [...d, name]));
+    setDraft((d) =>
+      d.includes(name) ? d.filter((x) => x !== name) : capReached ? d : [...d, name],
+    );
   const toggleAll = () =>
     setDraft((d) => (allSelected ? d.filter((x) => !allowed.includes(x)) : [...new Set([...d, ...allowed])]));
 
@@ -189,7 +198,11 @@ function PicksModal({
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <div className="font-semibold text-icon-neutral">{selected.length}개</div>
+        <div className="font-semibold text-icon-neutral">
+          {selected.length} / {CUSTOMER_BRAND_MAX}개
+          <span className="ml-2 font-normal text-tx-alt">{CAP_HINT}</span>
+        </div>
+        {canSelectAll && (
         <label className="inline-flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -200,6 +213,7 @@ function PicksModal({
           />
           <span className="text-icon-neutral">브랜드 전체 선택하기</span>
         </label>
+        )}
       </div>
 
       <div className="flex-1 min-h-[80px] overflow-y-auto">
@@ -211,8 +225,17 @@ function PicksModal({
           <div className="flex flex-wrap gap-2">
             {allowed.map((name) => {
               const on = draft.includes(name);
+              const capped = !on && capReached;
               return (
-                <button key={name} type="button" onClick={() => toggle(name)} aria-pressed={on} className={chipClass(on)}>
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => toggle(name)}
+                  aria-pressed={on}
+                  disabled={capped}
+                  title={capped ? CAP_HINT : undefined}
+                  className={`${chipClass(on)} ${capped ? "cursor-not-allowed opacity-40" : ""}`}
+                >
                   {name}
                 </button>
               );

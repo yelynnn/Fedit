@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useUserStore } from "@/stores/UserStore";
-import CustomerBrandSetModal from "@/components/customer/CustomerBrandSetModal";
+import CustomerBrandSetModal, { CUSTOMER_BRAND_MAX } from "@/components/customer/CustomerBrandSetModal";
 import { AnalysisRequestDialog } from "@/components/customer/AnalysisRequestDialog";
 import { GetCustomerBrands, GetCustomerSummary } from "@/apis/CustomerAnalysisAPI";
 import type {
@@ -15,6 +15,7 @@ import { CustomerReviewSection } from "@/components/customer/CustomerReviewSecti
 import { CustomerCrossSection } from "@/components/customer/CustomerCrossSection";
 import { CustomerOnboarding } from "@/components/customer/CustomerOnboarding";
 import { CustomerDemoBanner, CustomerDemoCta } from "@/components/customer/CustomerDemo";
+import CustomerReportModal, { CustomerReportStrip } from "@/components/customer/CustomerReportModal";
 import { useUIStore } from "@/stores/UIStore";
 import { getEffectivePlan, useSubscriptionStore } from "@/stores/SubscriptionStore";
 import { EmptyText, ErrorBox, LoadingBox } from "@/components/customer/CustomerUI";
@@ -91,6 +92,8 @@ function CustomerAnalysisPage() {
   };
   const openUpgrade = () => openSettingsModal("구독");
   const [isSetModalOpen, setSetModalOpen] = useState(false);
+  // 맞춤 리포트 창(문서 + PDF 다운로드) — 리포트는 이 탭에서만 본다
+  const [reportOpen, setReportOpen] = useState(false);
   // 헤더 "리뷰 분석 신청" — ""로 열면 브랜드명을 적는 칸이 나온다
   const [requestBrand, setRequestBrand] = useState<string | null>(null);
   const [brands, setBrands] = useState<CustomerBrand[]>([]);
@@ -125,8 +128,12 @@ function CustomerAnalysisPage() {
       const fromStored = stored ? (await GetCustomerBrands(stored)).brands ?? [] : [];
       return { list: fromStored.length > 0 ? fromStored : base.brands ?? [], demo: false };
     })()
-      .then(({ list, demo: isDemo }) => {
+      .then(({ list: all, demo: isDemo }) => {
         if (ignore) return;
+        // 기본 묶음(관심 브랜드 전부)이나 예전에 저장한 묶음이 5개를 넘으면 자사 브랜드를 앞에 두고 5개만
+        const list = [...all]
+          .sort((a, b) => Number(!!b.isOwn) - Number(!!a.isOwn))
+          .slice(0, CUSTOMER_BRAND_MAX);
         setDemo(isDemo);
         setBrands(list);
         setBrandId((prev) =>
@@ -255,6 +262,10 @@ function CustomerAnalysisPage() {
     );
   };
 
+  // 분석 화면(브랜드 칩·결과)이 보이는지 — 이때는 칩 위 리포트 줄이 있어서 머리말의 리포트 버튼은 숨긴다
+  const analysisView =
+    !brandsLoading && !brandsError && (demo ? demoOpened : brands.length > 0 && !guideOpen);
+
   return (
     <div className="flex flex-col w-full min-w-0 gap-6 px-4 sm:px-8 lg:px-14">
       <CustomerAnalysisHeader
@@ -264,6 +275,7 @@ function CustomerAnalysisPage() {
         demo={demo}
         // 예시 화면은 사용 안내가 첫 화면이라 그 화면으로, 그 밖은 사용법 화면으로
         onOpenGuide={() => (demo ? setDemoOpened(false) : setGuideOpen(true))}
+        onOpenReport={analysisView ? undefined : () => setReportOpen(true)}
       />
 
       {brandsLoading ? (
@@ -283,6 +295,8 @@ function CustomerAnalysisPage() {
         <CustomerOnboarding startLabel="고객 분석 시작하기" onSelectBrands={closeGuide} />
       ) : (
         <>
+          {/* 리포트 박스를 맨 위에, 예시 안내는 칩 바로 위 한 줄로 */}
+          <CustomerReportStrip onOpen={() => setReportOpen(true)} />
           {demo && (
             <CustomerDemoBanner brandNames={brands.map((b) => b.name)} onUpgrade={openUpgrade} />
           )}
@@ -298,6 +312,7 @@ function CustomerAnalysisPage() {
         </>
       )}
       <AnalysisRequestDialog brand={requestBrand} onClose={() => setRequestBrand(null)} />
+      <CustomerReportModal isOpen={reportOpen} onClose={() => setReportOpen(false)} />
       {/* 브랜드가 없을 때(처음 화면)도 같은 창으로 고른다 */}
       <CustomerBrandSetModal
         isOpen={isSetModalOpen}
