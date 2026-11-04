@@ -6,8 +6,7 @@ import { useUIStore } from "@/stores/UIStore";
 import {
   useSubscriptionStore,
   getEffectivePlan,
-  toBillingPlan,
-} from "@/stores/SubscriptionStore";
+  toBillingPlan, isNewTrial } from "@/stores/SubscriptionStore";
 import { GetBrandList, GetBrandPicks, PutBrandPicks } from "@/apis/AnalysisAPI";
 import { findTabForKeyword, useScrollActiveTabIntoView } from "@/lib/brandTabSearch";
 import pointIcon from "@/assets/etc/pointIcon.svg";
@@ -53,7 +52,7 @@ export default function InterestBrandModal({
   const subscription = useSubscriptionStore((s) => s.subscription);
   const currentPlan = toBillingPlan(getEffectivePlan(subscription));
   const isProPlan = currentPlan === "pro";
-  const cap = getBrandCap(currentPlan);
+  const cap = getBrandCap(currentPlan, isNewTrial(subscription));
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [activeTab, setActiveTab] = useState("");

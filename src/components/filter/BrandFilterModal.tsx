@@ -6,8 +6,7 @@ import { useUIStore } from "@/stores/UIStore";
 import {
   useSubscriptionStore,
   getEffectivePlan,
-  toBillingPlan,
-} from "@/stores/SubscriptionStore";
+  toBillingPlan, isNewTrial } from "@/stores/SubscriptionStore";
 import { GetBrandList, PostBrandApply } from "@/apis/AnalysisAPI";
 import { findTabForKeyword, useScrollActiveTabIntoView } from "@/lib/brandTabSearch";
 import { getBrandCap } from "@/lib/brandCap";
@@ -96,7 +95,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
   const trialNotStarted = getEffectivePlan(subscription) === "none";
   const openTrialModal = useUIStore((s) => s.openTrialModal);
   const isPro = currentPlan === "pro";
-  const brandCap = getBrandCap(currentPlan);
+  const brandCap = getBrandCap(currentPlan, isNewTrial(subscription));
   const [rawCategories, setCategories] = useState<ApiCategory[]>([]);
   const allowed = selection?.allowed;
   // selection.allowed 가 있으면 허용 브랜드만 남기고, 비는 카테고리 탭은 뺀다
@@ -615,7 +614,7 @@ export default function BrandFilterModal({ isOpen, onClose, onSubmit, selection 
             <Icon icon="ph:info" className="w-3.5 h-3.5 flex-shrink-0" />
             {isFree
               ? "멤버십을 시작하고 관심 브랜드를 고르면 해당 브랜드를 볼 수 있어요."
-              : `${isPro ? "Pro" : "Basic"} 플랜은 관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요.`}
+              : `${isPro ? "Pro 플랜은" : isNewTrial(subscription) ? "무료체험은" : "Basic 플랜은"} 관심 브랜드(최대 ${brandCap}개)만 이용할 수 있어요.`}
           </p>
         )
       )}

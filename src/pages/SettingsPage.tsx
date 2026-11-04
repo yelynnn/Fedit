@@ -34,8 +34,7 @@ import {
   isTrial,
   getTrialEndsAt,
   useSimulatedSubscription,
-  isLegacyBasicTrial,
-} from "@/stores/SubscriptionStore";
+  isLegacyBasicTrial, isNewTrial } from "@/stores/SubscriptionStore";
 import cancelIcon from "@/assets/planCard/cancel.svg";
 import InterestBrandModal from "@/components/billing/InterestBrandModal";
 import {
@@ -456,7 +455,7 @@ export default function SettingsPage() {
     }
   };
 
-  const brandCap = getBrandCap(currentPlan);
+  const brandCap = getBrandCap(currentPlan, isNewTrial(subscription));
 
   useEffect(() => {
     if (

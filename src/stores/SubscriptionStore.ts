@@ -40,6 +40,13 @@ export const isLegacyBasicTrial = (subscription: Subscription | null): boolean =
 };
 const isBasicPlanValue = (plan: Subscription["plan"] | undefined) => plan === "basic" || plan === "basic_secret";
 
+/** 개편 뒤에 시작한 Basic 무료체험(Trial, 혜택 코드 없음) — 관심 브랜드 3개·크롬 확장 30개·엑셀 1회(백엔드 TrialPolicy 와 같게) */
+export const isNewTrial = (subscription: Subscription | null): boolean =>
+  subscription?.status === "trial" &&
+  isBasicPlanValue(subscription.plan) &&
+  !subscription.promoTrialPlan &&
+  !isLegacyBasicTrial(subscription);
+
 // 무료 체험이 끝나는 날(ISO). 백엔드가 trialEndsAt를 아직 안 내려주면
 // nextBillingDate로 폴백한다.
 export const getTrialEndsAt = (

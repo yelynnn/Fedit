@@ -4,8 +4,7 @@ import { useFilterStore } from "@/stores/FilterStore";
 import {
   useSubscriptionStore,
   getEffectivePlan,
-  toBillingPlan,
-} from "@/stores/SubscriptionStore";
+  toBillingPlan, isNewTrial } from "@/stores/SubscriptionStore";
 import { getBrandCap, PRO_REQUIRED_COUNT } from "@/lib/brandCap";
 import sparkleIcon from "@/assets/etc/sparkleicon.svg";
 
@@ -107,7 +106,7 @@ export default function OnboardingTour() {
   const interestBrandPicks = useFilterStore((s) => s.interestBrandPicks);
   const subscription = useSubscriptionStore((s) => s.subscription);
   const currentPlan = toBillingPlan(getEffectivePlan(subscription));
-  const brandCap = getBrandCap(currentPlan);
+  const brandCap = getBrandCap(currentPlan, isNewTrial(subscription));
 
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
