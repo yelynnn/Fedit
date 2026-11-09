@@ -20,7 +20,7 @@ import { useUIStore } from "@/stores/UIStore";
 import { getEffectivePlan, useSubscriptionStore } from "@/stores/SubscriptionStore";
 import { EmptyText, ErrorBox, LoadingBox } from "@/components/customer/CustomerUI";
 import {
-  PLATFORM_LABELS,
+  platformLabel,
   platformAvailability,
   topicParticle,
 } from "@/components/customer/customerFormat";
@@ -223,7 +223,7 @@ function CustomerAnalysisPage() {
       );
     }
     if (availability !== "ok") {
-      const label = PLATFORM_LABELS[platform];
+      const label = platformLabel(platform);
       return (
         <div className="rounded-xl border border-line-alt bg-fill-bg-strong px-5 py-12 text-center text-[14px] text-tx-alt">
           {availability === "unlisted"

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { CustomerPlatform, CustomerSummary } from "@/types/CustomerAnalysis";
-import { PLATFORM_LABELS, fmtNum, fmtPct, pct } from "./customerFormat";
+import { fmtNum, fmtPct, isCrossPlatform, pct, platformLabel } from "./customerFormat";
 
 function KpiCard({ label, value, sub }: { label: string; value: ReactNode; sub: ReactNode }) {
   return (
@@ -15,8 +15,11 @@ function KpiCard({ label, value, sub }: { label: string; value: ReactNode; sub: 
 export function CustomerKpiCards({ summary }: { summary: CustomerSummary }) {
   const platformText = (Object.entries(summary.platformCounts) as [CustomerPlatform, number][])
     .filter(([, n]) => n != null)
-    .map(([p, n]) => `${PLATFORM_LABELS[p]} ${fmtNum(n)}건`)
+    .map(([p, n]) => `${platformLabel(p)} ${fmtNum(n)}건`)
     .join(" · ");
+  // SSF샵·자사몰 리뷰만 있는 브랜드(준지·유니클로 등)는 다른 브랜드 리뷰가 없어 교차 구매를 볼 수 없다
+  const reviewPlatforms = Object.keys(summary.platformCounts);
+  const crossUnavailable = reviewPlatforms.length > 0 && !reviewPlatforms.some(isCrossPlatform);
   const isMale = summary.male >= 50;
   const genderText = isMale ? `남성 ${fmtPct(summary.male)}` : `여성 ${fmtPct(100 - summary.male)}`;
   const profileSub = [
@@ -46,8 +49,12 @@ export function CustomerKpiCards({ summary }: { summary: CustomerSummary }) {
       <KpiCard label="리뷰 고객 프로필" value={genderText} sub={profileSub} />
       <KpiCard
         label="교차구매 포착 고객"
-        value={`${fmtNum(summary.crossAny)}명`}
-        sub={`리뷰어 ${fmtNum(summary.reviewers)}명 중 ${fmtPct(summary.crossPct)}가 다른 브랜드에서도 구매`}
+        value={crossUnavailable ? "—" : `${fmtNum(summary.crossAny)}명`}
+        sub={
+          crossUnavailable
+            ? `${reviewPlatforms.map((p) => platformLabel(p as CustomerPlatform)).join("·")} 리뷰라 교차 구매는 볼 수 없어요`
+            : `리뷰어 ${fmtNum(summary.reviewers)}명 중 ${fmtPct(summary.crossPct)}가 다른 브랜드에서도 구매`
+        }
       />
     </div>
   );

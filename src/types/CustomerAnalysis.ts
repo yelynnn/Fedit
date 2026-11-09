@@ -1,6 +1,7 @@
 // 고객 분석(리뷰 기반) 화면 타입 — 백엔드 계약은 src/apis/CustomerAnalysisAPI.ts 맨 위 주석 참고
 
-export type CustomerPlatform = "musinsa" | "29cm" | "wconcept";
+/** 교차 구매까지 보는 플랫폼 + SSF샵·자사몰(own:브랜드) — 뒤의 둘은 그 브랜드 리뷰만 모아 교차 구매가 없다 */
+export type CustomerPlatform = "musinsa" | "29cm" | "wconcept" | "ssfshop" | `own:${string}`;
 /** 플랫폼 선택값 — all = 전체 플랫폼 */
 export type CustomerPlatformFilter = "all" | CustomerPlatform;
 export type CustomerPeriod = 3 | 6 | 12;

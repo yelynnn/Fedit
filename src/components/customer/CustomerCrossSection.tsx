@@ -11,7 +11,8 @@ import type {
 import { Card, EmptyText, ErrorBox, LoadingBox, ProductThumb, Segmented } from "./CustomerUI";
 import {
   CATEGORIES,
-  PLATFORM_LABELS,
+  isCrossPlatform,
+  platformLabel,
   fmtNum,
   fmtPct,
   genderPrefix,
@@ -79,13 +80,26 @@ function CrossBody({
   category: CustomerCategory;
 }) {
   const gp = genderPrefix(gender);
-  const platformLabel = PLATFORM_LABELS[cross.platform];
+  const label = platformLabel(cross.platform);
+
+  if (!isCrossPlatform(cross.platform)) {
+    return (
+      <div className="rounded-xl border border-line-alt bg-fill-bg-strong p-5">
+        <p className="text-[14px] font-semibold text-tx-neutral">
+          {brandName} 리뷰는 {label}에서만 모아 교차 구매를 볼 수 없어요.
+        </p>
+        <p className="mt-1 text-[13px] leading-[1.6] text-tx-alt">
+          {label}에서는 다른 브랜드 리뷰를 모으지 않아, 같은 고객이 어떤 브랜드를 같이 샀는지 알 수 없어요. 위의 리뷰 분석은 그대로 볼 수 있어요.
+        </p>
+      </div>
+    );
+  }
 
   if (cross.cross === 0) {
     return (
       <div className="rounded-xl border border-[var(--palette-orange-90)] bg-[var(--palette-orange-95)] p-5">
         <p className="text-[14px] font-semibold text-[var(--palette-orange-30)]">
-          {platformLabel}에서 다른 브랜드도 산 {gp}고객이 아직 없어요.
+          {label}에서 다른 브랜드도 산 {gp}고객이 아직 없어요.
         </p>
         <p className="mt-1 text-[13px] leading-[1.6] text-[var(--palette-orange-30)]">
           {brandName} {gp}고객 {fmtNum(cross.reviewers)}명의 리뷰 이력에서 다른 브랜드 구매가 잡히지 않았어요.
@@ -109,7 +123,7 @@ function CrossBody({
           }
         >
           <p className="-mt-2 mb-4 text-[13px] leading-[1.6] text-tx-alt">
-            {brandName} {gp}고객 {fmtNum(cross.reviewers)}명 중 {platformLabel}의 각 브랜드에서 {category}
+            {brandName} {gp}고객 {fmtNum(cross.reviewers)}명 중 {label}의 각 브랜드에서 {category}
             {objectParticle(category)} 산 고객 비율이에요.
           </p>
           <ul className="grid grid-cols-[minmax(0,max-content)_minmax(40px,1fr)_max-content] items-center gap-x-3 gap-y-2.5">

@@ -5,14 +5,22 @@ import type {
   CustomerPlatformFilter,
 } from "@/types/CustomerAnalysis";
 
-export const PLATFORM_LABELS: Record<CustomerPlatformFilter, string> = {
+const LABELS: Record<string, string> = {
   all: "전체 플랫폼",
   musinsa: "무신사",
   "29cm": "29CM",
   wconcept: "W컨셉",
+  ssfshop: "SSF샵",
 };
 
+/** 플랫폼 이름 — own:* 는 자사몰 */
+export const platformLabel = (p: CustomerPlatformFilter) =>
+  LABELS[p] ?? (p.startsWith("own:") ? "자사몰" : p);
+
 export const PLATFORMS: CustomerPlatform[] = ["musinsa", "29cm", "wconcept"];
+
+/** 다른 브랜드 리뷰도 모으는 플랫폼인지 — 아니면(SSF샵·자사몰) 교차 구매를 볼 수 없다 */
+export const isCrossPlatform = (p: string) => (PLATFORMS as string[]).includes(p);
 
 export const CATEGORIES = ["상의", "바지", "아우터"] as const;
 
