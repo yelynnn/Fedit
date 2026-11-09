@@ -13,14 +13,15 @@ const LABELS: Record<string, string> = {
   ssfshop: "SSF샵",
 };
 
-/** 플랫폼 이름 — own:* 는 자사몰 */
-export const platformLabel = (p: CustomerPlatformFilter) =>
-  LABELS[p] ?? (p.startsWith("own:") ? "자사몰" : p);
+const oneLabel = (p: string) => LABELS[p] ?? (p.startsWith("own:") ? "자사몰" : p);
+
+/** 플랫폼 이름 — own:* 는 자사몰, 여러 플랫폼("29cm,wconcept")은 "29CM·W컨셉" */
+export const platformLabel = (p: CustomerPlatformFilter | string) => p.split(",").map(oneLabel).join("·");
 
 export const PLATFORMS: CustomerPlatform[] = ["musinsa", "29cm", "wconcept"];
 
 /** 다른 브랜드 리뷰도 모으는 플랫폼인지 — 아니면(SSF샵·자사몰) 교차 구매를 볼 수 없다 */
-export const isCrossPlatform = (p: string) => (PLATFORMS as string[]).includes(p);
+export const isCrossPlatform = (p: string) => p.split(",").every((x) => (PLATFORMS as string[]).includes(x));
 
 export const CATEGORIES = ["상의", "바지", "아우터"] as const;
 

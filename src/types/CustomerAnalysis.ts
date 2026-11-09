@@ -133,8 +133,8 @@ export type CrossTopRow = {
 };
 
 export type CustomerCross = {
-  /** 교차 구매를 계산한 플랫폼(같은 플랫폼 안에서만 계산) */
-  platform: CustomerPlatform;
+  /** 교차 구매를 계산한 플랫폼 — 리뷰가 있는 플랫폼을 합쳐 계산하면 "29cm,wconcept"처럼 쉼표로 잇는다 */
+  platform: string;
   majorGender: CustomerGender;
   genders: Record<CustomerGenderFilter, number>;
   /** 선택한 성별의 리뷰어 수 */

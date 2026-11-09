@@ -39,6 +39,18 @@ const readStoredSet = (email: string): string[] | null => {
   }
 };
 
+// 고른 기간 — 새로고침해도 유지한다(브라우저마다)
+const PERIOD_KEY = "customer-analysis-period";
+const PERIODS: CustomerPeriod[] = [0, 3, 6, 12];
+const readStoredPeriod = (): CustomerPeriod => {
+  try {
+    const v = Number(localStorage.getItem(PERIOD_KEY));
+    return (PERIODS as number[]).includes(v) && localStorage.getItem(PERIOD_KEY) !== null ? (v as CustomerPeriod) : 12;
+  } catch {
+    return 12;
+  }
+};
+
 const writeStoredSet = (email: string, names: string[]) => {
   if (!email) return;
   try {
@@ -104,7 +116,15 @@ function CustomerAnalysisPage() {
   const [brandId, setBrandId] = useState<string | null>(null);
   // 브랜드마다 리뷰를 한 플랫폼에서만 받아서 플랫폼 선택은 없앴다 — 항상 전체(서버가 그 브랜드의 플랫폼을 쓴다)
   const platform: CustomerPlatformFilter = "all";
-  const [period, setPeriod] = useState<CustomerPeriod>(12);
+  const [period, setPeriodState] = useState<CustomerPeriod>(readStoredPeriod);
+  const setPeriod = (p: CustomerPeriod) => {
+    setPeriodState(p);
+    try {
+      localStorage.setItem(PERIOD_KEY, String(p));
+    } catch {
+      // 저장 못 해도 이번 화면에서는 그대로 쓴다
+    }
+  };
 
   const [summary, setSummary] = useState<CustomerSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
