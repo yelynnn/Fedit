@@ -12,6 +12,7 @@ const PERIOD_OPTIONS: { value: CustomerPeriod; label: string }[] = [
   { value: 3, label: "최근 3개월" },
   { value: 6, label: "최근 6개월" },
   { value: 12, label: "최근 12개월" },
+  { value: 0, label: "전체 기간" },
 ];
 
 

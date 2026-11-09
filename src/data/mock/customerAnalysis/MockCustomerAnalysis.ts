@@ -83,7 +83,7 @@ const getBrand = (brandId: string, period: CustomerPeriod, platform: CustomerPla
   if (platform === "29cm" || platform === "wconcept") {
     throw new Error("이 플랫폼 리뷰는 아직 수집하지 않았어요.");
   }
-  const b = data.periods[String(period)]?.[brandId];
+  const b = data.periods[String(period || 12)]?.[brandId];
   if (!b) throw new Error("브랜드 데이터를 찾지 못했어요.");
   return b;
 };

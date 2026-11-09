@@ -4,7 +4,8 @@
 export type CustomerPlatform = "musinsa" | "29cm" | "wconcept" | "ssfshop" | `own:${string}`;
 /** 플랫폼 선택값 — all = 전체 플랫폼 */
 export type CustomerPlatformFilter = "all" | CustomerPlatform;
-export type CustomerPeriod = 3 | 6 | 12;
+/** 0 = 전체(수집된 리뷰 전부 — 리뷰가 적어 전체 기간을 받은 브랜드용) */
+export type CustomerPeriod = 0 | 3 | 6 | 12;
 export type CustomerGender = "여성" | "남성";
 export type CustomerGenderFilter = "all" | CustomerGender;
 export type CustomerCategory = "상의" | "바지" | "아우터";
