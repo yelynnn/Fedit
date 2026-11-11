@@ -40,6 +40,7 @@ const xlsxCols = [
   { header: "넥라인", key: "neckline", width: 12 },
   { header: "핏", key: "fit", width: 12 },
   { header: "패턴", key: "pattern", width: 14 },
+  { header: "계절감", key: "season_feel", width: 14 },
   { header: "디테일", key: "details", width: 40 },
   { header: "AI BETA", key: "ai_description", width: 40 },
   { header: "평점", key: "rating", width: 8 },
@@ -229,6 +230,9 @@ function ExcelDownloadButton() {
           r[k] = Array.isArray(p.vlm?.pattern)
             ? p.vlm.pattern.join("/")
             : (p.vlm?.pattern ?? "");
+        // 계절감(봄·여름·가을·겨울·사계절) — 상세 화면과 같은 값. 없으면 빈칸
+        else if (k === "season_feel")
+          r[k] = Array.isArray(p.vlm?.season_feel) ? p.vlm.season_feel.join("/") : "";
         else if (k === "details")
           r[k] = Array.isArray(p.vlm?.detail) ? p.vlm.detail.join(", ") : "";
         // 할인 중이 아닌 상품(할인가 없음)은 현업 엑셀 관행대로 현재가(판매가)를
