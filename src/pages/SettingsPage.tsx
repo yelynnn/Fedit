@@ -400,8 +400,8 @@ export default function SettingsPage() {
         plan.key === promoPlan
           ? {
               ...plan,
-              badge: "혜택 코드",
-              discount: `첫 ${promoRemainingMonths}개월 할인 · 이후 ${plan.price}`,
+              badge: "혜택가",
+              discount: `첫 ${promoRemainingMonths}개월 혜택가 · 이후 ${plan.price}`,
               price: `${(promoAmount ?? 0).toLocaleString("ko-KR")}원`,
             }
           : plan,
@@ -2077,14 +2077,22 @@ export default function SettingsPage() {
               시작할게요
             </h2>
             <div className="mb-6">
-              <p className="text-sm leading-relaxed text-tx-alt">
-                {planDefs.find((p) => p.key === pendingPlan)?.price}
-                {planDefs.find((p) => p.key === pendingPlan)?.sub}에 정기결제가
-                시작됩니다. 진행 전 아래 내용을 확인해주세요.
-              </p>
+              {isPromoDiscountActive && pendingPlan === promoPlan ? (
+                <p className="text-sm leading-relaxed text-tx-alt">
+                  첫 {promoRemainingMonths}개월 동안 월{" "}
+                  {promoAmount?.toLocaleString("ko-KR")}원으로 정기결제가
+                  시작됩니다. 진행 전 아래 내용을 확인해주세요.
+                </p>
+              ) : (
+                <p className="text-sm leading-relaxed text-tx-alt">
+                  {planDefs.find((p) => p.key === pendingPlan)?.price}
+                  {planDefs.find((p) => p.key === pendingPlan)?.sub}에 정기결제가
+                  시작됩니다. 진행 전 아래 내용을 확인해주세요.
+                </p>
+              )}
               {isPromoDiscountActive && pendingPlan === promoPlan && (
                 <p className="mt-2 text-xs leading-relaxed text-tx-assistive">
-                  혜택 코드 할인으로 첫 {promoRemainingMonths}개월은 월{" "}
+                  혜택가로 첫 {promoRemainingMonths}개월은 월{" "}
                   {promoAmount?.toLocaleString("ko-KR")}원이 청구되고, 이후에는
                   월 {PLAN_DEFS.find((p) => p.key === pendingPlan)?.price}이
                   청구돼요.
