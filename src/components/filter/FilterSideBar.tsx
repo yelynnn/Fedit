@@ -12,6 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// 연도 필터에 보여 줄 가장 이른 연도
+const MIN_FILTER_YEAR = 2020;
+
 function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void }) {
   const {
     resetFilter,
@@ -26,14 +29,19 @@ function FilterSideBar({ onOpenFilter }: { onOpenFilter?: (tab: string) => void 
   // /menu/season은 "23FW", "25SS"처럼 "YY" + "SS"/"FW" 시즌 코드를 준다.
   // 연도 선택지는 앞 2자리(YY)만 뽑아 "20YY"로 복원하고 중복 제거,
   // 최신 연도가 위로 오도록 내림차순 정렬한다.
+  // 선택지는 MIN_FILTER_YEAR ~ 올해만 보여 준다. 오래된 시즌(01~19)은 상품이 거의 없고,
+  // 내년 시즌 코드(예: 27SS 선판매)는 아직 고를 이유가 없어서 뺀다(2026-11-17).
   const [years, setYears] = useState<string[]>([]);
   useEffect(() => {
     let ignore = false;
     GetSeasonList().then((seasons) => {
       if (ignore) return;
+      const thisYear = new Date().getFullYear();
       const uniqueYears = Array.from(
         new Set(seasons.map((s) => `20${s.slice(0, 2)}`)),
-      ).sort((a, b) => Number(b) - Number(a));
+      )
+        .filter((y) => Number(y) >= MIN_FILTER_YEAR && Number(y) <= thisYear)
+        .sort((a, b) => Number(b) - Number(a));
       setYears(uniqueYears);
     });
     return () => {
