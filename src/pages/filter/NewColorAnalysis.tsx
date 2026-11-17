@@ -16,7 +16,8 @@ import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
 import type { BrandColorData, TrendColorItem } from "@/apis/ColorAPI";
 import AnalysisSeasonSelect, {
   EMPTY_ANALYSIS_PERIOD,
-  toPeriodParams,
+  useAnalysisPeriodEnabled,
+  useAnalysisPeriodParams,
   type AnalysisPeriod,
 } from "@/components/filter/AnalysisSeasonSelect";
 
@@ -88,6 +89,9 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
   const [isCompareModalOpen, setCompareModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [period, setPeriod] = useState<AnalysisPeriod>(EMPTY_ANALYSIS_PERIOD);
+  // 연도·시즌 선택은 관리자에게만 먼저 공개 — 그 밖에는 전체 기간
+  const periodEnabled = useAnalysisPeriodEnabled();
+  const periodParams = useAnalysisPeriodParams(period);
 
   const [allBrandData, setAllBrandData] = useState<TreeMapEntry[]>([]);
   const [displayTreeMapBrands, setDisplayTreeMapBrands] = useState<
@@ -101,7 +105,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
       try {
         const res = await GetColorGraph(
           demo ? ANALYSIS_DEMO_BRANDS : undefined,
-          toPeriodParams(period),
+          periodParams,
         );
         const mapped = Array.isArray(res?.brands)
           ? res.brands.map(toTreeMapEntry)
@@ -121,7 +125,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
       }
     };
     load();
-  }, [brandList, isFilterHydrated, demo, period]);
+  }, [brandList, isFilterHydrated, demo, periodParams]);
 
   useEffect(() => {
     if (!isFilterHydrated && !demo) return;
@@ -130,7 +134,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
         const res = await GetTrendColor(
           demo ? ANALYSIS_DEMO_BRANDS : undefined,
           // 연도는 빼고 시즌만 — 안 골랐으면 지금 계절, '전체'면 조건 없음
-          toPeriodParams(period).season,
+          periodParams.season,
         );
         setTrendColors(
           Array.isArray(res?.trend_color)
@@ -142,7 +146,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
       }
     };
     load();
-  }, [brandList, isFilterHydrated, demo, period]);
+  }, [brandList, isFilterHydrated, demo, periodParams]);
 
   const handleCompareSubmit = (brands: string[]) => {
     brands.forEach((brandName) => {
@@ -202,7 +206,9 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-        <AnalysisSeasonSelect value={period} onChange={setPeriod} />
+        {periodEnabled && (
+          <AnalysisSeasonSelect value={period} onChange={setPeriod} />
+        )}
         {/* 뷰 전환 버튼 그룹 */}
         <div className="flex items-center p-1 border bg-surface-base rounded-xl border-surface-base shrink-0">
           <button
@@ -253,7 +259,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
                       ? () => handleRemoveTreeMap(block.brand)
                       : undefined
                   }
-                  period={toPeriodParams(period)}
+                  period={periodParams}
                 />
               )}
             </div>
@@ -301,7 +307,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
           <TrendColorBox
             key={item.rank}
             data={item}
-            period={{ season: toPeriodParams(period).season }}
+            period={{ season: periodParams.season }}
           />
         ))}
       </div>

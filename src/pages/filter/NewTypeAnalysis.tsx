@@ -9,7 +9,8 @@ import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
 import OwnBrandInsights from "@/components/type/OwnBrandInsights";
 import AnalysisSeasonSelect, {
   EMPTY_ANALYSIS_PERIOD,
-  toPeriodParams,
+  useAnalysisPeriodEnabled,
+  useAnalysisPeriodParams,
   type AnalysisPeriod,
 } from "@/components/filter/AnalysisSeasonSelect";
 
@@ -28,6 +29,9 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
   const { brandList } = useFilterStore();
   const isFilterHydrated = useFilterStoreHydrated();
   const [period, setPeriod] = useState<AnalysisPeriod>(EMPTY_ANALYSIS_PERIOD);
+  // 연도·시즌 선택과 자사 맞춤 분석은 관리자에게만 먼저 공개
+  const periodEnabled = useAnalysisPeriodEnabled();
+  const periodParams = useAnalysisPeriodParams(period);
 
   // 카드 목록은 카드 폭(340~400px)이 정해져 있어 화면 오른쪽 끝까지 차지 않는다.
   // 연도·시즌 칸이 카드보다 더 오른쪽으로 나가지 않도록, 머리 줄 폭을 '카드가 실제로 끝나는 위치'에 맞춘다.
@@ -55,7 +59,7 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
         setLoading(true);
         const res = await GetCategoryGraph(
           demo ? ANALYSIS_DEMO_BRANDS : undefined,
-          toPeriodParams(period),
+          periodParams,
         );
 
         const list = (
@@ -72,7 +76,7 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
       }
     };
     load();
-  }, [brandList, isFilterHydrated, demo, period]);
+  }, [brandList, isFilterHydrated, demo, periodParams]);
 
   return (
     <div className="px-14">
@@ -99,11 +103,13 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
           <p className="text-base font-semibold leading-6 text-icon-neutral">
             최근 주목받는 상품 유형과 연관 키워드를 탐색해보세요.
           </p>
-          <AnalysisSeasonSelect value={period} onChange={setPeriod} strong />
+          {periodEnabled && (
+            <AnalysisSeasonSelect value={period} onChange={setPeriod} strong />
+          )}
         </div>
       </div>
 
-      {!demo && <OwnBrandInsights period={toPeriodParams(period)} />}
+      {!demo && periodEnabled && <OwnBrandInsights period={periodParams} />}
 
       <div
         ref={gridRef}

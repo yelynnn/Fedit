@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useUserStore } from "@/stores/UserStore";
 import { GetSeasonList } from "@/apis/AnalysisAPI";
 import {
   Select,
@@ -49,6 +50,21 @@ export const toPeriodParams = ({
     year: year && year !== ALL ? year : ALL,
     season: season && season !== ALL ? season : ALL,
   };
+};
+
+/**
+ * 관리자 먼저 공개(2026-11-17): 연도·시즌 선택은 관리자에게만 보인다.
+ * 관리자가 아니면 선택 UI 가 없으니 예전처럼 전체 기간으로 조회한다 — 백엔드는 값이 없으면 최신 시즌이라 all 을 명시한다.
+ */
+export const useAnalysisPeriodEnabled = () => useUserStore((s) => s.admin);
+
+export const useAnalysisPeriodParams = (period: AnalysisPeriod) => {
+  const enabled = useAnalysisPeriodEnabled();
+  return useMemo(
+    () => (enabled ? toPeriodParams(period) : { year: ALL, season: ALL }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [enabled, period.year, period.season],
+  );
 };
 
 function AnalysisSeasonSelect({
