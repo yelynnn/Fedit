@@ -179,7 +179,19 @@ const GetCustomerReviews = async (
   try {
     const res = await axiosInstance.get<CustomerReviewsResponse>(
       `/customer-analysis/${encodeURIComponent(brandId)}/reviews`,
-      { params: { ...params, product: params.product || undefined } },
+      {
+        params: { ...params, product: params.product || undefined },
+        // 상품명에 "[5차 리오더]" 같은 대괄호가 흔한데, axios 기본 직렬화는 [ ] 를
+        // 인코딩하지 않아 백엔드(Tomcat)가 400 으로 요청 자체를 거부한다.
+        // URLSearchParams 로 모든 값을 인코딩해서 보낸다.
+        paramsSerializer: (p: Record<string, unknown>) => {
+          const qs = new URLSearchParams();
+          Object.entries(p).forEach(([k, v]) => {
+            if (v !== undefined && v !== null && v !== "") qs.append(k, String(v));
+          });
+          return qs.toString();
+        },
+      },
     );
     return res.data;
   } catch (error: any) {
