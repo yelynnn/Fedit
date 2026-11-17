@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useUserStore } from "@/stores/UserStore";
 import { GetSeasonList } from "@/apis/AnalysisAPI";
 import {
   Select,
@@ -53,10 +52,9 @@ export const toPeriodParams = ({
 };
 
 /**
- * 관리자 먼저 공개(2026-11-17): 연도·시즌 선택은 관리자에게만 보인다.
- * 관리자가 아니면 선택 UI 가 없으니 예전처럼 전체 기간으로 조회한다 — 백엔드는 값이 없으면 최신 시즌이라 all 을 명시한다.
+ * 연도·시즌 선택은 모든 계정에 공개(2026-11-17). 예전 관리자 한정 공개 때 쓰던 훅 이름을 그대로 둔다.
  */
-export const useAnalysisPeriodEnabled = () => useUserStore((s) => s.admin);
+export const useAnalysisPeriodEnabled = () => true;
 
 export const useAnalysisPeriodParams = (period: AnalysisPeriod) => {
   const enabled = useAnalysisPeriodEnabled();
@@ -65,6 +63,36 @@ export const useAnalysisPeriodParams = (period: AnalysisPeriod) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [enabled, period.year, period.season],
   );
+};
+
+/** 브라우저에 저장하는 화면 상태(새로고침해도 유지). 저장소를 못 쓰는 환경이면 조용히 무시한다 */
+export const readStored = <T,>(key: string, fallback: T): T => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+export const writeStored = (key: string, value: unknown) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // 저장 실패는 무시(사생활 보호 모드 등)
+  }
+};
+
+/** 화면별 연도·시즌 선택을 새로고침해도 유지한다(key: 화면 이름) */
+export const useStoredPeriod = (key: string) => {
+  const storageKey = `fedit-analysis-period:${key}`;
+  const [period, setPeriod] = useState<AnalysisPeriod>(() =>
+    readStored<AnalysisPeriod>(storageKey, EMPTY_ANALYSIS_PERIOD),
+  );
+  useEffect(() => {
+    writeStored(storageKey, period);
+  }, [storageKey, period]);
+  return [period, setPeriod] as const;
 };
 
 function AnalysisSeasonSelect({

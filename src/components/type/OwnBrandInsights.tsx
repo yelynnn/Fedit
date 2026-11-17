@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useOwnBrandStore } from "@/stores/OwnBrandStore";
 import { useUIStore } from "@/stores/UIStore";
+import { useUserStore } from "@/stores/UserStore";
+import {
+  useSubscriptionStore,
+  getEffectivePlan,
+  toBillingPlan,
+} from "@/stores/SubscriptionStore";
 import { GetOwnBrandInsights, type OwnBrandInsights as Insights } from "@/apis/OwnBrandAPI";
 
 // 유형 분석 상단의 '자사 맞춤 분석' (2026-11-17). 데이터는 GET /category/own-insights.
@@ -80,6 +86,11 @@ function PricePositionCard({ prices }: { prices: Insights["prices"] }) {
 /** 자사 브랜드를 지정했으면 맞춤 분석 두 개, 아니면 지정 안내 한 줄. period: 유형 분석의 연도·시즌 */
 export default function OwnBrandInsights({ period }: { period: Period }) {
   const { ownBrand, loaded, load } = useOwnBrandStore();
+  // 자사 브랜드는 Basic·Pro(관심 브랜드 안에서)·Enterprise·관리자만 지정할 수 있다 — 그 밖에는 안내도 띄우지 않는다
+  const subscription = useSubscriptionStore((s) => s.subscription);
+  const isAdmin = useUserStore((s) => s.admin);
+  const plan = toBillingPlan(getEffectivePlan(subscription));
+  const canUseOwnBrand = isAdmin || plan === "basic" || plan === "pro" || plan === "enterprise";
   const openSettingsModal = useUIStore((s) => s.openSettingsModal);
   const [data, setData] = useState<Insights | null>(null);
 
@@ -103,7 +114,7 @@ export default function OwnBrandInsights({ period }: { period: Period }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownBrand, periodKey]);
 
-  if (!loaded) return null;
+  if (!loaded || !canUseOwnBrand) return null;
 
   if (!ownBrand) {
     return (

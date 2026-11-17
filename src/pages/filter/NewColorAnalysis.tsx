@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ColorTreeMap from "@/components/color/ColorTreeMap";
 import ColorBar from "@/components/color/ColorBar";
@@ -15,10 +15,11 @@ import AnalysisDemoBanner from "@/components/common/AnalysisDemoBanner";
 import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
 import type { BrandColorData, TrendColorItem } from "@/apis/ColorAPI";
 import AnalysisSeasonSelect, {
-  EMPTY_ANALYSIS_PERIOD,
+  useStoredPeriod,
+  readStored,
+  writeStored,
   useAnalysisPeriodEnabled,
   useAnalysisPeriodParams,
-  type AnalysisPeriod,
 } from "@/components/filter/AnalysisSeasonSelect";
 
 const toTrendColorData = (item: TrendColorItem): TrendColorData => ({
@@ -37,6 +38,8 @@ const toTrendColorData = (item: TrendColorItem): TrendColorData => ({
     itemCount: b.item_count,
   })),
 });
+
+const COMPARE_KEY = "fedit-color-compare-brands";
 
 type TreeMapEntry = {
   brand: string;
@@ -88,7 +91,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
   const isFilterHydrated = useFilterStoreHydrated();
   const [isCompareModalOpen, setCompareModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [period, setPeriod] = useState<AnalysisPeriod>(EMPTY_ANALYSIS_PERIOD);
+  const [period, setPeriod] = useStoredPeriod("color");
   // 연도·시즌 선택은 관리자에게만 먼저 공개 — 그 밖에는 전체 기간
   const periodEnabled = useAnalysisPeriodEnabled();
   const periodParams = useAnalysisPeriodParams(period);
@@ -98,6 +101,17 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
     TreeMapEntry[]
   >([]);
   const [trendColors, setTrendColors] = useState<TrendColorData[]>([]);
+  // 마지막으로 그래프를 불러온 브랜드 필터 — 연도·시즌만 바뀐 재조회인지 구분한다
+  const lastBrandsKey = useRef<string | null>(null);
+
+  // 추가한 비교 브랜드는 새로고침해도 유지(예시 화면 제외)
+  useEffect(() => {
+    if (demo || lastBrandsKey.current === null) return;
+    writeStored(
+      COMPARE_KEY,
+      displayTreeMapBrands.map((b) => b.brand).filter((name) => name !== "전체"),
+    );
+  }, [displayTreeMapBrands, demo]);
 
   useEffect(() => {
     if (!isFilterHydrated && !demo) return;
@@ -119,7 +133,30 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
               .filter((b): b is TreeMapEntry => !!b && b.data.length > 0)
               .slice(0, 2)
           : [];
-        if (initial) setDisplayTreeMapBrands([initial, ...demoPair]);
+        if (!initial) return;
+        // 연도·시즌만 바뀐 재조회면 지금 띄워 둔 비교 브랜드는 그대로 두고 데이터만 새 기간 값으로 바꾼다.
+        // (전에는 매번 '전체'만 남기고 초기화돼, 추가한 브랜드가 사라졌다)
+        // 브랜드 필터 자체가 바뀌었으면 예전처럼 '전체'부터 다시
+        const brandsKey = brandList.join("|");
+        const firstLoad = lastBrandsKey.current === null;
+        const brandsChanged = !firstLoad && lastBrandsKey.current !== brandsKey;
+        lastBrandsKey.current = brandsKey;
+        setDisplayTreeMapBrands((prev) => {
+          if (firstLoad && !demo) {
+            // 새로고침 직후: 저장해 둔 비교 브랜드(현재 필터에 있는 것만)를 다시 띄운다
+            const saved = readStored<string[]>(COMPARE_KEY, [])
+              .map((name) => mapped.find((b) => b.brand === name))
+              .filter((b): b is TreeMapEntry => !!b)
+              .slice(0, 2);
+            return [initial, ...saved];
+          }
+          if (prev.length === 0 || brandsChanged) return [initial, ...demoPair];
+          return prev.map(
+            (shown) =>
+              mapped.find((b) => b.brand === shown.brand) ??
+              (shown.brand === "전체" ? initial : { brand: shown.brand, data: [] }),
+          );
+        });
       } catch {
         // 색상 그래프 로드 실패 시 빈 배열 유지
       }

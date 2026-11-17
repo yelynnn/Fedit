@@ -8,10 +8,9 @@ import AnalysisDemoBanner from "@/components/common/AnalysisDemoBanner";
 import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
 import OwnBrandInsights from "@/components/type/OwnBrandInsights";
 import AnalysisSeasonSelect, {
-  EMPTY_ANALYSIS_PERIOD,
+  useStoredPeriod,
   useAnalysisPeriodEnabled,
   useAnalysisPeriodParams,
-  type AnalysisPeriod,
 } from "@/components/filter/AnalysisSeasonSelect";
 
 type TypeBlock = (typeof MockNewTypeData)[number];
@@ -28,7 +27,7 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
   // brandList를 deps에 넣고 복원 완료까지 기다리도록 고친다.
   const { brandList } = useFilterStore();
   const isFilterHydrated = useFilterStoreHydrated();
-  const [period, setPeriod] = useState<AnalysisPeriod>(EMPTY_ANALYSIS_PERIOD);
+  const [period, setPeriod] = useStoredPeriod("type");
   // 연도·시즌 선택과 자사 맞춤 분석은 관리자에게만 먼저 공개
   const periodEnabled = useAnalysisPeriodEnabled();
   const periodParams = useAnalysisPeriodParams(period);

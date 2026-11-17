@@ -759,6 +759,7 @@ export default function SettingsPage() {
                       item.id !== "관심브랜드" ||
                       currentPlan === "basic" ||
                       currentPlan === "pro" ||
+                      currentPlan === "enterprise" ||
                       isAdmin,
                   )
                   .map((item) => (
@@ -1345,15 +1346,14 @@ export default function SettingsPage() {
                   </div>
 
                   {/* ── 자사 브랜드 — 관심 브랜드 중 하나를 '우리 브랜드'로 지정하면 자사 맞춤 분석을 보여 준다 ── */}
-                  {/* 자사 브랜드는 관리자에게만 먼저 공개(2026-11-17) */}
-                  {isAdmin && !brandPicksLoading && currentBrandPicks.length > 0 && (
+                  {!brandPicksLoading && currentBrandPicks.length > 0 && (
                     <OwnBrandSection picks={currentBrandPicks} />
                   )}
                 </div>
               )}
 
-            {/* 관리자(요금제와 무관)·Enterprise: 관심 브랜드 제한이 없어 자사 브랜드만 전체 브랜드에서 고른다 — 지금은 관리자만 공개 */}
-            {active === "관심브랜드" && isAdmin && currentPlan !== "basic" && currentPlan !== "pro" && (
+            {/* Enterprise·관리자(요금제와 무관): 관심 브랜드 제한이 없어 자사 브랜드만 전체 브랜드에서 고른다 */}
+            {active === "관심브랜드" && (currentPlan === "enterprise" || isAdmin) && currentPlan !== "basic" && currentPlan !== "pro" && (
               <div className="max-w-[680px]">
                 <h1 className="text-2xl font-semibold text-[#0B0E0F]">
                   관심 브랜드 설정
