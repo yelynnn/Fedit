@@ -25,9 +25,11 @@ export interface TrendColorData {
 
 interface Props {
   data: TrendColorData;
+  /** 신규 주목 색상의 시즌 조건 — 관련 상품도 같은 조건으로 조회한다 */
+  period?: { year?: string; season?: string };
 }
 
-const TrendColorBox = ({ data }: Props) => {
+const TrendColorBox = ({ data, period }: Props) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { brandList } = useFilterStore();
   const [modalOpen, setModalOpen] = useState(false);
@@ -51,6 +53,8 @@ const TrendColorBox = ({ data }: Props) => {
       const items = await GetColorRelatedProducts({
         brand: brandParam,
         color_hex: data.colorHex,
+        year: period?.year,
+        season: period?.season,
       });
       setModalItems(items);
     } catch {

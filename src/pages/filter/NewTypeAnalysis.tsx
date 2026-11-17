@@ -1,11 +1,16 @@
 import NewTypeBox from "@/components/type/NewTypeBox";
 import { MockNewTypeData } from "@/data/mock/MockNewTypeData";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { GetCategoryGraph } from "@/apis/AnalysisAPI";
 import QuestionTooltip from "@/components/common/QuestionTooltip";
 import { useFilterStore, useFilterStoreHydrated } from "@/stores/FilterStore";
 import AnalysisDemoBanner from "@/components/common/AnalysisDemoBanner";
 import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
+import AnalysisSeasonSelect, {
+  EMPTY_ANALYSIS_PERIOD,
+  toPeriodParams,
+  type AnalysisPeriod,
+} from "@/components/filter/AnalysisSeasonSelect";
 
 type TypeBlock = (typeof MockNewTypeData)[number];
 
@@ -21,13 +26,36 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
   // brandList를 deps에 넣고 복원 완료까지 기다리도록 고친다.
   const { brandList } = useFilterStore();
   const isFilterHydrated = useFilterStoreHydrated();
+  const [period, setPeriod] = useState<AnalysisPeriod>(EMPTY_ANALYSIS_PERIOD);
+
+  // 카드 목록은 카드 폭(340~400px)이 정해져 있어 화면 오른쪽 끝까지 차지 않는다.
+  // 연도·시즌 칸이 카드보다 더 오른쪽으로 나가지 않도록, 머리 줄 폭을 '카드가 실제로 끝나는 위치'에 맞춘다.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [headerWidth, setHeaderWidth] = useState<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const measure = () => {
+      const left = grid.getBoundingClientRect().left;
+      const cards = Array.from(grid.children) as HTMLElement[];
+      const right = cards.reduce((m, el) => Math.max(m, el.getBoundingClientRect().right - left), 0);
+      setHeaderWidth(right > 0 ? right : undefined);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(grid);
+    return () => ro.disconnect();
+  }, [blocks, loading]);
 
   useEffect(() => {
     if (!isFilterHydrated && !demo) return;
     const load = async () => {
       try {
         setLoading(true);
-        const res = await GetCategoryGraph(demo ? ANALYSIS_DEMO_BRANDS : undefined);
+        const res = await GetCategoryGraph(
+          demo ? ANALYSIS_DEMO_BRANDS : undefined,
+          toPeriodParams(period),
+        );
 
         const list = (
           Array.isArray(res)
@@ -43,7 +71,7 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
       }
     };
     load();
-  }, [brandList, isFilterHydrated, demo]);
+  }, [brandList, isFilterHydrated, demo, period]);
 
   return (
     <div className="px-14">
@@ -62,12 +90,20 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
             infoText="상품 유형별 출시 비중과 최근 빠르게 증가한 실루엣을 확인하고, 시장에서 성장하고 있는 유형의 흐름을 남보다 먼저 잡아보세요."
           />
         </div>
-        <p className="text-base font-semibold leading-6 text-icon-neutral">
-          최근 주목받는 상품 유형과 연관 키워드를 탐색해보세요.
-        </p>
+        {/* 연도·시즌은 설명 문구 줄의 오른쪽 끝 — 단, 아래 카드 목록의 오른쪽 끝을 넘지 않게 */}
+        <div
+          className="flex items-center justify-between gap-4"
+          style={{ maxWidth: headerWidth }}
+        >
+          <p className="text-base font-semibold leading-6 text-icon-neutral">
+            최근 주목받는 상품 유형과 연관 키워드를 탐색해보세요.
+          </p>
+          <AnalysisSeasonSelect value={period} onChange={setPeriod} strong />
+        </div>
       </div>
 
       <div
+        ref={gridRef}
         // 표 폭은 340~400px 사이에서만 움직이고 개수는 화면에 맞춘다 — 노트북에서 한 줄 3개, 큰 화면은 4개 이상.
         // 화면이 커져도 표가 끝없이 늘어나지 않게 최대 폭을 둔다.
         className="grid justify-start gap-6 mt-8"

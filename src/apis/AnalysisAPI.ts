@@ -34,12 +34,16 @@ const GetColorGraph = async () => {
 };
 
 // brands 를 주면 필터 대신 그 브랜드로(예시 화면)
-const GetCategoryGraph = async (brands?: string[]) => {
+// period: { year: "2026", season: "겨울" } — 빈 값은 전체. 시즌은 상품 계절감(봄·여름·가을·겨울) 기준
+const GetCategoryGraph = async (
+  brands?: string[],
+  period?: { year?: string; season?: string },
+) => {
   const brandList = brands ?? useFilterStore.getState().brandList;
   const query = brandList.join(",");
-  const response = await axiosInstance.get(
-    `/category/graph?brand=${encodeURIComponent(query)}`,
-  );
+  const response = await axiosInstance.get("/category/graph", {
+    params: { brand: query, year: period?.year, season: period?.season },
+  });
   return response.data;
 };
 

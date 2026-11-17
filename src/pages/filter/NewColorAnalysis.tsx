@@ -14,6 +14,11 @@ import { GetColorGraph, GetTrendColor } from "@/apis/ColorAPI";
 import AnalysisDemoBanner from "@/components/common/AnalysisDemoBanner";
 import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
 import type { BrandColorData, TrendColorItem } from "@/apis/ColorAPI";
+import AnalysisSeasonSelect, {
+  EMPTY_ANALYSIS_PERIOD,
+  toPeriodParams,
+  type AnalysisPeriod,
+} from "@/components/filter/AnalysisSeasonSelect";
 
 const toTrendColorData = (item: TrendColorItem): TrendColorData => ({
   rank: item.rank,
@@ -82,6 +87,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
   const isFilterHydrated = useFilterStoreHydrated();
   const [isCompareModalOpen, setCompareModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [period, setPeriod] = useState<AnalysisPeriod>(EMPTY_ANALYSIS_PERIOD);
 
   const [allBrandData, setAllBrandData] = useState<TreeMapEntry[]>([]);
   const [displayTreeMapBrands, setDisplayTreeMapBrands] = useState<
@@ -93,7 +99,10 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
     if (!isFilterHydrated && !demo) return;
     const load = async () => {
       try {
-        const res = await GetColorGraph(demo ? ANALYSIS_DEMO_BRANDS : undefined);
+        const res = await GetColorGraph(
+          demo ? ANALYSIS_DEMO_BRANDS : undefined,
+          toPeriodParams(period),
+        );
         const mapped = Array.isArray(res?.brands)
           ? res.brands.map(toTreeMapEntry)
           : [];
@@ -112,13 +121,17 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
       }
     };
     load();
-  }, [brandList, isFilterHydrated, demo]);
+  }, [brandList, isFilterHydrated, demo, period]);
 
   useEffect(() => {
     if (!isFilterHydrated && !demo) return;
     const load = async () => {
       try {
-        const res = await GetTrendColor(demo ? ANALYSIS_DEMO_BRANDS : undefined);
+        const res = await GetTrendColor(
+          demo ? ANALYSIS_DEMO_BRANDS : undefined,
+          // 연도는 빼고 시즌만 — 안 골랐으면 지금 계절, '전체'면 조건 없음
+          toPeriodParams(period).season,
+        );
         setTrendColors(
           Array.isArray(res?.trend_color)
             ? res.trend_color.map(toTrendColorData)
@@ -129,7 +142,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
       }
     };
     load();
-  }, [brandList, isFilterHydrated, demo]);
+  }, [brandList, isFilterHydrated, demo, period]);
 
   const handleCompareSubmit = (brands: string[]) => {
     brands.forEach((brandName) => {
@@ -188,6 +201,8 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
           </p>
         </div>
 
+        <div className="flex items-center gap-3 shrink-0">
+        <AnalysisSeasonSelect value={period} onChange={setPeriod} />
         {/* 뷰 전환 버튼 그룹 */}
         <div className="flex items-center p-1 border bg-surface-base rounded-xl border-surface-base shrink-0">
           <button
@@ -202,6 +217,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
           >
             <Icon icon="fa7-solid:list-ul" className="w-5 h-5" />
           </button>
+        </div>
         </div>
       </div>
       {/* 그래프 영역: viewMode에 따라 TreeMap 또는 ColorBar를 보여줌 */}
@@ -237,6 +253,7 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
                       ? () => handleRemoveTreeMap(block.brand)
                       : undefined
                   }
+                  period={toPeriodParams(period)}
                 />
               )}
             </div>
@@ -281,7 +298,11 @@ function NewColorAnalysis({ demo = false }: { demo?: boolean }) {
       </p>
       <div className="grid items-start grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {(demo && trendColors.length === 0 ? DEMO_TREND_COLORS : trendColors).map((item) => (
-          <TrendColorBox key={item.rank} data={item} />
+          <TrendColorBox
+            key={item.rank}
+            data={item}
+            period={{ season: toPeriodParams(period).season }}
+          />
         ))}
       </div>
       <BrandCompareModal

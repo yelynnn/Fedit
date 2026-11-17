@@ -57,11 +57,15 @@ const GetColorRelatedProducts = async (params: {
   // ("all" 그래프에서 선택한 모든 브랜드를 조회할 때).
   brand: string | string[];
   color_hex: string;
+  year?: string;
+  season?: string;
 }): Promise<ColorProductItem[]> => {
   const response = await axiosInstance.get("/color/product", {
     params: {
       brand: params.brand,
       color_hex: params.color_hex,
+      year: params.year || undefined,
+      season: params.season || undefined,
     },
     // 배열을 brand[]=A 가 아니라 brand=A&brand=B 로 직렬화
     paramsSerializer: { indexes: null },
@@ -69,21 +73,25 @@ const GetColorRelatedProducts = async (params: {
   return Array.isArray(response.data) ? response.data : [];
 };
 
+type Period = { year?: string; season?: string };
+
 // brands 를 주면 필터 대신 그 브랜드로(예시 화면)
-const GetColorGraph = async (brands?: string[]): Promise<ColorGraphResponse> => {
+// period: 연도·시즌(계절감 봄·여름·가을·겨울) — 빈 값은 전체
+const GetColorGraph = async (brands?: string[], period?: Period): Promise<ColorGraphResponse> => {
   const brandList = brands ?? useFilterStore.getState().brandList;
   const query = brandList.join(",");
   const response = await axiosInstance.get("/color/graph", {
-    params: { brand: query },
+    params: { brand: query, year: period?.year, season: period?.season },
   });
   return response.data;
 };
 
-const GetTrendColor = async (brands?: string[]): Promise<TrendColorResponse> => {
+// 신규 주목 색상은 '최근 3개월 증가율' 기준이라 연도는 보내지 않고 시즌만 보낸다
+const GetTrendColor = async (brands?: string[], season?: string): Promise<TrendColorResponse> => {
   const brandList = brands ?? useFilterStore.getState().brandList;
   const query = brandList.join(",");
   const response = await axiosInstance.get("/color/trendColor", {
-    params: { brand: query },
+    params: { brand: query, season: season || undefined },
   });
   return response.data;
 };

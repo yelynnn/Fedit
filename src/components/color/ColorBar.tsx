@@ -15,9 +15,11 @@ interface ColorBarProps {
   brand?: string | string[];
   data?: ColorData[];
   onClose?: () => void;
+  /** 색상 분석의 연도·시즌 조건 — 관련 상품도 같은 기간으로 조회한다 */
+  period?: { year?: string; season?: string };
 }
 
-export default function ColorBar({ title, brand, data, onClose }: ColorBarProps) {
+export default function ColorBar({ title, brand, data, onClose, period }: ColorBarProps) {
   const chartData = data && data.length > 0 ? data : [];
   const [modalOpen, setModalOpen] = useState(false);
   const [modalItems, setModalItems] = useState<ColorProductItem[]>([]);
@@ -37,6 +39,8 @@ export default function ColorBar({ title, brand, data, onClose }: ColorBarProps)
       const items = await GetColorRelatedProducts({
         brand: targetBrand,
         color_hex: colorHex,
+        year: period?.year,
+        season: period?.season,
       });
       setModalItems(items);
     } catch {
