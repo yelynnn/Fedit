@@ -759,7 +759,7 @@ export default function SettingsPage() {
                       item.id !== "관심브랜드" ||
                       currentPlan === "basic" ||
                       currentPlan === "pro" ||
-                      (currentPlan === "enterprise" && isAdmin),
+                      isAdmin,
                   )
                   .map((item) => (
                     <button
@@ -1352,8 +1352,8 @@ export default function SettingsPage() {
                 </div>
               )}
 
-            {/* ── Enterprise: 관심 브랜드 제한이 없어 자사 브랜드만 전체 브랜드에서 고른다 ── */}
-            {active === "관심브랜드" && currentPlan === "enterprise" && isAdmin && (
+            {/* 관리자(요금제와 무관)·Enterprise: 관심 브랜드 제한이 없어 자사 브랜드만 전체 브랜드에서 고른다 — 지금은 관리자만 공개 */}
+            {active === "관심브랜드" && isAdmin && currentPlan !== "basic" && currentPlan !== "pro" && (
               <div className="max-w-[680px]">
                 <h1 className="text-2xl font-semibold text-[#0B0E0F]">
                   관심 브랜드 설정

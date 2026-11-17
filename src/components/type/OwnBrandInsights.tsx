@@ -107,7 +107,8 @@ export default function OwnBrandInsights({ period }: { period: Period }) {
 
   if (!ownBrand) {
     return (
-      <div className="flex items-center justify-between gap-4 py-2 pl-4 pr-2 mt-6 rounded-lg bg-[#EAF2FE]">
+      // 내용 길이만큼만 — 큰 화면에서 줄이 끝까지 늘어나지 않게
+      <div className="inline-flex items-center gap-6 py-2 pl-4 pr-2 mt-6 rounded-lg bg-[#EAF2FE] max-w-full">
         <p className="text-sm font-medium text-tx-neutral [word-break:keep-all]">
           자사 브랜드를 지정하면 유형별로 우리 상품과 시장을 비교해 볼 수 있어요.
         </p>
