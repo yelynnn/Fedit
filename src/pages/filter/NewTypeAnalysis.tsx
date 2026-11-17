@@ -6,6 +6,7 @@ import QuestionTooltip from "@/components/common/QuestionTooltip";
 import { useFilterStore, useFilterStoreHydrated } from "@/stores/FilterStore";
 import AnalysisDemoBanner from "@/components/common/AnalysisDemoBanner";
 import { ANALYSIS_DEMO_BRANDS } from "@/lib/analysisDemo";
+import OwnBrandInsights from "@/components/type/OwnBrandInsights";
 import AnalysisSeasonSelect, {
   EMPTY_ANALYSIS_PERIOD,
   toPeriodParams,
@@ -101,6 +102,8 @@ function NewTypeAnalysis({ demo = false }: { demo?: boolean }) {
           <AnalysisSeasonSelect value={period} onChange={setPeriod} strong />
         </div>
       </div>
+
+      {!demo && <OwnBrandInsights period={toPeriodParams(period)} />}
 
       <div
         ref={gridRef}

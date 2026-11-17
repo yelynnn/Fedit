@@ -46,6 +46,7 @@ import BrandApplyPanel from "@/components/settings/BrandApplyPanel";
 import { GetBrandList, GetBrandPicks } from "@/apis/AnalysisAPI";
 import { isSecretEntry as checkSecretEntry } from "@/lib/secretEntry";
 import { setPendingBasicDowngrade } from "@/lib/pendingDowngrade";
+import OwnBrandSection from "@/components/settings/OwnBrandSection";
 
 const GUIDE_TABS: ("전체" | GuideCategory)[] = ["전체", ...GUIDE_CATEGORIES];
 
@@ -757,7 +758,8 @@ export default function SettingsPage() {
                     (item) =>
                       item.id !== "관심브랜드" ||
                       currentPlan === "basic" ||
-                      currentPlan === "pro",
+                      currentPlan === "pro" ||
+                      currentPlan === "enterprise",
                   )
                   .map((item) => (
                     <button
@@ -1341,8 +1343,26 @@ export default function SettingsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* ── 자사 브랜드 — 관심 브랜드 중 하나를 '우리 브랜드'로 지정하면 자사 맞춤 분석을 보여 준다 ── */}
+                  {!brandPicksLoading && currentBrandPicks.length > 0 && (
+                    <OwnBrandSection picks={currentBrandPicks} />
+                  )}
                 </div>
               )}
+
+            {/* ── Enterprise: 관심 브랜드 제한이 없어 자사 브랜드만 전체 브랜드에서 고른다 ── */}
+            {active === "관심브랜드" && currentPlan === "enterprise" && (
+              <div className="max-w-[680px]">
+                <h1 className="text-2xl font-semibold text-[#0B0E0F]">
+                  관심 브랜드 설정
+                </h1>
+                <p className="text-base font-medium text-[#6F7173] mt-1 mb-2">
+                  Enterprise 요금제는 모든 브랜드를 분석할 수 있어요
+                </p>
+                <OwnBrandSection picks={[]} allBrands />
+              </div>
+            )}
 
             {/* ── 구독 관리 ── */}
             {active === "구독" && (
