@@ -173,7 +173,7 @@ export default function RankBox() {
       category: selectedCategory,
       month,
       page: 0,
-      size: 20,
+      size: 30,
       gender,
     })
       .then((res: TrendRankingPageResponse) => {
