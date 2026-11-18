@@ -208,6 +208,38 @@ const DeleteWithdraw = async (feedback: string[]) => {
   }
 };
 
+// 비밀번호 찾기 — 가입되지 않은 이메일이면 400 + 안내 메시지가 온다.
+const PostPasswordResetRequest = async (email: string) => {
+  try {
+    await axiosInstance.post("/auth/password-reset/request", { email });
+  } catch (error: any) {
+    if (error.response) {
+      throw new Error(error.response.data?.message || "메일을 보내지 못했어요. 잠시 후 다시 시도해주세요.");
+    }
+    throw new Error("서버에 연결할 수 없습니다.");
+  }
+};
+
+const GetPasswordResetVerify = async (token: string): Promise<boolean> => {
+  try {
+    const res = await axiosInstance.get("/auth/password-reset/verify", { params: { token } });
+    return Boolean(res.data?.valid);
+  } catch {
+    return false;
+  }
+};
+
+const PostPasswordResetConfirm = async (token: string, newPassword: string, newPasswordConfirm: string) => {
+  try {
+    await axiosInstance.post("/auth/password-reset/confirm", { token, newPassword, newPasswordConfirm });
+  } catch (error: any) {
+    if (error.response) {
+      throw new Error(error.response.data?.message || "비밀번호를 바꾸지 못했어요.");
+    }
+    throw new Error("서버에 연결할 수 없습니다.");
+  }
+};
+
 export {
   PostPersonalSignup,
   GetCheckPromoCode,
@@ -218,4 +250,7 @@ export {
   PostLogout,
   DeleteWithdraw,
   GetMe,
+  PostPasswordResetRequest,
+  GetPasswordResetVerify,
+  PostPasswordResetConfirm,
 };

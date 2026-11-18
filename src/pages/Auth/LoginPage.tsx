@@ -153,13 +153,23 @@ const LoginPage = () => {
             </button>
           </form>
 
-          <button
-            type="button"
-            onClick={() => navigate("/signup")}
-            className="mx-auto mt-4 block bg-transparent text-[13px] text-tx-default hover:underline"
-          >
-            회원가입하기
-          </button>
+          <div className="mt-4 flex items-center justify-center gap-3 text-[13px] text-tx-default">
+            <button
+              type="button"
+              onClick={() => navigate("/forgot-password")}
+              className="bg-transparent hover:underline"
+            >
+              비밀번호 찾기
+            </button>
+            <span className="h-[11px] w-px bg-line-alt" />
+            <button
+              type="button"
+              onClick={() => navigate("/signup")}
+              className="bg-transparent hover:underline"
+            >
+              회원가입하기
+            </button>
+          </div>
 
           <div className="mt-[34px] text-[12px] leading-[1.8] text-tx-alt">
             <p className="flex items-center">

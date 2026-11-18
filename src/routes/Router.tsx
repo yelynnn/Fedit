@@ -10,6 +10,8 @@ import CompanySignupPage from "@/pages/Auth/CompanySignupPage";
 import PersonalSignupPage from "@/pages/Auth/PersonalSignupPage";
 import NextSignupPage from "@/pages/Auth/NextSignupPage";
 import CorporateVerifyPage from "@/pages/Auth/CorporateVerifyPage";
+import ForgotPasswordPage from "@/pages/Auth/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/Auth/ResetPasswordPage";
 import TermsOfServicePage from "@/pages/Auth/TermsOfServicePage";
 import CancellationTermsPage from "@/pages/Auth/CancellationTermsPage";
 import PrivacyPolicyPage from "@/pages/Auth/PrivacyPolicyPage";
@@ -69,6 +71,14 @@ const router = createBrowserRouter([
       {
         path: "login",
         element: <LoginPage />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPasswordPage />,
+      },
+      {
+        path: "reset-password",
+        element: <ResetPasswordPage />,
       },
       {
         path: "signup",
