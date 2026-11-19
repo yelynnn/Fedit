@@ -110,6 +110,13 @@ function DashBoardPage() {
   const isTypeStoreHydrated = useTypeStoreHydrated();
 
   const [currentDate, setCurrentDate] = useState(dayjs());
+
+  // 대시보드에 새로 들어오면 항상 최신(이번 달)부터 보여 준다. 예전에 고른 달이
+  // 브라우저에 남아 있으면 날짜는 "오늘"인데 지난달 키워드가 나오는 일이 있었다.
+  useEffect(() => {
+    if (isTypeStoreHydrated && selectedMonth) setSelectedMonth("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTypeStoreHydrated]);
   const isToday = currentDate.isSame(dayjs(), "day");
   const isCurrentMonth = currentDate.isSame(dayjs(), "month");
   const prevMonth = currentDate.subtract(1, "month");
@@ -137,15 +144,21 @@ function DashBoardPage() {
   );
   const canGoPrev = !prevMonth.isBefore(dataStartMonth, "month");
 
-  const goToMonth = (value: string) => {
-    setSelectedMonth(value);
-    setCurrentDate(dayjs(`${value}-01`));
-  };
-
   // "이번달" 버튼 — 어느 달을 보고 있든 오늘 날짜(이번 달)로 바로 복귀한다.
   const goToCurrentMonth = () => {
     setSelectedMonth("");
     setCurrentDate(dayjs());
+  };
+
+  const goToMonth = (value: string) => {
+    // 이번 달을 고르면 "이번달" 버튼과 똑같이 오늘 날짜로 돌아간다
+    // (그 달 1일로 두면 날짜가 01로 보이고, 고른 달이 저장돼 다음 달에도 남았다).
+    if (dayjs(`${value}-01`).isSame(dayjs(), "month")) {
+      goToCurrentMonth();
+      return;
+    }
+    setSelectedMonth(value);
+    setCurrentDate(dayjs(`${value}-01`));
   };
 
   const handlePrevMonth = () => {
@@ -270,7 +283,7 @@ function DashBoardPage() {
               className="flex items-center gap-1.5 text-base font-semibold text-tx-alt hover:opacity-80 transition-opacity"
             >
               {isToday
-                ? `오늘(${currentDate.format("YYYY.MM.DD")})`
+                ? `오늘(${dayjs().format("YYYY.MM.DD")})`
                 : currentDate.format("YYYY년 M월")}
               <Icon icon="ph:caret-down" className="w-5 h-5 text-tx-alt" />
             </button>

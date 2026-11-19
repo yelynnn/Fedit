@@ -214,8 +214,11 @@ export default function RankBox() {
       .finally(() => setIsSnapshotLoading(false));
   }, [activeTempItemId]);
 
+  // 이번 달을 고르면 1일이 아니라 오늘 날짜로 둔다 — 1일로 두면 "오늘(…01)"로 보였다.
+  const toMonthDate = (m: dayjs.Dayjs) => (m.isSame(dayjs(), "month") ? dayjs() : m.startOf("month"));
+
   const handleMonthSelect = (value: string) => {
-    setCurrentDate(dayjs(`${value}-01`));
+    setCurrentDate(toMonthDate(dayjs(`${value}-01`)));
     setIsMonthModalOpen(false);
   };
 
@@ -246,7 +249,7 @@ export default function RankBox() {
           className="flex items-center gap-1.5 text-base font-semibold text-tx-alt hover:opacity-80 transition-opacity"
         >
           {isCurrentMonth
-            ? `오늘(${currentDate.format("YYYY.MM.DD")})`
+            ? `오늘(${dayjs().format("YYYY.MM.DD")})`
             : currentDate.format("YYYY년 M월")}
           <Icon icon="ph:caret-down" className="w-5 h-5 text-tx-alt" />
         </button>
@@ -258,7 +261,7 @@ export default function RankBox() {
               onClick={() =>
                 isFirstMonth
                   ? handleDateNavBlocked("prev")
-                  : setCurrentDate((d) => d.subtract(1, "month"))
+                  : setCurrentDate((d) => d.subtract(1, "month").startOf("month"))
               }
               className="flex h-[34px] w-[34px] shrink-0 items-center justify-center gap-2.5 rounded-full border border-line-alt bg-white p-1 transition-colors hover:bg-fill-bg-strong"
             >
@@ -284,7 +287,7 @@ export default function RankBox() {
             <button
               type="button"
               onClick={() =>
-                !isCurrentMonth && setCurrentDate((d) => d.add(1, "month"))
+                !isCurrentMonth && setCurrentDate((d) => toMonthDate(d.add(1, "month")))
               }
               disabled={isCurrentMonth}
               className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center gap-2.5 rounded-full border border-line-alt bg-white p-1 transition-colors ${
