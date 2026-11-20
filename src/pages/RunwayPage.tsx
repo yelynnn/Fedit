@@ -10,8 +10,10 @@ import QuestionTooltip from "@/components/common/QuestionTooltip";
 
 
 
-// 최신 시즌이 위로(첫 번째가 기본 선택)
+// 최신 시즌이 위로. 시즌을 고르지 않고 들어오면 데이터가 있는 가장 최신 시즌을 보여준다
+// (2027SS 처럼 목록에 먼저 올려 둔 시즌은 데이터가 들어오면 자동으로 기본이 된다).
 const SEASONS = [
+  { label: "2027 Spring/Summer", value: "2027SS" },
   { label: "2026 Fall/Winter", value: "2026FW" },
   { label: "2026 Spring/Summer", value: "2026SS" },
   { label: "2025 Spring/Summer", value: "2025SS" },
@@ -19,7 +21,10 @@ const SEASONS = [
 
 function RunwayPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const seasonValue = searchParams.get("season") ?? SEASONS[0].value;
+  const requestedSeason = searchParams.get("season");
+  // 시즌을 고르지 않았을 때 보여줄 시즌 — 최신 시즌에 데이터가 없으면(404) 다음 시즌으로 내려간다
+  const [fallbackIndex, setFallbackIndex] = useState(0);
+  const seasonValue = requestedSeason ?? SEASONS[Math.min(fallbackIndex, SEASONS.length - 1)].value;
   const selectedSeason = SEASONS.find((s) => s.value === seasonValue) ?? SEASONS[0];
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [overall, setOverall] = useState<any>(null);
@@ -94,8 +99,14 @@ function RunwayPage() {
             description: b.insight,
           }))
         );
-      } catch {
-        setError("데이터를 불러오는 데 실패했습니다.");
+      } catch (err: any) {
+        const notReady = err?.response?.status === 404;
+        if (notReady && !requestedSeason && fallbackIndex < SEASONS.length - 1) {
+          setFallbackIndex((i) => i + 1);   // 기본 진입: 데이터 있는 이전 시즌으로
+          return;
+        }
+        const label = SEASONS.find((s) => s.value === seasonValue)?.label ?? seasonValue;
+        setError(notReady ? `${label} 패션쇼 분석은 준비 중이에요. 곧 업데이트될 예정이에요.` : "데이터를 불러오는 데 실패했습니다.");
       } finally {
         setLoading(false);
       }
@@ -193,7 +204,7 @@ function RunwayPage() {
 
       {error && (
         <div className="flex items-center justify-center py-20">
-          <span className="text-red-400 text-sm">{error}</span>
+          <span className={`text-sm ${error.includes("준비 중") ? "text-tx-alt" : "text-red-400"}`}>{error}</span>
         </div>
       )}
 
