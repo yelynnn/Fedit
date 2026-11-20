@@ -209,7 +209,8 @@ export default function RunwayContainer({ data }: RunwayContainerProps) {
                     alt={item.name}
                   />
 
-                  {hoveredIdx === i && (
+                  {/* 설명(detail)이 비어 있으면 빈 말풍선을 띄우지 않는다 */}
+                  {hoveredIdx === i && String(item.detail ?? "").trim() !== "" && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[180px]">
                       <div className="bg-black/70 backdrop-blur-md text-white text-xs p-2 rounded-lg leading-snug shadow-xl relative text-center">
                         {item.detail}
