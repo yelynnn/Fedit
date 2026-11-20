@@ -761,6 +761,13 @@ export default function ProductDetailContent({
                       itemcode={effectiveId ?? ""}
                     />
                   )}
+                  {hasValue(detailData.vlm?.size ?? "") && (
+                    <DetailItem
+                      title="사이즈"
+                      content={detailData.vlm!.size ?? ""}
+                      itemcode={effectiveId ?? ""}
+                    />
+                  )}
                   {hasValue(detailData.vlm?.detail) && (
                     <DetailItem
                       title="디테일"

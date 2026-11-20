@@ -14,6 +14,8 @@ type Vlm = {
   neckline: string;
   sleeve: string;
   fit: string;
+  // 판매 사이즈("S, M, L, XL") — 크롤 원본 값. 사이즈를 안 주는 몰·백엔드 배포 전이면 없거나 빈 문자열.
+  size?: string;
   pattern: string | string[];
   detail: string[];
   color: string[];
