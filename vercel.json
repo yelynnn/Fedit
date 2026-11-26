@@ -1,3 +1,8 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+  "rewrites": [
+    { "source": "/", "has": [{ "type": "host", "value": "kids.mify.im" }], "destination": "/kids/index.html" },
+    { "source": "/kids", "destination": "/kids/index.html" },
+    { "source": "/kids/", "destination": "/kids/index.html" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
 }
