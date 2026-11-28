@@ -1,10 +1,3 @@
 {
-  "redirects": [
-    { "source": "/", "has": [{ "type": "host", "value": "kids.mify.im" }], "destination": "/kids", "permanent": false }
-  ],
-  "rewrites": [
-    { "source": "/kids", "destination": "/kids/index.html" },
-    { "source": "/kids/", "destination": "/kids/index.html" },
-    { "source": "/(.*)", "destination": "/" }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
 }

@@ -94,6 +94,16 @@ function mapSnapshotToApiDetail(snapshot: TrendSnapshotDetailDto): ApiDetail {
   };
 }
 
+// 수영복은 VLM 이 아니라 사람이 속성을 채워 넣는다. 넥라인 칸에 상의 형태(홀터넥·반두·삼각 등),
+// 기장 칸에 하의 형태(하이컷·하이웨이스트·사이드 타이 등)를 담으므로 수영복일 때만 이름을 바꿔 보여 준다.
+const SWIMWEAR_MAIN_CATEGORY = "수영복";
+
+function isSwimwear(detail: ApiDetail): boolean {
+  return (detail.categories ?? []).some(
+    (c) => c?.main_category === SWIMWEAR_MAIN_CATEGORY,
+  );
+}
+
 export default function ProductDetailContent({
   product,
   itemcodeOverride,
@@ -735,7 +745,7 @@ export default function ProductDetailContent({
                   )}
                   {hasValue(detailData.vlm?.length) && (
                     <DetailItem
-                      title="기장"
+                      title={isSwimwear(detailData) ? "하의 형태" : "기장"}
                       content={detailData.vlm!.length}
                       itemcode={effectiveId ?? ""}
                     />
@@ -749,7 +759,7 @@ export default function ProductDetailContent({
                   )}
                   {hasValue(detailData.vlm?.neckline) && (
                     <DetailItem
-                      title="넥라인"
+                      title={isSwimwear(detailData) ? "상의 형태" : "넥라인"}
                       content={detailData.vlm!.neckline}
                       itemcode={effectiveId ?? ""}
                     />
